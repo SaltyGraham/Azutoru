@@ -1,0 +1,55 @@
+name: Azutoru
+author: Aztl
+api-version: 1.16
+version: 1.0.0
+main: me.aztl.azutoru.Azutoru
+depend: [ProjectKorra]
+permissions:
+  azutoru.player:
+    default: true
+    children:
+      bending.ability.aircocoon: true
+      bending.ability.aircushion: true
+      bending.ability.airspoutrush: true
+      bending.ability.airwake: true
+      bending.ability.cloudsurf: true
+      bending.ability.dodge: true
+      bending.ability.duck: true
+      bending.ability.sandstorm: true
+      bending.ability.metalcables: true
+      bending.ability.lavawalk: true
+      bending.ability.dustdevil: true
+      bending.ability.dustdevilrush: true
+      bending.ability.earthshift: true
+      bending.ability.earthlevitation: true
+      bending.ability.glassshards: true
+      bending.ability.tectonicrift: true
+      bending.ability.electrify: true
+      bending.ability.fireaugmentation: true
+      bending.ability.fireblade: true
+      bending.ability.firedaggers: true
+      bending.ability.fireorb: true
+      bending.ability.electricfield: true
+      bending.ability.firewhips: true
+      bending.ability.iceshots: true
+      bending.ability.razorrings: true
+      bending.ability.waterrun: true
+      bending.ability.waterslash: true
+      bending.ability.watersphere: true
+      bending.ability.waterspoutrush: true
+      bending.ability.marionettes: true
+      bending.ability.octopusform: true
+      bending.ability.transform: true
+      bending.ability.hexapod: true
+      bending.ability.hexapod.slam: true
+      bending.ability.hexapod.grapple: true
+      bending.ability.hexapod.cling: true
+      bending.ability.hexapod.shell: true
+      bending.ability.hexapod.strider: true
+      bending.ability.hexapod.catapult: true
+      bending.ability.hexapod.spears: true
+      bending.ability.hexapod.wings: true
+      bending.ability.bloodpuppet: true
+      bending.ability.bloodstrangle: true
+      bending.ability.healinghands: true
+      bending.ability.plantwhip: true
