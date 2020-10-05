@@ -124,6 +124,9 @@ While these moves can be bound, they are meant to be used on any slot, so there 
   * I'm going to rework OctopusForm into a multiability. More info to come.
 * Transform
   * A WIP concept, Transform will allow waterbenders to transition between one multiability to another with fluidity
+#### Blood
+* BloodStrangle
+  * Demonstrated by Yakone and Tarrlok, BloodStrangle allows bloodbenders to grab multiple entities and slowly strangle them, similar to Suffocate
 #### Healing
 * Spiritbending
   * Demonstrated by Unalaq and Korra, healers will be able to "pacify" mobs with spiritbending, effectively just removing them from the world. If used on a human or passive mob, it will attempt to destroy their soul, slowly killing them.
