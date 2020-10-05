@@ -72,7 +72,7 @@ While these moves can be bound, they are meant to be used on any slot, so there 
   * Not yet started
 * Meteor
   * This might be converted into an icebending ability, but the concept behind Meteor is based on the meteor hammer weapon in Chinese martial arts.
-### Combos
+#### Combos
 * FireAugmentation
   * Demonstrated by Zuko during his fight with Aang on Ember Island, this combo allows a firebender to create a long snake-like circle of fire that places fire wherever it goes.
 * FireBlade
