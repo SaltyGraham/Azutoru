@@ -52,6 +52,7 @@ public class FireStreams extends FireAbility implements AddonAbility, ComboAbili
 		
 		location = player.getEyeLocation();
 		origin = location.clone();
+		direction = location.getDirection();
 		rotation = 0;
 		counter = 0;
 		

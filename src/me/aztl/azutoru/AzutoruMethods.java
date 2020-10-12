@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
@@ -37,6 +37,11 @@ public class AzutoruMethods {
 		return Azutoru.az.getConfig().getStringList("Properties.Earth.DustBlocks").contains(material.toString());
 	}
 	
+	/*
+	 * "Ignored" plants are plants that DustDevil skips over while finding its top block.
+	 * This is so DustDevil doesn't cancel when you go over a flower or something,
+	 * and also so that the block data for DustDevil doesn't use a plant.
+	 */
 	public static boolean isIgnoredPlant(Block block) {
 		return block != null ? isIgnoredPlant(block.getType()) : false;
 	}
@@ -84,52 +89,21 @@ public class AzutoruMethods {
 		return ignoredPlants.contains(material.toString());
 	}
 	
-	public static boolean isGlass(Block block) {
-		return block != null ? isGlass(block.getType()) : false;
-	}
-	
-	public static boolean isGlass(Material material) {
-		return getGlassBlocks().contains(material.toString());
-	}
-	
-	public static ArrayList<String> getGlassBlocks() {
-		ArrayList<String> glassBlocks = new ArrayList<String>();
-		glassBlocks.add(Material.GLASS.toString());
-		glassBlocks.add(Material.WHITE_STAINED_GLASS.toString());
-		glassBlocks.add(Material.ORANGE_STAINED_GLASS.toString());
-		glassBlocks.add(Material.MAGENTA_STAINED_GLASS.toString());
-		glassBlocks.add(Material.LIGHT_BLUE_STAINED_GLASS.toString());
-		glassBlocks.add(Material.YELLOW_STAINED_GLASS.toString());
-		glassBlocks.add(Material.LIME_STAINED_GLASS.toString());
-		glassBlocks.add(Material.PINK_STAINED_GLASS.toString());
-		glassBlocks.add(Material.GRAY_STAINED_GLASS.toString());
-		glassBlocks.add(Material.LIGHT_GRAY_STAINED_GLASS.toString());
-		glassBlocks.add(Material.CYAN_STAINED_GLASS.toString());
-		glassBlocks.add(Material.PURPLE_STAINED_GLASS.toString());
-		glassBlocks.add(Material.BLUE_STAINED_GLASS.toString());
-		glassBlocks.add(Material.BROWN_STAINED_GLASS.toString());
-		glassBlocks.add(Material.GREEN_STAINED_GLASS.toString());
-		glassBlocks.add(Material.RED_STAINED_GLASS.toString());
-		glassBlocks.add(Material.BLACK_STAINED_GLASS.toString());
-		glassBlocks.add(Material.GLASS_PANE.toString());
-		glassBlocks.add(Material.WHITE_STAINED_GLASS_PANE.toString());
-		glassBlocks.add(Material.ORANGE_STAINED_GLASS_PANE.toString());
-		glassBlocks.add(Material.MAGENTA_STAINED_GLASS_PANE.toString());
-		glassBlocks.add(Material.LIGHT_BLUE_STAINED_GLASS_PANE.toString());
-		glassBlocks.add(Material.YELLOW_STAINED_GLASS_PANE.toString());
-		glassBlocks.add(Material.LIME_STAINED_GLASS_PANE.toString());
-		glassBlocks.add(Material.PINK_STAINED_GLASS_PANE.toString());
-		glassBlocks.add(Material.GRAY_STAINED_GLASS_PANE.toString());
-		glassBlocks.add(Material.LIGHT_GRAY_STAINED_GLASS_PANE.toString());
-		glassBlocks.add(Material.CYAN_STAINED_GLASS_PANE.toString());
-		glassBlocks.add(Material.PURPLE_STAINED_GLASS_PANE.toString());
-		glassBlocks.add(Material.BLUE_STAINED_GLASS_PANE.toString());
-		glassBlocks.add(Material.BROWN_STAINED_GLASS_PANE.toString());
-		glassBlocks.add(Material.GREEN_STAINED_GLASS_PANE.toString());
-		glassBlocks.add(Material.RED_STAINED_GLASS_PANE.toString());
-		glassBlocks.add(Material.BLACK_STAINED_GLASS_PANE.toString());
-		
-		return glassBlocks;
+	public static List<EntityType> getNonParryableMobs() {
+		List<EntityType> nonParryables = new ArrayList<>();
+		nonParryables.add(EntityType.CREEPER);
+		nonParryables.add(EntityType.ELDER_GUARDIAN);
+		nonParryables.add(EntityType.ENDER_DRAGON);
+		nonParryables.add(EntityType.GUARDIAN);
+		nonParryables.add(EntityType.HOGLIN);
+		nonParryables.add(EntityType.IRON_GOLEM);
+		nonParryables.add(EntityType.PHANTOM);
+		nonParryables.add(EntityType.POLAR_BEAR);
+		nonParryables.add(EntityType.RAVAGER);
+		nonParryables.add(EntityType.SILVERFISH);
+		nonParryables.add(EntityType.WITHER);
+		nonParryables.add(EntityType.WOLF);
+		return nonParryables;
 	}
 	
 	public static enum Hand {
@@ -161,7 +135,7 @@ public class AzutoruMethods {
 		double diffZ = diff.getZ() / steps;
 		Location loc = startLoc.clone();
 		for (int i = 0; i < steps; i++) {
-			loc.add(new Location(startLoc.getWorld(), diffX, diffY, diffZ));
+			loc.add(diffX, diffY, diffZ);
 			loc.setDirection(loc.clone().subtract(player.getEyeLocation()).toVector().normalize());
 			locations.add(loc.clone());
 		}
@@ -187,8 +161,8 @@ public class AzutoruMethods {
     }
     
     public static boolean isOnGround(Player player) {
-    	if (GeneralMethods.isSolid(player.getLocation().getBlock().getRelative(BlockFace.DOWN))
-    			&& !ElementalAbility.isWater(player.getLocation().getBlock())) {
+    	Block b = player.getLocation().subtract(0, 0.2, 0).getBlock();
+    	if (GeneralMethods.isSolid(b) && !player.getLocation().getBlock().isLiquid()) {
     		return true;
     	}
     	return false;

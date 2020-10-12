@@ -32,6 +32,7 @@ public class FireBlade extends FireAbility implements AddonAbility, ComboAbility
 	private int id = 0;
 	private HashMap<Integer, Location> locations;
 	private HashMap<Integer, Vector> directions;
+	private List<Location> locList;
 	private boolean setup, progressing;
 	private int counter;
 	
@@ -55,6 +56,7 @@ public class FireBlade extends FireAbility implements AddonAbility, ComboAbility
 		startLoc = GeneralMethods.getTargetedLocation(player, 3);
 		locations = new HashMap<Integer, Location>();
 		directions = new HashMap<Integer, Vector>();
+		locList = new ArrayList<>();
 		// The following adjusts the maximum duration based on the range and speed.
 		// It is meant to be used as a check to make sure the ability removes.
 		duration = (long) (200 + range * (50 / speed));
@@ -106,7 +108,11 @@ public class FireBlade extends FireAbility implements AddonAbility, ComboAbility
 				return;
 			}
 			
+			locList.clear();
+			
 			for (Integer i : locations.keySet()) {
+				updateLocations(locations.get(i));
+				
 				Block b = locations.get(i).getBlock();
 				if (GeneralMethods.isSolid(b) || b.isLiquid()) {
 					continue;
@@ -135,6 +141,18 @@ public class FireBlade extends FireAbility implements AddonAbility, ComboAbility
 			}
 		}
 	}
+	
+	@Override
+	public void remove() {
+		super.remove();
+		locations.clear();
+		directions.clear();
+		locList.clear();
+	}
+	
+	public void updateLocations(Location loc) {
+		locList.add(loc);
+	}
 
 	@Override
 	public long getCooldown() {
@@ -144,6 +162,11 @@ public class FireBlade extends FireAbility implements AddonAbility, ComboAbility
 	@Override
 	public Location getLocation() {
 		return startLoc;
+	}
+	
+	@Override
+	public List<Location> getLocations(){
+		return locList;
 	}
 
 	@Override

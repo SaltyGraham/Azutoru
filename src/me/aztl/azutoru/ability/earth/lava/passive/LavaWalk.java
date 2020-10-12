@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
@@ -21,39 +22,80 @@ import me.aztl.azutoru.Azutoru;
 public class LavaWalk extends LavaAbility implements AddonAbility, PassiveAbility {
 
 	private int radius;
-	private long revertTime;
 	private boolean canBendTempLava;
+	private double range;
 	
-	private Set<TempBlock> COOLED_BLOCKS = new HashSet<>();
+	private World world;
+	private static Set<TempBlock> affectedBlocks = new HashSet<>();
+	private static boolean isActive;
 	
 	public LavaWalk(Player player) {
 		super(player);
 		
 		radius = Azutoru.az.getConfig().getInt("Abilities.Earth.LavaWalk.Radius");
-		revertTime = Azutoru.az.getConfig().getLong("Abilities.Earth.LavaWalk.RevertTime");
 		canBendTempLava = Azutoru.az.getConfig().getBoolean("Abilities.Earth.LavaWalk.CanBendTempLava");
+		range = Azutoru.az.getConfig().getDouble("Abilities.Earth.LavaWalk.Range");
 		
+		world = player.getWorld();
+		isActive = true;
 	}
 
 	@Override
 	public void progress() {
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			remove();
+		if (!isActive || !bPlayer.canUsePassive(this) || !bPlayer.canBendPassive(this)) {
+			if (!affectedBlocks.isEmpty()) {
+				revertBlocks();
+			}
 			return;
+		}
+		
+		if (!player.getWorld().equals(world)) {
+			revertBlocks();
+			world = player.getWorld();
 		}
 		
 		Block block = player.getLocation().getBlock().getRelative(BlockFace.DOWN);
-		if (bPlayer == null) {
-			return;
-		}
-		
 		for (Block affectedBlock : GeneralMethods.getBlocksAroundPoint(block.getLocation(), radius)) {
-			if ((EarthAbility.isLava(affectedBlock) && !TempBlock.isTempBlock(affectedBlock) || (EarthAbility.isLava(affectedBlock)) && TempBlock.isTempBlock(affectedBlock) && canBendTempLava)) {
+			if ((EarthAbility.isLava(affectedBlock) && !TempBlock.isTempBlock(affectedBlock)) 
+					|| (EarthAbility.isLava(affectedBlock) && TempBlock.isTempBlock(affectedBlock) && canBendTempLava)) {
 				TempBlock tb = new TempBlock(affectedBlock, Material.STONE);
-				tb.setRevertTime(revertTime);
-				tb.setRevertTask(() -> COOLED_BLOCKS.remove(tb));
+				affectedBlocks.add(tb);
 			}
 		}
+		
+		for (TempBlock tb : affectedBlocks) {
+			if (tb.getBlock().getLocation().distanceSquared(player.getLocation()) > range * range) {
+				tb.revertBlock();
+			}
+		}
+	}
+	
+	public static void revertBlocks() {
+		for (TempBlock tb : affectedBlocks) {
+			tb.revertBlock();
+		}
+		affectedBlocks.clear();
+	}
+	
+	public static boolean isActive() {
+		return isActive;
+	}
+	
+	public static void setActive(boolean isActive) {
+		if (!isActive) {
+			revertBlocks();
+		}
+		LavaWalk.isActive = isActive;
+	}
+	
+	@Override
+	public void remove() {
+		super.remove();
+		revertBlocks();
+	}
+	
+	public static Set<TempBlock> getAffectedBlocks() {
+		return affectedBlocks;
 	}
 	
 	@Override
@@ -78,7 +120,7 @@ public class LavaWalk extends LavaAbility implements AddonAbility, PassiveAbilit
 	
 	@Override
 	public String getInstructions() {
-		return "Walk close to a lava pool.";
+		return "Walk close to a lava pool. Right-click with LavaFlow with an empty hand to toggle LavaWalk.";
 	}
 
 	@Override
@@ -89,16 +131,6 @@ public class LavaWalk extends LavaAbility implements AddonAbility, PassiveAbilit
 	@Override
 	public boolean isSneakAbility() {
 		return false;
-	}
-
-	@Override
-	public boolean isInstantiable() {
-		return true;
-	}
-
-	@Override
-	public boolean isProgressable() {
-		return true;
 	}
 
 	@Override
@@ -121,6 +153,16 @@ public class LavaWalk extends LavaAbility implements AddonAbility, PassiveAbilit
 	
 	@Override
 	public boolean isEnabled() {
+		return true;
+	}
+
+	@Override
+	public boolean isInstantiable() {
+		return true;
+	}
+
+	@Override
+	public boolean isProgressable() {
 		return true;
 	}
 

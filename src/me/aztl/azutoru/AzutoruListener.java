@@ -2,10 +2,9 @@ package me.aztl.azutoru;
 
 import java.util.Set;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -49,6 +48,7 @@ import me.aztl.azutoru.ability.chi.passive.Dodge;
 import me.aztl.azutoru.ability.chi.passive.Duck;
 import me.aztl.azutoru.ability.chi.passive.Parry;
 import me.aztl.azutoru.ability.earth.glass.GlassShards;
+import me.aztl.azutoru.ability.earth.lava.passive.LavaWalk;
 import me.aztl.azutoru.ability.earth.sand.DustDevil;
 import me.aztl.azutoru.ability.earth.sand.combo.DustDevilRush;
 import me.aztl.azutoru.ability.fire.FireDaggers;
@@ -179,11 +179,15 @@ public class AzutoruListener implements Listener {
 				
 				if (abil.equalsIgnoreCase("heatcontrol") && CoreAbility.hasAbility(player, FireAugmentation.class)) {
 					CoreAbility.getAbility(player, FireAugmentation.class).onClick();
-				} else if (abil.equalsIgnoreCase("firedaggers") && !player.isSneaking()) {
-					if (CoreAbility.hasAbility(player, FireDaggers.class)) {
-						CoreAbility.getAbility(player, FireDaggers.class).onClick();
-					} else {
-						new FireDaggers(player);
+				} else if (abil.equalsIgnoreCase("firedaggers")) {
+					if (!player.isSneaking()) {
+						if (CoreAbility.hasAbility(player, FireDaggers.class)) {
+							CoreAbility.getAbility(player, FireDaggers.class).onClick();
+						} else {
+							new FireDaggers(player);
+						}
+					} else if (CoreAbility.hasAbility(player, FireDaggers.class) && player.isSneaking()) {
+						CoreAbility.getAbility(player, FireDaggers.class).onJumpSneakClick();
 					}
 				} else if (abil.equalsIgnoreCase("electrify")) {
 					new Electrify(player);
@@ -240,6 +244,7 @@ public class AzutoruListener implements Listener {
 			return;
 		}
 		
+		// Start sneaking
 		if (!player.isSneaking() && bPlayer.canBendIgnoreCooldowns(coreAbil)) {
 			if (coreAbil instanceof AirAbility && bPlayer.isElementToggled(Element.AIR) == true) {
 				if (GeneralMethods.isWeapon(player.getInventory().getItemInMainHand().getType()) && !ProjectKorra.plugin.getConfig().getBoolean("Properties.Air.CanBendWithWeapons")) {
@@ -289,6 +294,17 @@ public class AzutoruListener implements Listener {
 				}
 			}
 		}
+		// Releasing sneak
+		if (player.isSneaking() && bPlayer.canBendIgnoreBindsCooldowns(coreAbil)) {
+			if (coreAbil instanceof FireAbility && bPlayer.isElementToggled(Element.FIRE) == true) {
+				if (GeneralMethods.isWeapon(player.getInventory().getItemInMainHand().getType()) && !ProjectKorra.plugin.getConfig().getBoolean("Properties.Fire.CanBendWithWeapons")) {
+					return;
+				}
+				if (abil.equalsIgnoreCase("firedaggers") && CoreAbility.hasAbility(player, FireDaggers.class)) {
+					CoreAbility.getAbility(player, FireDaggers.class).onJumpReleaseSneak();
+				}
+			}
+		}
 	}
 	
 	@EventHandler
@@ -317,14 +333,7 @@ public class AzutoruListener implements Listener {
 			return;
 		}
 		
-		FileConfiguration conf = Azutoru.az.getConfig();
-		String dodge = "Abilities.Multi-Elemental.Dodge.";
-		if (bPlayer.isToggled() && !AzutoruMethods.isOnGround(player) && player.isSneaking()
-				&& ((bPlayer.isElementToggled(Element.AIR) && conf.getBoolean(dodge + "Air") == true)
-				|| (bPlayer.isElementToggled(Element.CHI) && conf.getBoolean(dodge + "Chi") == true)
-				|| (bPlayer.isElementToggled(Element.EARTH) && conf.getBoolean(dodge + "Earth") == true)
-				|| (bPlayer.isElementToggled(Element.FIRE) && conf.getBoolean(dodge + "Fire") == true)
-				|| (bPlayer.isElementToggled(Element.WATER) && conf.getBoolean(dodge + "Water") == true))) {
+		if (bPlayer.isToggled() && !AzutoruMethods.isOnGround(player) && player.isSneaking()) {
 			new Dodge(player);
 		}
 		
@@ -341,6 +350,14 @@ public class AzutoruListener implements Listener {
 				
 				if (abil.equalsIgnoreCase("glassshards")) {
 					new GlassShards(player, true);
+				} else if (abil.equalsIgnoreCase("lavaflow") && player.getInventory().getItemInMainHand().getType() == Material.AIR) {
+					if (LavaWalk.isActive()) {
+						LavaWalk.setActive(false);
+						player.sendMessage(ChatColor.DARK_GREEN + "LavaWalk is now disabled.");
+					} else {
+						LavaWalk.setActive(true);
+						player.sendMessage(ChatColor.DARK_GREEN + "LavaWalk is now enabled.");
+					}
 				}
 			}
 			
@@ -385,7 +402,8 @@ public class AzutoruListener implements Listener {
 			}
 			if (CoreAbility.hasAbility(player, Parry.class)) {
 				Entity damager = event.getDamager();
-				if (damager instanceof Projectile || damager instanceof Creeper) {
+				if (AzutoruMethods.getNonParryableMobs().contains(damager.getType())
+						|| damager instanceof Projectile) {
 					return;
 				}
 				
@@ -425,7 +443,14 @@ public class AzutoruListener implements Listener {
 	
 	@EventHandler
 	public void onPlayerMoveEvent(PlayerMoveEvent event) {
+		if (event.getTo().getX() == event.getFrom().getX()
+				&& event.getTo().getY() == event.getFrom().getY()
+				&& event.getTo().getZ() == event.getFrom().getZ()) {
+			return;
+		}
+		
 		Player player = event.getPlayer();
+		
 		if (CoreAbility.hasAbility(player, DustDevil.class) && !CoreAbility.hasAbility(player, DustDevilRush.class)) {
 			Vector velocity = new Vector();
 			velocity.setX(event.getTo().getX() - event.getFrom().getX());

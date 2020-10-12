@@ -11,6 +11,7 @@ import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.FireAbility;
 import com.projectkorra.projectkorra.airbending.AirShield;
+import com.projectkorra.projectkorra.firebending.FireBlast;
 import com.projectkorra.projectkorra.firebending.FireShield;
 import com.projectkorra.projectkorra.firebending.util.FireDamageTimer;
 import com.projectkorra.projectkorra.util.DamageHandler;
@@ -18,6 +19,7 @@ import com.projectkorra.projectkorra.util.DamageHandler;
 import me.aztl.azutoru.Azutoru;
 import me.aztl.azutoru.AzutoruMethods;
 import me.aztl.azutoru.AzutoruMethods.Hand;
+import me.aztl.azutoru.ability.fire.combo.FireBlade;
 
 public class FireDaggers extends FireAbility implements AddonAbility {
 
@@ -61,6 +63,7 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 		start();
 	}
 	
+	// Normal clicking shoots a dagger
 	public void onClick() {
 		if (bPlayer.isOnCooldown(getName() + "_ATTACK")) {
 			return;
@@ -80,7 +83,11 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 		maxThrows--;
 	}
 	
+	// Sneaking while on the ground blocks attacks
 	public void onSneak() {
+		if (!AzutoruMethods.isOnGround(player)) {
+			return;
+		}
 		if (bPlayer.isOnCooldown(getName() + "_BLOCK")) {
 			return;
 		}
@@ -88,6 +95,29 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 		activeAbility = Ability.BLOCK;
 		
 		bPlayer.addCooldown(getName() + "_BLOCK", usageCooldown);
+	}
+	
+	// Sneaking midair gives the player the option to either shoot FireBlast or FireBlade from their feet
+	// Releasing sneak midair shoots a FireBlast
+	public void onJumpReleaseSneak() {
+		if (AzutoruMethods.isOnGround(player)) {
+			return;
+		}
+		if (hasAbility(player, FireBlade.class)) {
+			return;
+		}
+		new FireBlast(player);
+	}
+	
+	// Sneak-clicking midair shoots a FireBlade
+	public void onJumpSneakClick() {
+		if (AzutoruMethods.isOnGround(player)) {
+			return;
+		}
+		if (hasAbility(player, FireBlast.class)) {
+			return;
+		}
+		new FireBlade(player);
 	}
 	
 	@Override
@@ -303,7 +333,7 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 	
 	@Override
 	public String getInstructions() {
-		return "Left-click to create the daggers. Left-click again to attack with a dagger, and hold sneak to block attacks with your daggers.";
+		return "Left-click to create the daggers. Left-click again to attack with a dagger, and hold sneak to block attacks with your daggers. Tap sneak midair to send out a FireBlast, and sneak-click midair to send out a FireBlade.";
 	}
 
 	@Override

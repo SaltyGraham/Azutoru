@@ -20,6 +20,7 @@ import com.projectkorra.projectkorra.configuration.Config;
 import com.projectkorra.projectkorra.earthbending.EarthBlast;
 import com.projectkorra.projectkorra.earthbending.EarthSmash;
 import com.projectkorra.projectkorra.firebending.FireBlast;
+import com.projectkorra.projectkorra.firebending.FireBlastCharged;
 import com.projectkorra.projectkorra.firebending.FireBurst;
 import com.projectkorra.projectkorra.firebending.lightning.Lightning;
 import com.projectkorra.projectkorra.waterbending.SurgeWall;
@@ -32,6 +33,8 @@ import com.projectkorra.projectkorra.waterbending.combo.IceWave;
 import com.projectkorra.projectkorra.waterbending.ice.IceSpikeBlast;
 
 import me.aztl.azutoru.ability.air.combo.AirCocoon;
+import me.aztl.azutoru.ability.air.combo.AirWake;
+import me.aztl.azutoru.ability.earth.sand.DustDevil;
 import me.aztl.azutoru.ability.fire.FireDaggers;
 import me.aztl.azutoru.ability.fire.bluefire.combo.Evaporate;
 import me.aztl.azutoru.ability.fire.combo.FireStreams;
@@ -149,6 +152,22 @@ public class Azutoru extends JavaPlugin {
 			ProjectKorra.getCollisionInitializer().addLargeAbility(CoreAbility.getAbility(Evaporate.class));
 			ProjectKorra.getCollisionInitializer().addRemoveSpoutAbility(CoreAbility.getAbility(Evaporate.class));
 			ProjectKorra.getCollisionInitializer().addComboAbility(CoreAbility.getAbility(Evaporate.class));
+		}
+		
+		if (CoreAbility.getAbility(DustDevil.class) != null) {
+			ProjectKorra.getCollisionManager().addCollision(new Collision(CoreAbility.getAbility(DustDevil.class), CoreAbility.getAbility(AirSwipe.class), true, false));
+			ProjectKorra.getCollisionManager().addCollision(new Collision(CoreAbility.getAbility(DustDevil.class), CoreAbility.getAbility(EarthBlast.class), true, false));
+			ProjectKorra.getCollisionManager().addCollision(new Collision(CoreAbility.getAbility(DustDevil.class), CoreAbility.getAbility(EarthSmash.class), true, false));
+			ProjectKorra.getCollisionManager().addCollision(new Collision(CoreAbility.getAbility(DustDevil.class), CoreAbility.getAbility(FireBlast.class), true, false));
+			ProjectKorra.getCollisionManager().addCollision(new Collision(CoreAbility.getAbility(DustDevil.class), CoreAbility.getAbility(FireBlastCharged.class), true, false));
+			ProjectKorra.getCollisionManager().addCollision(new Collision(CoreAbility.getAbility(DustDevil.class), CoreAbility.getAbility(FireBurst.class), true, false));
+			ProjectKorra.getCollisionManager().addCollision(new Collision(CoreAbility.getAbility(DustDevil.class), CoreAbility.getAbility(WaterManipulation.class), true, false));
+		}
+		
+		if (CoreAbility.getAbility(AirWake.class) != null) {
+			ProjectKorra.getCollisionInitializer().addSmallAbility(CoreAbility.getAbility(AirWake.class));
+			ProjectKorra.getCollisionInitializer().addComboAbility(CoreAbility.getAbility(AirWake.class));
+			ProjectKorra.getCollisionInitializer().addRemoveSpoutAbility(CoreAbility.getAbility(AirWake.class));
 		}
 		
 	}
@@ -424,8 +443,8 @@ public class Azutoru extends JavaPlugin {
 		// LavaWalk
 		c.addDefault("Abilities.Earth.LavaWalk.Enabled", true);
 		c.addDefault("Abilities.Earth.LavaWalk.Radius", 3);
-		c.addDefault("Abilities.Earth.LavaWalk.RevertTime", 5000);
 		c.addDefault("Abilities.Earth.LavaWalk.CanBendTempLava", true);
+		c.addDefault("Abilities.Earth.LavaWalk.Range", 10);
 		
 		// MetalCables
 		
@@ -446,7 +465,7 @@ public class Azutoru extends JavaPlugin {
 		c.addDefault("Abilities.Fire.Evaporate.InitialShieldRadius", 3);
 		c.addDefault("Abilities.Fire.Evaporate.RadiusIncreaseRate", 0.1);
 		c.addDefault("Abilities.Fire.Evaporate.HitRadius", 1);
-		c.addDefault("Abilities.Fire.Evaporate.CollisionRadius", 2);
+		c.addDefault("Abilities.Fire.Evaporate.CollisionRadius", 4);
 		c.addDefault("Abilities.Fire.Evaporate.ParticleAmount", 2);
 		c.addDefault("Abilities.Fire.Evaporate.ParticleSpread", 0.2);
 		c.addDefault("Abilities.Fire.Evaporate.Duration", 2000);
@@ -514,6 +533,8 @@ public class Azutoru extends JavaPlugin {
 		// MULTI-ELEMENTAL
 		c.addDefault("Abilities.Multi-Elemental.Dodge.Enabled", true);
 		c.addDefault("Abilities.Multi-Elemental.Dodge.Cooldown", 5000);
+		c.addDefault("Abilities.Multi-Elemental.Dodge.HorizontalModifier", 0.6);
+		c.addDefault("Abilities.Multi-Elemental.Dodge.VerticalModifier", 0.4);
 		c.addDefault("Abilities.Multi-Elemental.Dodge.Chi", true);
 		c.addDefault("Abilities.Multi-Elemental.Dodge.Fire", true);
 		c.addDefault("Abilities.Multi-Elemental.Dodge.Air", true);

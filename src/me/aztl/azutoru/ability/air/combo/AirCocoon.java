@@ -21,6 +21,8 @@ public class AirCocoon extends AirAbility implements AddonAbility, ComboAbility 
 	private long cooldown;
 	private long duration;
 	
+	private double counter = 0;
+	
 	public AirCocoon(Player player) {
 		super(player);
 		
@@ -46,7 +48,17 @@ public class AirCocoon extends AirAbility implements AddonAbility, ComboAbility 
 			return;
 		}
 		
+		if (!bPlayer.getBoundAbilityName().equalsIgnoreCase("airshield")) {
+			remove();
+			return;
+		}
+		
 		displayCocoon();
+		
+		if (counter % 6 == 0) {
+			playAirbendingSound(player.getLocation());
+		}
+		counter++;
 		
 		Vector velocity = player.getVelocity().multiply(0);
 		player.setVelocity(velocity);
@@ -103,7 +115,8 @@ public class AirCocoon extends AirAbility implements AddonAbility, ComboAbility 
 	
 	@Override
 	public String getInstructions() {
-		return "AirShield (Left-click) > AirShield (Left-click) > AirShield (Tap sneak)";
+		return "AirShield (Left-click) > AirShield (Left-click) > AirShield (Tap sneak).\n"
+				+ "You can cancel the move early by switching slots.";
 	}
 
 	@Override

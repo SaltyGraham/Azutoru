@@ -18,6 +18,7 @@ public class CloudSurf extends AirAbility implements AddonAbility {
 	
 	private Location cloudLoc;
 	private double health;
+	private double counter = 0;
 	
 	public CloudSurf(Player player) {
 		super(player);
@@ -85,6 +86,11 @@ public class CloudSurf extends AirAbility implements AddonAbility {
 		} else {
 			playAirbendingParticles(cloudLoc, 5, 0.8, 0.5, 0.8);
 		}
+		
+		if (counter % 6 == 0) {
+			playAirbendingSound(cloudLoc);
+		}
+		counter++;
 	}
 	
 	private void allowFlight() {

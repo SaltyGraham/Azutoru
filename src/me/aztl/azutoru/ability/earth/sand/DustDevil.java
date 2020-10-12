@@ -1,5 +1,8 @@
 package me.aztl.azutoru.ability.earth.sand;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -13,7 +16,6 @@ import org.bukkit.potion.PotionEffectType;
 
 import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
-import com.projectkorra.projectkorra.ability.CoreAbility;
 import com.projectkorra.projectkorra.ability.SandAbility;
 import com.projectkorra.projectkorra.util.DamageHandler;
 import com.projectkorra.projectkorra.util.ParticleEffect;
@@ -32,6 +34,7 @@ public class DustDevil extends SandAbility implements AddonAbility {
 	private Material topBlockType;
 	private World world;
 	private double currentHeight;
+	private List<Location> locations;
 	
 	public DustDevil(Player player) {
 		super(player);
@@ -48,6 +51,7 @@ public class DustDevil extends SandAbility implements AddonAbility {
 		
 		topBlock = GeneralMethods.getTopBlock(player.getLocation(), (int) height);
 		world = player.getWorld();
+		locations = new ArrayList<>();
 		
 		if (!AzutoruMethods.isDust(topBlock)) {
 			return;
@@ -65,36 +69,11 @@ public class DustDevil extends SandAbility implements AddonAbility {
 	
 	@Override
 	public void progress() {
-		topBlock = GeneralMethods.getTopBlock(player.getLocation(), (int) height);
-		
-		if (AzutoruMethods.isIgnoredPlant(topBlock)) {
-			topBlockType = topBlock.getRelative(BlockFace.DOWN, 2).getType();
-		} else {
-			topBlockType = topBlock.getType();
-		}
-		
 		if (!bPlayer.canBendIgnoreBinds(this)) {
 			remove();
 			return;
 		}
-		
-		if (!AzutoruMethods.isDust(topBlock)) {
-			if (!AzutoruMethods.isIgnoredPlant(topBlock)) {
-				remove();
-				return;
-			} else {
-				if (!AzutoruMethods.isDust(topBlock.getRelative(BlockFace.DOWN, 2))) {
-					remove();
-					return;
-				}
-			}
-		}
-		
-		if (!AzutoruMethods.isDust(topBlock) && (!AzutoruMethods.isIgnoredPlant(topBlock) && !AzutoruMethods.isDust(topBlock.getRelative(BlockFace.DOWN, 2)))) {
-			remove();
-			return;
-		}
-		
+
 		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
 			remove();
 			return;
@@ -105,11 +84,29 @@ public class DustDevil extends SandAbility implements AddonAbility {
 			return;
 		}
 		
+		topBlock = GeneralMethods.getTopBlock(player.getLocation(), (int) height);
+		if (AzutoruMethods.isIgnoredPlant(topBlock)) {
+			if (AzutoruMethods.isIgnoredPlant(topBlock.getRelative(BlockFace.DOWN))) {
+				topBlockType = topBlock.getRelative(BlockFace.DOWN, 2).getType();
+			} else {
+				topBlockType = topBlock.getRelative(BlockFace.DOWN).getType();
+			}
+		} else {
+			topBlockType = topBlock.getType();
+		}
+		
+		if (!AzutoruMethods.isDust(topBlockType)) {
+			remove();
+			return;
+		}
+		
 		double heightRemoveThreshold = 2;
 		if (!isWithinMaxSpoutHeight(topBlock.getLocation(), heightRemoveThreshold)) {
 			remove();
 			return;
 		}
+		
+		updateLocations();
 		
 		Block eyeBlock = player.getEyeLocation().getBlock();
 		if (isWater(eyeBlock) || GeneralMethods.isSolid(eyeBlock)) {
@@ -142,6 +139,7 @@ public class DustDevil extends SandAbility implements AddonAbility {
 				ParticleEffect.BLOCK_DUST.display(loc, 1, 0, Math.random(), 0, 1, topBlockType.createBlockData());
 				loc.subtract(x, 0, z);
 			}
+			
 			for (Entity entity : GeneralMethods.getEntitiesAroundPoint(loc, 1.5)) {
 				if (entity instanceof LivingEntity && entity.getUniqueId() != player.getUniqueId()) {
 					DamageHandler.damageEntity(entity, damage, this);
@@ -154,10 +152,20 @@ public class DustDevil extends SandAbility implements AddonAbility {
 		}
 	}
 	
+	public void updateLocations() {
+		locations.clear();
+		
+		List<Location> newLocations = new ArrayList<>();
+		newLocations = AzutoruMethods.getLinePoints(player, player.getLocation(), topBlock.getLocation(), 
+				(int) (player.getLocation().getY() - topBlock.getLocation().getY()));
+		
+		locations.addAll(newLocations);
+	}
+	
 	public void remove() {
 		super.remove();
-		if (CoreAbility.hasAbility(player, DustDevilRush.class)) {
-			CoreAbility.getAbility(player, DustDevilRush.class).remove();
+		if (hasAbility(player, DustDevilRush.class)) {
+			getAbility(player, DustDevilRush.class).remove();
 		}
 		bPlayer.addCooldown(this);
 		flightHandler.removeInstance(player, getName());
@@ -203,6 +211,11 @@ public class DustDevil extends SandAbility implements AddonAbility {
 	@Override
 	public Location getLocation() {
 		return player.getLocation();
+	}
+	
+	@Override
+	public List<Location> getLocations() {
+		return locations;
 	}
 
 	@Override

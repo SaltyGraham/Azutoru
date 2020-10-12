@@ -2,7 +2,6 @@ package me.aztl.azutoru.ability.earth.glass;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -15,7 +14,6 @@ import com.projectkorra.projectkorra.util.DamageHandler;
 import com.projectkorra.projectkorra.util.ParticleEffect;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
 import me.aztl.azutoru.ability.util.Shot;
 import me.aztl.azutoru.util.GlassAbility;
 
@@ -29,6 +27,7 @@ public class GlassShards extends GlassAbility implements AddonAbility {
 	private long lastShotTime, timeBetweenShots;
 	private Location location;
 	private Vector direction;
+	private double counter = 0;
 	
 	public GlassShards(Player player, boolean rightClick) {
 		super(player);
@@ -51,13 +50,13 @@ public class GlassShards extends GlassAbility implements AddonAbility {
 		
 		Block sourceBlock = player.getTargetBlock(null, (int) sourceRange);
 		
-		if (sourceBlock == null || !AzutoruMethods.isGlass(sourceBlock)) {
+		if (sourceBlock == null || !isGlass(sourceBlock)) {
 			return;
 		}
 		
 		if (rightClick) {
 			for (Block b : GeneralMethods.getBlocksAroundPoint(sourceBlock.getLocation(), glassCrackRadius)) {
-				if (AzutoruMethods.isGlass(b)) {
+				if (isGlass(b)) {
 					ParticleEffect.BLOCK_DUST.display(b.getLocation(), 3, Math.random(), Math.random(), Math.random(), b.getType().createBlockData());
 					if (isEarthRevertOn()) {
 						addTempAirBlock(b);
@@ -66,7 +65,7 @@ public class GlassShards extends GlassAbility implements AddonAbility {
 					}
 				}
 			}
-			player.getWorld().playSound(sourceBlock.getLocation(), Sound.BLOCK_GLASS_BREAK, 5, 1);
+			playGlassbendingSound(sourceBlock.getLocation());
 			bPlayer.addCooldown(this);
 		} else {
 			glassType = sourceBlock.getType();
@@ -105,6 +104,11 @@ public class GlassShards extends GlassAbility implements AddonAbility {
 		
 		displayLeftRing();
 		displayRightRing();
+		
+		if (counter % 6 == 0) {
+			playGlassbendingSound(location);
+		}
+		counter++;
 	}
 	
 	public void displayLeftRing() {

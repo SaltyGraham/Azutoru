@@ -26,6 +26,7 @@ public class AirWake extends AirAbility implements AddonAbility, ComboAbility {
 	
 	private Location location, origin, head, lArm, rArm;
 	private Vector direction;
+	private double counter = 0;
 	
 	public AirWake(Player player) {
 		super(player);
@@ -63,6 +64,11 @@ public class AirWake extends AirAbility implements AddonAbility, ComboAbility {
 			remove();
 			return;
 		}
+		
+		if (counter % 6 == 0) {
+			playAirbendingSound(location);
+		}
+		counter++;
 		
 		for (int i = 0; i < 2; i++) {
 			if (!isTransparent(location.getBlock().getRelative(BlockFace.DOWN, i))) {
@@ -164,6 +170,11 @@ public class AirWake extends AirAbility implements AddonAbility, ComboAbility {
 	@Override
 	public Location getLocation() {
 		return location;
+	}
+	
+	@Override
+	public double getCollisionRadius() {
+		return hitRadius;
 	}
 
 	@Override

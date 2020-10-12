@@ -27,6 +27,7 @@ public class AirCushion extends AirAbility implements AddonAbility, ComboAbility
 	private Location location, origin, center;
 	private Vector direction;
 	private Block topBlock;
+	private double counter = 0;
 	
 	public AirCushion(Player player) {
 		super(player);
@@ -66,6 +67,11 @@ public class AirCushion extends AirAbility implements AddonAbility, ComboAbility
 			return;
 		}
 		
+		if (counter % 6 == 0) {
+			playAirbendingSound(location);
+		}
+		counter++;
+		
 		for (int i = 0; i < 5; i++) {
 			if (GeneralMethods.isSolid(location.getBlock())) {
 				formCushion(location);
@@ -88,6 +94,7 @@ public class AirCushion extends AirAbility implements AddonAbility, ComboAbility
 				}
 			}
 		}
+		
 		for (Block b : GeneralMethods.getBlocksAroundPoint(center, radius)) {
 			if (GeneralMethods.isSolid(b.getRelative(BlockFace.DOWN))) {
 				getAirbendingParticles().display(b.getLocation(), 1, Math.random(), 0.2, Math.random());

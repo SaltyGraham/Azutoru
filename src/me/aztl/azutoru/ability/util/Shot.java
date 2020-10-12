@@ -38,6 +38,7 @@ public class Shot extends ElementalAbility implements AddonAbility {
 	private Vector direction;
 	private Ability ability;
 	private boolean controllable;
+	private double counter;
 	
 	public Shot(Player player, Ability ability, Location origin, Vector direction,
 			double damage, double range, double hitRadius, double speed, boolean controllable) {
@@ -94,6 +95,8 @@ public class Shot extends ElementalAbility implements AddonAbility {
 				progressGlass();
 			}
 		}
+		
+		counter++;
 	}
 	
 	public void progressIce() {
@@ -114,6 +117,10 @@ public class Shot extends ElementalAbility implements AddonAbility {
 			remove();
 			return;
 		}
+		
+		if (counter % 6 == 0) {
+			IceAbility.playIcebendingSound(location);
+		}
 	}
 	
 	public void progressGlass() {
@@ -125,6 +132,10 @@ public class Shot extends ElementalAbility implements AddonAbility {
 			if (entity instanceof LivingEntity && entity.getUniqueId() != player.getUniqueId()) {
 				DamageHandler.damageEntity(entity, damage, ability);
 			}
+		}
+		
+		if (counter % 6 == 0) {
+			GlassAbility.playGlassbendingSound(location);
 		}
 	}
 
@@ -171,6 +182,11 @@ public class Shot extends ElementalAbility implements AddonAbility {
 	@Override
 	public Location getLocation() {
 		return location;
+	}
+	
+	@Override
+	public double getCollisionRadius() {
+		return hitRadius;
 	}
 
 	@Override

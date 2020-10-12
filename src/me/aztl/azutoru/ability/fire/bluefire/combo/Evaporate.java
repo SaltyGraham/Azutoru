@@ -6,6 +6,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.util.Vector;
 
 import com.projectkorra.projectkorra.GeneralMethods;
@@ -22,7 +23,7 @@ import me.aztl.azutoru.Azutoru;
 public class Evaporate extends BlueFireAbility implements AddonAbility, ComboAbility {
 
 	private long cooldown, duration;
-	private double shieldRadius, particleSpread, speed, radiusIncreaseRate;
+	private double shieldRadius, particleSpread, speed, radiusIncreaseRate, collisionRadius;
 	private int particleAmount;
 	
 	private Location location;
@@ -45,6 +46,7 @@ public class Evaporate extends BlueFireAbility implements AddonAbility, ComboAbi
 		particleSpread = Azutoru.az.getConfig().getDouble("Abilities.Fire.Evaporate.ParticleSpread");
 		duration = Azutoru.az.getConfig().getLong("Abilities.Fire.Evaporate.Duration");
 		speed = Azutoru.az.getConfig().getDouble("Abilities.Fire.Evaporate.Speed");
+		collisionRadius = Azutoru.az.getConfig().getDouble("Abilities.Fire.Evaporate.CollisionRadius");
 		
 		location = GeneralMethods.getTargetedLocation(player, 2);
 		
@@ -92,6 +94,8 @@ public class Evaporate extends BlueFireAbility implements AddonAbility, ComboAbi
 							e.setFireTicks(80);
 							new FireDamageTimer(e, player);
 						}
+					} else if (e instanceof Projectile) {
+						e.remove();
 					}
 				}
 			}
@@ -127,8 +131,8 @@ public class Evaporate extends BlueFireAbility implements AddonAbility, ComboAbi
 	@Override
 	public String getDescription() {
 		return "Demonstrated by Azula in her fight with Katara and Aang in the Crystal Catacombs, "
-				+ "this combo allows a blue firebender to evaporate nearby water blocks "
-				+ "and even incoming water attacks. This is due to blue fire's high temperature.";
+				+ "this combo allows a blue firebender to evaporate incoming water attacks "
+				+ "and ignite entities. This is due to blue fire's high temperature.";
 	}
 	
 	@Override
@@ -138,7 +142,12 @@ public class Evaporate extends BlueFireAbility implements AddonAbility, ComboAbi
 
 	@Override
 	public Location getLocation() {
-		return null;
+		return location;
+	}
+	
+	@Override
+	public double getCollisionRadius() {
+		return collisionRadius;
 	}
 
 	@Override

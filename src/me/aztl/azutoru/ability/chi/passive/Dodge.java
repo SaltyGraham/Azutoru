@@ -4,6 +4,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import com.projectkorra.projectkorra.Element;
 import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.ChiAbility;
@@ -15,6 +16,9 @@ import me.aztl.azutoru.AzutoruMethods;
 public class Dodge extends ChiAbility implements AddonAbility {
 
 	private long cooldown;
+	private double horizontal, vertical;
+	
+	private boolean chi, air, fire, earth, water, dodged;
 	
 	public Dodge(Player player) {
 		super(player);
@@ -24,22 +28,63 @@ public class Dodge extends ChiAbility implements AddonAbility {
 		}
 		
 		cooldown = Azutoru.az.getConfig().getLong("Abilities.Multi-Elemental.Dodge.Cooldown");
+		horizontal = Azutoru.az.getConfig().getDouble("Abilities.Multi-Elemental.Dodge.HorizontalModifier");
+		vertical = Azutoru.az.getConfig().getDouble("Abilities.Multi-Elemental.Dodge.VerticalModifier");
+		chi = Azutoru.az.getConfig().getBoolean("Abilities.Multi-Elemental.Dodge.Chi");
+		air = Azutoru.az.getConfig().getBoolean("Abilities.Multi-Elemental.Dodge.Air");
+		fire = Azutoru.az.getConfig().getBoolean("Abilities.Multi-Elemental.Dodge.Fire");
+		earth = Azutoru.az.getConfig().getBoolean("Abilities.Multi-Elemental.Dodge.Earth");
+		water = Azutoru.az.getConfig().getBoolean("Abilities.Multi-Elemental.Dodge.Water");
 		
-		if (!AzutoruMethods.isOnGround(player) && !player.getLocation().getBlock().isLiquid() && player.isSneaking()) {
+		dodged = false;
+		
+		if (canDodge()) {
 			start();
 		}
 	}
 	
 	@Override
 	public void progress() {
-		Location eyeTarget = GeneralMethods.getTargetedLocation(player, 2);
-		Vector direction = GeneralMethods.getDirection(eyeTarget, player.getEyeLocation());
-		player.setVelocity(direction.multiply(0.5));
+		if (!player.isOnline() || player.isDead()) {
+			remove();
+			return;
+		}
+		if (!dodged) {
+			Location eyeLoc = player.getEyeLocation();
+			Location eyeTarget = GeneralMethods.getTargetedLocation(player, 2);
+			Vector direction = GeneralMethods.getDirection(eyeTarget, eyeLoc);
+			direction.setX(direction.getX() * horizontal);
+			direction.setY(direction.getY() * vertical);
+			direction.setZ(direction.getZ() * horizontal);
+			player.setVelocity(direction);
+			
+			ParticleEffect.CLOUD.display(eyeLoc, 10, Math.random(), 0.2, Math.random());
+			dodged = true;
+			bPlayer.addCooldown(this);
+			return;
+		}
 		player.setFallDistance(0);
-		ParticleEffect.CLOUD.display(player.getLocation(), 10, Math.random(), 0.2, Math.random());
-		remove();
-		bPlayer.addCooldown(this);
-		
+		if (AzutoruMethods.isOnGround(player) || player.getLocation().getBlock().isLiquid()) {
+			remove();
+			return;
+		}
+	}
+	
+	public boolean canDodge() {
+		if (AzutoruMethods.isOnGround(player) || player.getLocation().getBlock().isLiquid()) {
+			return false;
+		}
+		if (!player.isSneaking()) {
+			return false;
+		}
+		if ((bPlayer.isElementToggled(Element.CHI) && chi)
+				|| (bPlayer.isElementToggled(Element.AIR) && air)
+				|| (bPlayer.isElementToggled(Element.FIRE) && fire)
+				|| (bPlayer.isElementToggled(Element.EARTH) && earth)
+				|| (bPlayer.isElementToggled(Element.WATER) && water)) {
+			return true;
+		}
+		return false;
 	}
 
 	@Override
@@ -64,7 +109,7 @@ public class Dodge extends ChiAbility implements AddonAbility {
 	
 	@Override
 	public String getInstructions() {
-		return "To use, you must be off the ground. Then, hold sneak and right-click (on any slot) in the direction opposite from where you want to go.";
+		return "To use, you must be off the ground. Then, hold sneak and right-click (on any slot) on a block in the direction opposite from where you want to go.";
 	}
 	
 	@Override
