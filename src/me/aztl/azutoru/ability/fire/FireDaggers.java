@@ -8,7 +8,9 @@ import org.bukkit.entity.Projectile;
 
 import com.projectkorra.projectkorra.BendingPlayer;
 import com.projectkorra.projectkorra.GeneralMethods;
+import com.projectkorra.projectkorra.Element.SubElement;
 import com.projectkorra.projectkorra.ability.AddonAbility;
+import com.projectkorra.projectkorra.ability.BlueFireAbility;
 import com.projectkorra.projectkorra.ability.FireAbility;
 import com.projectkorra.projectkorra.airbending.AirShield;
 import com.projectkorra.projectkorra.firebending.FireBlast;
@@ -40,6 +42,7 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 	private Location left, right, location, handLoc;
 	private long time;
 	public boolean blocking;
+	private int counter;
 	
 	public FireDaggers(Player player) {
 		super(player);
@@ -58,66 +61,33 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 		throwSpeed = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireDaggers.ThrowSpeed");
 		maxThrows = Azutoru.az.getConfig().getInt("Abilities.Fire.FireDaggers.MaxThrows");
 		
+		applyModifiers();
+		
 		blocking = false;
 		
 		start();
 	}
 	
-	// Normal clicking shoots a dagger
-	public void onClick() {
-		if (bPlayer.isOnCooldown(getName() + "_ATTACK")) {
-			return;
+	private void applyModifiers() {
+		if (bPlayer.canUseSubElement(SubElement.BLUE_FIRE)) {
+			cooldown *= BlueFireAbility.getCooldownFactor();
+			duration *= BlueFireAbility.getRangeFactor();
+			damage *= BlueFireAbility.getDamageFactor();
+			range *= BlueFireAbility.getRangeFactor();
 		}
 		
-		if (lastActiveDagger == null) {
-			activeDagger = Dagger.RIGHT;
-		} else if (lastActiveDagger == Dagger.RIGHT) {
-			activeDagger = Dagger.LEFT;
-		} else if (lastActiveDagger == Dagger.LEFT) {
-			activeDagger = Dagger.RIGHT;
+		if (isDay(player.getWorld())) {
+			cooldown -= ((long) getDayFactor(cooldown) - cooldown);
+			duration = (long) getDayFactor(duration);
+			range = getDayFactor(range);
 		}
 		
-		activeAbility = Ability.ATTACK;
-		
-		bPlayer.addCooldown(getName() + "_ATTACK", usageCooldown);
-		maxThrows--;
-	}
-	
-	// Sneaking while on the ground blocks attacks
-	public void onSneak() {
-		if (!AzutoruMethods.isOnGround(player)) {
-			return;
+		if (bPlayer.isAvatarState()) {
+			cooldown /= 2;
+			duration *= 2;
+			damage *= 2;
+			range *= 2;
 		}
-		if (bPlayer.isOnCooldown(getName() + "_BLOCK")) {
-			return;
-		}
-		
-		activeAbility = Ability.BLOCK;
-		
-		bPlayer.addCooldown(getName() + "_BLOCK", usageCooldown);
-	}
-	
-	// Sneaking midair gives the player the option to either shoot FireBlast or FireBlade from their feet
-	// Releasing sneak midair shoots a FireBlast
-	public void onJumpReleaseSneak() {
-		if (AzutoruMethods.isOnGround(player)) {
-			return;
-		}
-		if (hasAbility(player, FireBlade.class)) {
-			return;
-		}
-		new FireBlast(player);
-	}
-	
-	// Sneak-clicking midair shoots a FireBlade
-	public void onJumpSneakClick() {
-		if (AzutoruMethods.isOnGround(player)) {
-			return;
-		}
-		if (hasAbility(player, FireBlast.class)) {
-			return;
-		}
-		new FireBlade(player);
 	}
 	
 	@Override
@@ -144,6 +114,11 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 			remove();
 			return;
 		}
+		
+		if (counter % 6 == 0) {
+			playFirebendingSound(right);
+		}
+		counter++;
 		
 		if (activeAbility != Ability.BLOCK) {
 			time = System.currentTimeMillis();
@@ -200,6 +175,10 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 		for (int i = 1; i < 9; i++) {
 			location.add(GeneralMethods.getDirection(location, GeneralMethods.getTargetedLocation(player, range).add(player.getEyeLocation().getDirection())).multiply(0.125).multiply(throwSpeed));
 			playFirebendingParticles(location, 1, 0, 0, 0);
+		}
+		
+		if (counter % 6 == 0) {
+			playFirebendingSound(location);
 		}
 		
 		for (Entity e : GeneralMethods.getEntitiesAroundPoint(location, hitRadius + 1)) {
@@ -280,6 +259,63 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 			remove();
 			return;
 		}
+	}
+	
+	// Normal clicking shoots a dagger
+	public void onClick() {
+		if (bPlayer.isOnCooldown(getName() + "_ATTACK")) {
+			return;
+		}
+		
+		if (lastActiveDagger == null) {
+			activeDagger = Dagger.RIGHT;
+		} else if (lastActiveDagger == Dagger.RIGHT) {
+			activeDagger = Dagger.LEFT;
+		} else if (lastActiveDagger == Dagger.LEFT) {
+			activeDagger = Dagger.RIGHT;
+		}
+		
+		activeAbility = Ability.ATTACK;
+		
+		bPlayer.addCooldown(getName() + "_ATTACK", usageCooldown);
+		maxThrows--;
+	}
+	
+	// Sneaking while on the ground blocks attacks
+	public void onSneak() {
+		if (!AzutoruMethods.isOnGround(player)) {
+			return;
+		}
+		if (bPlayer.isOnCooldown(getName() + "_BLOCK")) {
+			return;
+		}
+		
+		activeAbility = Ability.BLOCK;
+		
+		bPlayer.addCooldown(getName() + "_BLOCK", usageCooldown);
+	}
+	
+	// Sneaking midair gives the player the option to either shoot FireBlast or FireBlade from their feet
+	// Releasing sneak midair shoots a FireBlast
+	public void onJumpReleaseSneak() {
+		if (AzutoruMethods.isOnGround(player)) {
+			return;
+		}
+		if (hasAbility(player, FireBlade.class) || hasAbility(player, FireJet.class)) {
+			return;
+		}
+		new FireBlast(player);
+	}
+	
+	// Sneak-clicking midair shoots a FireBlade
+	public void onJumpSneakClick() {
+		if (AzutoruMethods.isOnGround(player)) {
+			return;
+		}
+		if (hasAbility(player, FireBlast.class) || hasAbility(player, FireJet.class)) {
+			return;
+		}
+		new FireBlade(player);
 	}
 	
 	public void setBlocking(boolean blocking) {

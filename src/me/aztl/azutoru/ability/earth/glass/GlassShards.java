@@ -23,7 +23,7 @@ public class GlassShards extends GlassAbility implements AddonAbility {
 	private double sourceRange, damage, speed, range, hitRadius;
 	private int remaining;
 	
-	private static Material glassType;
+	private Material glassType;
 	private long lastShotTime, timeBetweenShots;
 	private Location location;
 	private Vector direction;
@@ -93,9 +93,11 @@ public class GlassShards extends GlassAbility implements AddonAbility {
 			return;
 		}
 		
-		if (remaining < 1 && !hasAbility(player, Shot.class)) {
-			remove();
-			bPlayer.addCooldown(this);
+		if (remaining < 1) {
+			if (!hasAbility(player, Shot.class)) {
+				remove();
+				bPlayer.addCooldown(this);
+			}
 			return;
 		}
 		
@@ -104,7 +106,7 @@ public class GlassShards extends GlassAbility implements AddonAbility {
 		
 		displayLeftRing();
 		displayRightRing();
-		
+			
 		if (counter % 6 == 0) {
 			playGlassbendingSound(location);
 		}
@@ -161,7 +163,7 @@ public class GlassShards extends GlassAbility implements AddonAbility {
 		}
 	}
 	
-	public static Material getGlassType() {
+	public Material getGlassType() {
 		return glassType;
 	}
 	
@@ -195,7 +197,7 @@ public class GlassShards extends GlassAbility implements AddonAbility {
 	
 	@Override
 	public String getInstructions() {
-		return "Tap sneak on a glass block and shards of glass will begin to spin around you. Carry them with you and left-click to shoot them one by one at your target.";
+		return "Tap sneak on a glass block and shards of glass will begin to spin around you. Carry them with you and left-click to shoot them one by one at your target. You can also right-click on a glass block to break it and surrounding glass blocks.";
 	}
 
 	@Override

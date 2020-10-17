@@ -1,5 +1,6 @@
 package me.aztl.azutoru.ability.chi.passive;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
@@ -8,7 +9,9 @@ import com.projectkorra.projectkorra.Element;
 import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.ChiAbility;
+import com.projectkorra.projectkorra.util.ActionBar;
 import com.projectkorra.projectkorra.util.ParticleEffect;
+import com.projectkorra.projectkorra.util.TimeUtil;
 
 import me.aztl.azutoru.Azutoru;
 import me.aztl.azutoru.AzutoruMethods;
@@ -24,6 +27,8 @@ public class Dodge extends ChiAbility implements AddonAbility {
 		super(player);
 		
 		if (bPlayer.isOnCooldown(this)) {
+			long cd = bPlayer.getCooldown(getName()) - System.currentTimeMillis();
+			ActionBar.sendActionBar(ChatColor.GOLD + "Dodge - " + TimeUtil.formatTime(cd), player);
 			return;
 		}
 		
@@ -74,16 +79,23 @@ public class Dodge extends ChiAbility implements AddonAbility {
 		if (AzutoruMethods.isOnGround(player) || player.getLocation().getBlock().isLiquid()) {
 			return false;
 		}
+		
 		if (!player.isSneaking()) {
 			return false;
 		}
-		if ((bPlayer.isElementToggled(Element.CHI) && chi)
-				|| (bPlayer.isElementToggled(Element.AIR) && air)
-				|| (bPlayer.isElementToggled(Element.FIRE) && fire)
-				|| (bPlayer.isElementToggled(Element.EARTH) && earth)
-				|| (bPlayer.isElementToggled(Element.WATER) && water)) {
+		
+		if (chi && bPlayer.hasElement(Element.CHI)) {
+			return true;
+		} else if (air && bPlayer.hasElement(Element.AIR)) {
+			return true;
+		} else if (fire && bPlayer.hasElement(Element.FIRE)) {
+			return true;
+		} else if (water && bPlayer.hasElement(Element.WATER)) {
+			return true;
+		} else if (earth && bPlayer.hasElement(Element.EARTH)) {
 			return true;
 		}
+		
 		return false;
 	}
 

@@ -12,8 +12,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
+import com.projectkorra.projectkorra.Element.SubElement;
 import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
+import com.projectkorra.projectkorra.ability.BlueFireAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.FireAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
@@ -52,6 +54,8 @@ public class FireAugmentation extends FireAbility implements AddonAbility, Combo
 		sourceRange = Azutoru.az.getConfig().getLong("Abilities.Fire.FireAugmentation.SourceRange");
 		allowSlotChange = Azutoru.az.getConfig().getBoolean("Abilities.Fire.FireAugmentation.AllowSlotChange");
 		
+		applyModifiers();
+		
 		clicked = false;
 		launching = false;
 		pulling = false;
@@ -61,6 +65,23 @@ public class FireAugmentation extends FireAbility implements AddonAbility, Combo
 		location = sourceBlock.getLocation().add(0, 0.5, 0);
 		
 		start();
+	}
+	
+	private void applyModifiers() {
+		if (bPlayer.canUseSubElement(SubElement.BLUE_FIRE)) {
+			cooldown *= BlueFireAbility.getCooldownFactor();
+			duration *= BlueFireAbility.getRangeFactor();
+		}
+		
+		if (isDay(player.getWorld())) {
+			cooldown -= ((long) getDayFactor(cooldown) - cooldown);
+			duration = (long) getDayFactor(duration);
+		}
+		
+		if (bPlayer.isAvatarState()) {
+			cooldown /= 2;
+			duration *= 2;
+		}
 	}
 	
 	@Override

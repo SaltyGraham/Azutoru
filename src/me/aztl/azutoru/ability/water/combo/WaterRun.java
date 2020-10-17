@@ -23,7 +23,7 @@ import me.aztl.azutoru.AzutoruMethods;
 
 public class WaterRun extends WaterAbility implements AddonAbility, ComboAbility {
 
-	private double speed, health, breakDamage;
+	private double speed, health, damageThreshold;
 	private long cooldown, duration;
 	
 	private Block topBlock, headBlock;
@@ -35,27 +35,44 @@ public class WaterRun extends WaterAbility implements AddonAbility, ComboAbility
 		speed = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterRun.Speed");
 		cooldown = Azutoru.az.getConfig().getLong("Abilities.Water.WaterRun.Cooldown");
 		duration = Azutoru.az.getConfig().getLong("Abilities.Water.WaterRun.Duration");
-		breakDamage = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterRun.BreakDamage");
+		damageThreshold = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterRun.DamageThreshold");
+		
+		applyModifiers();
 		
 		health = player.getHealth();
 		topBlock = GeneralMethods.getTopBlock(player.getLocation(), 3);
 		headBlock = player.getLocation().add(0, 1.5, 0).getBlock();
 		
-		if (bPlayer.isAvatarState()) {
-			speed = speed * 2;
-			cooldown = 0;
-			duration = 0;
-			breakDamage = breakDamage * 2;
+		if (!bPlayer.canBendIgnoreBinds(this) || bPlayer.isOnCooldown(this)) {
+			return;
 		}
 		
-		if (!bPlayer.canBendIgnoreBinds(this) || bPlayer.isOnCooldown(this)) return;
-		
-		if (hasAbility(player, WaterSpout.class) || hasAbility(player, WaterSpoutRush.class)) return;
+		if (hasAbility(player, WaterSpout.class) || hasAbility(player, WaterSpoutRush.class)) {
+			return;
+		}
 		
 		Block topBlock = GeneralMethods.getTopBlock(player.getLocation(), 3);
-		if (!WaterAbility.isWater(topBlock) && !WaterAbility.isIce(topBlock)) return;
+		if (!WaterAbility.isWater(topBlock) && !WaterAbility.isIce(topBlock)) {
+			return;
+		}
 		
 		start();
+	}
+	
+	private void applyModifiers() {
+		if (isNight(player.getWorld())) {
+			speed *= 1.1;
+			cooldown -= ((long) getNightFactor(cooldown) - cooldown);
+			duration = (long) getNightFactor(duration);
+			damageThreshold = getNightFactor(damageThreshold);
+		}
+		
+		if (bPlayer.isAvatarState()) {
+			speed *= 1.5;
+			cooldown = 0;
+			duration = 0;
+			damageThreshold *= 2;
+		}
 	}
 	
 	@Override
@@ -63,7 +80,7 @@ public class WaterRun extends WaterAbility implements AddonAbility, ComboAbility
 		if (!player.isOnline() || player.isDead()) {
 			remove();
 			return;
-		} else if (player.getHealth() + breakDamage <= health) {
+		} else if (player.getHealth() + damageThreshold <= health) {
 			remove();
 			return;
 		}

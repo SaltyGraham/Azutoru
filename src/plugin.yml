@@ -32,7 +32,11 @@ permissions:
       bending.ability.fireblade: true
       bending.ability.firebreath: true
       bending.ability.firestreams: true
+      bending.ability.jetblast: true
+      bending.ability.jetblaze: true
+      bending.ability.jetstepping: true
       bending.ability.firedaggers: true
+      bending.ability.firejet: true
       bending.ability.electricfield: true
       bending.ability.firewhips: true
       bending.ability.meteor: true

@@ -1,10 +1,13 @@
 package me.aztl.azutoru.ability.chi.passive;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.ChiAbility;
+import com.projectkorra.projectkorra.util.ActionBar;
+import com.projectkorra.projectkorra.util.TimeUtil;
 
 import me.aztl.azutoru.Azutoru;
 import me.aztl.azutoru.AzutoruMethods;
@@ -46,13 +49,8 @@ public class Duck extends ChiAbility implements AddonAbility {
 			ableToDuck = true;
 		}
 		
-		if (!bPlayer.canBendIgnoreBinds(this)) {
+		if (!bPlayer.canBendIgnoreBindsCooldowns(this)) {
 			remove();
-			return;
-		}
-		
-		if (System.currentTimeMillis() > getStartTime() + duration) {
-			removeWithCooldown();
 			return;
 		}
 		
@@ -73,6 +71,16 @@ public class Duck extends ChiAbility implements AddonAbility {
 				stage = Stage.SECOND_SNEAK;
 			}
 		} else if (stage == Stage.SECOND_SNEAK) {
+			if (bPlayer.isOnCooldown(this)) {
+				long cd = bPlayer.getCooldown(getName()) - System.currentTimeMillis();
+				ActionBar.sendActionBar(ChatColor.GOLD + "Duck - " + TimeUtil.formatTime(cd), player);
+				remove();
+				return;
+			}
+			if (System.currentTimeMillis() > getStartTime() + duration) {
+				removeWithCooldown();
+				return;
+			}
 			ducking = true;
 			player.setVelocity(player.getVelocity().multiply(0));
 			startGliding();

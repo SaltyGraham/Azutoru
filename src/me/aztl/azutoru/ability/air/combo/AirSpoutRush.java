@@ -20,6 +20,7 @@ import com.projectkorra.projectkorra.airbending.AirSpout;
 import com.projectkorra.projectkorra.util.ClickType;
 
 import me.aztl.azutoru.Azutoru;
+import me.aztl.azutoru.AzutoruMethods;
 
 public class AirSpoutRush extends AirAbility implements AddonAbility, ComboAbility {
 
@@ -108,9 +109,9 @@ public class AirSpoutRush extends AirAbility implements AddonAbility, ComboAbili
 		if (block != null) {
 			double dy = player.getLocation().getY() - block.getY();
 			if (dy > height) {
-				removeFlight();
+				AzutoruMethods.removeFlight(player);
 			} else {
-				allowFlight();
+				AzutoruMethods.allowFlight(player);
 			}
 			rotateAirColumn(block);
 		} else {
@@ -140,30 +141,12 @@ public class AirSpoutRush extends AirAbility implements AddonAbility, ComboAbili
 		}
 	}
 	
-	private void allowFlight() {
-		if (!player.getAllowFlight()) {
-			player.setAllowFlight(true);
-		}
-		if (!player.isFlying()) {
-			player.setFlying(true);
-		}
-	}
-	
-	private void removeFlight() {
-		if (player.getAllowFlight()) {
-			player.setAllowFlight(false);
-		}
-		if (player.isFlying()) {
-			player.setFlying(false);
-		}
-	}
-	
 	@Override
 	public void remove() {
 		super.remove();
 		flightHandler.removeInstance(player, getName());
 		player.setFlySpeed(initFlySpeed);
-		removeFlight();
+		AzutoruMethods.removeFlight(player);
 		new AirSpout(player);
 	}
 

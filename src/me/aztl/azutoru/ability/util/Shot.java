@@ -124,7 +124,7 @@ public class Shot extends ElementalAbility implements AddonAbility {
 	}
 	
 	public void progressGlass() {
-		Material glassType = GlassShards.getGlassType();
+		Material glassType = getAbility(player, GlassShards.class).getGlassType();
 		
 		ParticleEffect.BLOCK_DUST.display(location, 4, 0.1, 0.1, 0.1, 5, glassType.createBlockData());
 		

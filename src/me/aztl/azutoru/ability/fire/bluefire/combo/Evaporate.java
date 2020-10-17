@@ -48,9 +48,23 @@ public class Evaporate extends BlueFireAbility implements AddonAbility, ComboAbi
 		speed = Azutoru.az.getConfig().getDouble("Abilities.Fire.Evaporate.Speed");
 		collisionRadius = Azutoru.az.getConfig().getDouble("Abilities.Fire.Evaporate.CollisionRadius");
 		
+		applyModifiers();
+		
 		location = GeneralMethods.getTargetedLocation(player, 2);
 		
 		start();
+	}
+	
+	private void applyModifiers() {
+		if (isDay(player.getWorld())) {
+			cooldown -= ((long) getDayFactor(cooldown) - cooldown);
+			duration = (long) getDayFactor(duration);
+		}
+		
+		if (bPlayer.isAvatarState()) {
+			cooldown /= 2;
+			duration *= 2;
+		}
 	}
 
 	@Override

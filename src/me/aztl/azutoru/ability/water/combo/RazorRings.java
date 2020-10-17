@@ -110,6 +110,8 @@ public class RazorRings extends WaterAbility implements AddonAbility, ComboAbili
 		timeBetweenShots = Azutoru.az.getConfig().getLong("Abilities.Water.RazorRings.ShotCooldown");
 		radiusIncreaseRate = Azutoru.az.getConfig().getDouble("Abilities.Water.RazorRings.RadiusIncreaseRate");
 		
+		applyModifiers();
+		
 		lastShotTime = getStartTime();
 		
 		deadProjectiles = new HashMap<Integer, Location>();
@@ -117,6 +119,21 @@ public class RazorRings extends WaterAbility implements AddonAbility, ComboAbili
 		directions = new HashMap<Integer, Vector>();
 		affectedBlocks = new HashMap<Integer, ArrayList<TempBlock>>();
 		radiusMap = new HashMap<Integer, Double>();
+	}
+	
+	private void applyModifiers() {
+		if (isNight(player.getWorld())) {
+			damage = getNightFactor(damage);
+			range = getNightFactor(range);
+			duration = (long) getNightFactor(duration);
+		}
+		
+		if (bPlayer.isAvatarState()) {
+			damage *= 1.5;
+			range *= 1.5;
+			duration = 0;
+			remainingRings += 10;
+		}
 	}
 	
 	@Override

@@ -26,7 +26,7 @@ public class LavaWalk extends LavaAbility implements AddonAbility, PassiveAbilit
 	private double range;
 	
 	private World world;
-	private static Set<TempBlock> affectedBlocks = new HashSet<>();
+	private Set<TempBlock> affectedBlocks = new HashSet<>();
 	private static boolean isActive;
 	
 	public LavaWalk(Player player) {
@@ -49,11 +49,6 @@ public class LavaWalk extends LavaAbility implements AddonAbility, PassiveAbilit
 			return;
 		}
 		
-		if (!player.getWorld().equals(world)) {
-			revertBlocks();
-			world = player.getWorld();
-		}
-		
 		Block block = player.getLocation().getBlock().getRelative(BlockFace.DOWN);
 		for (Block affectedBlock : GeneralMethods.getBlocksAroundPoint(block.getLocation(), radius)) {
 			if ((EarthAbility.isLava(affectedBlock) && !TempBlock.isTempBlock(affectedBlock)) 
@@ -63,6 +58,11 @@ public class LavaWalk extends LavaAbility implements AddonAbility, PassiveAbilit
 			}
 		}
 		
+		if (!player.getWorld().equals(world)) {
+			revertBlocks();
+			world = player.getWorld();
+		}
+		
 		for (TempBlock tb : affectedBlocks) {
 			if (tb.getBlock().getLocation().distanceSquared(player.getLocation()) > range * range) {
 				tb.revertBlock();
@@ -70,20 +70,20 @@ public class LavaWalk extends LavaAbility implements AddonAbility, PassiveAbilit
 		}
 	}
 	
-	public static void revertBlocks() {
+	public void revertBlocks() {
 		for (TempBlock tb : affectedBlocks) {
 			tb.revertBlock();
 		}
 		affectedBlocks.clear();
 	}
 	
-	public static boolean isActive() {
+	public static boolean isActive(Player player) {
 		return isActive;
 	}
 	
-	public static void setActive(boolean isActive) {
+	public static void setActive(Player player, boolean isActive) {
 		if (!isActive) {
-			revertBlocks();
+			getAbility(player, LavaWalk.class).revertBlocks();
 		}
 		LavaWalk.isActive = isActive;
 	}
@@ -94,7 +94,7 @@ public class LavaWalk extends LavaAbility implements AddonAbility, PassiveAbilit
 		revertBlocks();
 	}
 	
-	public static Set<TempBlock> getAffectedBlocks() {
+	public Set<TempBlock> getAffectedBlocks() {
 		return affectedBlocks;
 	}
 	

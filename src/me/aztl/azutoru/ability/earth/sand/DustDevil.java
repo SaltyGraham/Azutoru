@@ -63,7 +63,7 @@ public class DustDevil extends SandAbility implements AddonAbility {
 		}
 		
 		flightHandler.createInstance(player, getName());
-		allowFlight();
+		AzutoruMethods.allowFlight(player);
 		start();
 	}
 	
@@ -120,9 +120,9 @@ public class DustDevil extends SandAbility implements AddonAbility {
 		
 		currentHeight = player.getLocation().getY() - topBlock.getY();
 		if (currentHeight > height) {
-			removeFlight();
+			AzutoruMethods.removeFlight(player);
 		} else {
-			allowFlight();
+			AzutoruMethods.allowFlight(player);
 		}
 		
 		rotateDustColumn();
@@ -169,26 +169,8 @@ public class DustDevil extends SandAbility implements AddonAbility {
 		}
 		bPlayer.addCooldown(this);
 		flightHandler.removeInstance(player, getName());
-		removeFlight();
+		AzutoruMethods.removeFlight(player);
 		return;
-	}
-	
-	private void allowFlight() {
-		if (!player.getAllowFlight()) {
-			player.setAllowFlight(true);
-		}
-		if (!player.isFlying()) {
-			player.setFlying(true);
-		}
-	}
-	
-	private void removeFlight() {
-		if (player.getAllowFlight()) {
-			player.setAllowFlight(false);
-		}
-		if (player.isFlying()) {
-			player.setFlying(false);
-		}
 	}
 	
 	private boolean isWithinMaxSpoutHeight(Location baseBlockLocation, double threshold) {

@@ -367,7 +367,7 @@ public class Azutoru extends JavaPlugin {
 		c.addDefault("Abilities.Water.WaterRun.Speed", 1);
 		c.addDefault("Abilities.Water.WaterRun.Cooldown", 6000);
 		c.addDefault("Abilities.Water.WaterRun.Duration", 0);
-		c.addDefault("Abilities.Water.WaterRun.BreakDamage", 2);
+		c.addDefault("Abilities.Water.WaterRun.DamageThreshold", 2);
 		
 		// WaterSlash
 		c.addDefault("Abilities.Water.WaterSlash.Enabled", true);
@@ -503,6 +503,30 @@ public class Azutoru extends JavaPlugin {
 		c.addDefault("Abilities.Fire.FireDaggers.ThrowSpeed", 2);
 		c.addDefault("Abilities.Fire.FireDaggers.MaxThrows", 6);
 		
+		// FireJet
+		c.addDefault("Abilities.Fire.FireJet.Enabled", true);
+		c.addDefault("Abilities.Fire.FireJet.Cooldown", 10000);
+		c.addDefault("Abilities.Fire.FireJet.Duration", 15000);
+		c.addDefault("Abilities.Fire.FireJet.ParticleAmount", 1);
+		c.addDefault("Abilities.Fire.FireJet.ParticleLength", 2);
+		c.addDefault("Abilities.Fire.FireJet.ParticleSpread", 0.1);
+		c.addDefault("Abilities.Fire.FireJet.OnSlotModifier", 1.25);
+		c.addDefault("Abilities.Fire.FireJet.DamageThreshold", 4);
+		c.addDefault("Abilities.Fire.FireJet.Propel.Speed", 1);
+		c.addDefault("Abilities.Fire.FireJet.Propel.Duration", 5000);
+		c.addDefault("Abilities.Fire.FireJet.Ski.Enabled", true);
+		c.addDefault("Abilities.Fire.FireJet.Ski.Speed", 1);
+		c.addDefault("Abilities.Fire.FireJet.Ski.TurningSpeed", 0.05);
+		c.addDefault("Abilities.Fire.FireJet.Ski.Duration", 5000);
+		c.addDefault("Abilities.Fire.FireJet.Hover.Enabled", true);
+		c.addDefault("Abilities.Fire.FireJet.Hover.Speed", 0.1);
+		c.addDefault("Abilities.Fire.FireJet.Hover.Duration", 5000);
+		c.addDefault("Abilities.Fire.FireJet.Hover.Recovery.Enabled", true);
+		c.addDefault("Abilities.Fire.FireJet.Hover.Recovery.Duration", 3000);
+		c.addDefault("Abilities.Fire.FireJet.Hover.Recovery.Cooldown", 5000);
+		c.addDefault("Abilities.Fire.FireJet.Hover.Drift.Enabled", true);
+		c.addDefault("Abilities.Fire.FireJet.Hover.Drift.Speed", 0.4);
+		
 		// FireStreams
 		c.addDefault("Abilities.Fire.FireStreams.Enabled", true);
 		c.addDefault("Abilities.Fire.FireStreams.Damage", 4);
@@ -513,6 +537,34 @@ public class Azutoru extends JavaPlugin {
 		c.addDefault("Abilities.Fire.FireStreams.ExplosionRadius", 2);
 		
 		// FireWhips
+		
+		// JetBlast
+		c.addDefault("Abilities.Fire.JetBlast.Enabled", true);
+		c.addDefault("Abilities.Fire.JetBlast.SpeedModifier", 1.4);
+		c.addDefault("Abilities.Fire.JetBlast.Cooldown", 8000);
+		c.addDefault("Abilities.Fire.JetBlast.Duration", 5000);
+		
+		// JetBlaze
+		c.addDefault("Abilities.Fire.JetBlaze.Enabled", true);
+		c.addDefault("Abilities.Fire.JetBlaze.SpeedModifier", 1.1);
+		c.addDefault("Abilities.Fire.JetBlaze.FireTicks", 40);
+		c.addDefault("Abilities.Fire.JetBlaze.Damage", 2);
+		c.addDefault("Abilities.Fire.JetBlaze.Cooldown", 8000);
+		c.addDefault("Abilities.Fire.JetBlaze.Duration", 5000);
+		c.addDefault("Abilities.Fire.JetBlaze.ParticleHitRadius", 0.5);
+		c.addDefault("Abilities.Fire.JetBlaze.ParticleAmount", 25);
+		c.addDefault("Abilities.Fire.JetBlaze.ParticleSpread", 1.25);
+		
+		// JetStepping
+		c.addDefault("Abilities.Fire.JetStepping.Enabled", true);
+		c.addDefault("Abilities.Fire.JetStepping.Lift", 1.25);
+		c.addDefault("Abilities.Fire.JetStepping.MaxSteps", 10);
+		c.addDefault("Abilities.Fire.JetStepping.StepCooldown", 500);
+		c.addDefault("Abilities.Fire.JetStepping.Cooldown", 8000);
+		c.addDefault("Abilities.Fire.JetStepping.Duration", 0);
+		c.addDefault("Abilities.Fire.JetStepping.ParticleAmount", 1);
+		c.addDefault("Abilities.Fire.JetStepping.ParticleLength", 2);
+		c.addDefault("Abilities.Fire.JetStepping.ParticleSpread", 0.2);
 		
 		// Meteor
 		

@@ -69,6 +69,18 @@ public class PlantWhip extends PlantAbility implements AddonAbility {
 		knockback = Azutoru.az.getConfig().getDouble("Abilities.Water.PlantWhip.Knockback");
 		knockup = Azutoru.az.getConfig().getDouble("Abilities.Water.PlantWhip.Knockup");
 		
+		applyModifiers();
+		
+	}
+	
+	private void applyModifiers() {
+		if (isNight(player.getWorld())) {
+			cooldown -= ((long) getNightFactor(cooldown) - cooldown);
+		}
+		
+		if (bPlayer.isAvatarState()) {
+			cooldown /= 2;
+		}
 	}
 	
 	public boolean setOrigin() {

@@ -24,6 +24,7 @@ import com.projectkorra.projectkorra.util.TempBlock;
 import com.projectkorra.projectkorra.waterbending.WaterSpout;
 
 import me.aztl.azutoru.Azutoru;
+import me.aztl.azutoru.AzutoruMethods;
 
 public class WaterSpoutRush extends WaterAbility implements AddonAbility, ComboAbility {
 
@@ -60,6 +61,8 @@ public class WaterSpoutRush extends WaterAbility implements AddonAbility, ComboA
 		initFlySpeed = player.getFlySpeed();
 		speedModifier = 2;
 		
+		applyModifiers();
+		
 		Block topBlock = GeneralMethods.getTopBlock(player.getLocation(), (int) -this.getNightFactor(this.height), (int) -this.getNightFactor(this.height));
 		if (topBlock == null) {
 			topBlock = player.getLocation().getBlock();
@@ -77,9 +80,23 @@ public class WaterSpoutRush extends WaterAbility implements AddonAbility, ComboA
 		}
 		
 		flightHandler.createInstance(player, getName());
-		allowFlight();
+		AzutoruMethods.allowFlight(player);
 		spoutableWaterHeight(player.getLocation());
 		start();
+	}
+	
+	private void applyModifiers() {
+		if (isNight(player.getWorld())) {
+			cooldown -= ((long) getNightFactor(cooldown) - cooldown);
+			height += 2;
+			maxHeight = getNightFactor(height);
+			duration = (long) getNightFactor(duration);
+		}
+		
+		if (bPlayer.isAvatarState()) {
+			cooldown = 0;
+			duration = 0;
+		}
 	}
 	
 	@Override
@@ -128,9 +145,9 @@ public class WaterSpoutRush extends WaterAbility implements AddonAbility, ComboA
 				
 				displayWaterSpiral(location.clone().add(0.5, 0, 0.5));
 				if (player.getLocation().getBlockY() > block.getY()) {
-					removeFlight();
+					AzutoruMethods.removeFlight(player);
 				} else {
-					allowFlight();
+					AzutoruMethods.allowFlight(player);
 				}
 			} else {
 				bPlayer.addCooldown(this);
@@ -168,24 +185,6 @@ public class WaterSpoutRush extends WaterAbility implements AddonAbility, ComboA
 		}
 	}
 	
-	private void allowFlight() {
-		if (!player.getAllowFlight()) {
-			player.setAllowFlight(true);
-		}
-		if (!player.isFlying()) {
-			player.setFlying(true);
-		}
-	}
-	
-	private void removeFlight() {
-		if (player.getAllowFlight()) {
-			player.setAllowFlight(false);
-		}
-		if (player.isFlying()) {
-			player.setFlying(false);
-		}
-	}
-	
 	@Override
 	public void remove() {
 		super.remove();
@@ -196,7 +195,7 @@ public class WaterSpoutRush extends WaterAbility implements AddonAbility, ComboA
 		}
 		flightHandler.removeInstance(player, getName());
 		player.setFlySpeed(initFlySpeed);
-		removeFlight();
+		AzutoruMethods.removeFlight(player);
 		new WaterSpout(player);
 	}
 	

@@ -181,4 +181,30 @@ public class AzutoruMethods {
 		return ElementalAbility.isWater(block) || ElementalAbility.isIce(block) || ElementalAbility.isAir(block.getType());
 	}
 	
+	public static void allowFlight(Player player) {
+		if (!player.getAllowFlight()) {
+			player.setAllowFlight(true);
+		}
+		if (!player.isFlying()) {
+			player.setFlying(true);
+		}
+	}
+	
+	public static void removeFlight(Player player) {
+		if (player.getAllowFlight()) {
+			player.setAllowFlight(false);
+		}
+		if (player.isFlying()) {
+			player.setFlying(false);
+		}
+	}
+	
+	public static float getOppositeYaw(float yaw) {
+		float opposite = yaw += 180;
+		if (opposite >= 360) {
+			opposite -= 360;
+		}
+		return opposite;
+	}
+	
 }

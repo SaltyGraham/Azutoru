@@ -67,6 +67,8 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 		range = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterSlash.Range");
 		duration = Azutoru.az.getConfig().getLong("Abilities.Water.WaterSlash.Duration");
 		
+		applyModifiers();
+		
 		locations = new HashMap<Integer, Location>();
 		directions = new HashMap<Integer, Vector>();
 		affectedBlocks = new ConcurrentHashMap<Block, TempBlock>();
@@ -79,6 +81,18 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 		} else {
 			clicked = true;
 			start();
+		}
+	}
+	
+	private void applyModifiers() {
+		if (isNight(player.getWorld())) {
+			cooldown -= ((long) getNightFactor(cooldown) - cooldown);
+			damage = getNightFactor(damage);
+		}
+		
+		if (bPlayer.isAvatarState()) {
+			cooldown /= 2;
+			damage *= 2;
 		}
 	}
 	

@@ -10,7 +10,6 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.util.Vector;
 
 import com.projectkorra.projectkorra.GeneralMethods;
@@ -40,6 +39,7 @@ public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbil
 	private boolean clicked;
 	private ConcurrentHashMap<Block, TempBlock> affectedBlocks;
 	private World world;
+	private ArrayList<Entity> damagedEntities;
 	
 	public WaterSphere(Player player) {
 		super(player);
@@ -64,15 +64,35 @@ public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbil
 		duration = Azutoru.az.getConfig().getLong("Abilities.Water.WaterSphere.Duration");
 		damage = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterSphere.Damage");
 		
+		applyModifiers();
+		
 		clicked = false;
 		affectedBlocks = new ConcurrentHashMap<>();
 		world = player.getWorld();
+		damagedEntities = new ArrayList<>();
 		
 		Block sourceBlock = BlockSource.getWaterSourceBlock(player, sourceRange, ClickType.SHIFT_DOWN, true, iceSource, plantSource, snowSource, bottleSource);
 		if (sourceBlock != null) {
 			location = sourceBlock.getLocation().add(0, 1.5, 0);
 			
 			start();
+		}
+	}
+	
+	private void applyModifiers() {
+		if (isNight(player.getWorld())) {
+			range = getNightFactor(range);
+			radius++;
+			cooldown -= ((long) getNightFactor(cooldown) - cooldown);
+			duration = (long) getNightFactor(duration);
+		}
+		
+		if (bPlayer.isAvatarState()) {
+			speed *= 1.25;
+			range *= 1.25;
+			cooldown /= 2;
+			duration *= 2;
+			damage *= 1.5;
 		}
 	}
 	
@@ -160,13 +180,17 @@ public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbil
 			
 			for (Entity e : GeneralMethods.getEntitiesAroundPoint(location, radius)) {
 				if (e.getUniqueId() != player.getUniqueId()) {
-					Vector velocity = location.toVector().subtract(e.getLocation().add(0, 1, 0).toVector());
-					e.setVelocity(velocity.normalize().multiply(speed).multiply(1.5));
+					Vector velocity = GeneralMethods.getDirection(e.getLocation().add(0, 1, 0), location).normalize();
+					
+					if (!(e instanceof Player)) {
+						velocity.multiply(1.5);
+					}
+					e.setVelocity(velocity);
 					e.setFallDistance(0);
 					
-					if (damage > 0 && e instanceof LivingEntity && !e.hasMetadata("WaterSphere")) {
+					if (damage > 0 && e instanceof LivingEntity && !damagedEntities.contains(e)) {
 						DamageHandler.damageEntity(e, damage, this);
-						e.setMetadata("WaterSphere", new FixedMetadataValue(Azutoru.az, ""));
+						damagedEntities.add(e);
 					}
 				}
 			}
@@ -193,13 +217,7 @@ public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbil
 		bPlayer.addCooldown(this);
 		AzutoruMethods.revertBlocks(affectedBlocks);
 		affectedBlocks.clear();
-		if (damage > 0) {
-			for (Entity e : world.getEntities()) {
-				if (e instanceof LivingEntity && e.hasMetadata("WaterSphere")) {
-					e.removeMetadata("WaterSphere", Azutoru.az);
-				}
-			}
-		}
+		damagedEntities.clear();
 	}
 	
 	@Override

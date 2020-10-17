@@ -67,6 +67,8 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 		ringRadius = Azutoru.az.getConfig().getDouble("Abilities.Water.IceShots.RingRadius");
 		speed = Azutoru.az.getConfig().getDouble("Abilities.Water.IceShots.Speed");
 		
+		applyModifiers();
+		
 		animation = AnimateState.RISE;
 		affectedBlocks = new ConcurrentHashMap<>();
 		
@@ -78,6 +80,22 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 				location = sourceBlock.getRelative(BlockFace.UP).getLocation().clone();
 			}
 			start();
+		}
+	}
+	
+	private void applyModifiers() {
+		if (isNight(player.getWorld())) {
+			cooldown -= ((long) getNightFactor(cooldown) - cooldown);
+			duration = (long) getNightFactor(duration);
+		}
+		
+		if (bPlayer.isAvatarState()) {
+			cooldown /= 2;
+			duration *= 2;
+			range *= 1.25;
+			damage *= 1.25;
+			speed *= 1.25;
+			maxIceShots += 2;
 		}
 	}
 	

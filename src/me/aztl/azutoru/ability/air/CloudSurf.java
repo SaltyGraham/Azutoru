@@ -45,7 +45,7 @@ public class CloudSurf extends AirAbility implements AddonAbility {
 		}
 		
 		flightHandler.createInstance(player, getName());
-		allowFlight();
+		AzutoruMethods.allowFlight(player);
 		start();
 	}
 	
@@ -93,30 +93,12 @@ public class CloudSurf extends AirAbility implements AddonAbility {
 		counter++;
 	}
 	
-	private void allowFlight() {
-		if (!player.getAllowFlight()) {
-			player.setAllowFlight(true);
-		}
-		if (!player.isFlying()) {
-			player.setFlying(true);
-		}
-	}
-	
-	private void removeFlight() {
-		if (player.getAllowFlight()) {
-			player.setAllowFlight(false);
-		}
-		if (player.isFlying()) {
-			player.setFlying(false);
-		}
-	}
-	
 	@Override
 	public void remove() {
 		super.remove();
 		bPlayer.addCooldown(this);
 		flightHandler.removeInstance(player, getName());
-		removeFlight();
+		AzutoruMethods.removeFlight(player);
 	}
 
 	@Override

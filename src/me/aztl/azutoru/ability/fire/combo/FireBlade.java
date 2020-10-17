@@ -11,8 +11,10 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+import com.projectkorra.projectkorra.Element.SubElement;
 import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
+import com.projectkorra.projectkorra.ability.BlueFireAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.FireAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
@@ -53,6 +55,8 @@ public class FireBlade extends FireAbility implements AddonAbility, ComboAbility
 		damage = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireBlade.Damage");
 		range = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireBlade.Range");
 		
+		applyModifiers();
+		
 		startLoc = GeneralMethods.getTargetedLocation(player, 3);
 		locations = new HashMap<Integer, Location>();
 		directions = new HashMap<Integer, Vector>();
@@ -63,6 +67,23 @@ public class FireBlade extends FireAbility implements AddonAbility, ComboAbility
 		
 		start();
 		bPlayer.addCooldown(this);
+	}
+	
+	private void applyModifiers() {
+		if (bPlayer.canUseSubElement(SubElement.BLUE_FIRE)) {
+			cooldown *= BlueFireAbility.getCooldownFactor();
+			damage *= BlueFireAbility.getDamageFactor();
+		}
+		
+		if (isDay(player.getWorld())) {
+			cooldown -= ((long) getDayFactor(cooldown) - cooldown);
+			damage = getDayFactor(damage);
+		}
+		
+		if (bPlayer.isAvatarState()) {
+			cooldown /= 2;
+			damage *= 2;
+		}
 	}
 	
 	@Override

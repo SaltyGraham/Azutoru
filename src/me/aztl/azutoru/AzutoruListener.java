@@ -37,6 +37,7 @@ import com.projectkorra.projectkorra.ability.WaterAbility;
 import com.projectkorra.projectkorra.ability.util.MultiAbilityManager;
 import com.projectkorra.projectkorra.airbending.Suffocate;
 import com.projectkorra.projectkorra.event.BendingReloadEvent;
+import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.MovementHandler;
 import com.projectkorra.projectkorra.util.TempBlock;
 import com.projectkorra.projectkorra.waterbending.blood.Bloodbending;
@@ -52,7 +53,11 @@ import me.aztl.azutoru.ability.earth.lava.passive.LavaWalk;
 import me.aztl.azutoru.ability.earth.sand.DustDevil;
 import me.aztl.azutoru.ability.earth.sand.combo.DustDevilRush;
 import me.aztl.azutoru.ability.fire.FireDaggers;
+import me.aztl.azutoru.ability.fire.FireJet;
 import me.aztl.azutoru.ability.fire.combo.FireAugmentation;
+import me.aztl.azutoru.ability.fire.combo.JetBlast;
+import me.aztl.azutoru.ability.fire.combo.JetBlaze;
+import me.aztl.azutoru.ability.fire.combo.JetStepping;
 import me.aztl.azutoru.ability.fire.lightning.Electrify;
 import me.aztl.azutoru.ability.water.WaterCanvas;
 import me.aztl.azutoru.ability.water.blood.BloodStrangle;
@@ -191,6 +196,18 @@ public class AzutoruListener implements Listener {
 					}
 				} else if (abil.equalsIgnoreCase("electrify")) {
 					new Electrify(player);
+				} else if (coreAbil.equals(CoreAbility.getAbility(FireJet.class))) {
+					if (CoreAbility.hasAbility(player, JetStepping.class)) {
+						CoreAbility.getAbility(player, JetStepping.class).onClick();
+					} else if (CoreAbility.hasAbility(player, JetBlast.class)
+							|| CoreAbility.hasAbility(player, JetBlaze.class)) {
+						return;
+					} else if (CoreAbility.hasAbility(player, FireJet.class)) {
+						CoreAbility.getAbility(player, FireJet.class).onLeftClick();
+					} else {
+						new FireJet(player, ClickType.LEFT_CLICK);
+					}
+					
 				}
 			}
 			
@@ -285,6 +302,12 @@ public class AzutoruListener implements Listener {
 				
 				if (abil.equalsIgnoreCase("firedaggers") && CoreAbility.hasAbility(player, FireDaggers.class)) {
 					CoreAbility.getAbility(player, FireDaggers.class).onSneak();
+				} else if (coreAbil.equals(CoreAbility.getAbility(FireJet.class))) {
+					if (CoreAbility.hasAbility(player, FireJet.class)) {
+						CoreAbility.getAbility(player, FireJet.class).onSneak();
+					} else {
+						new FireJet(player, ClickType.SHIFT_DOWN);
+					}
 				}
 			}
 			
@@ -351,11 +374,11 @@ public class AzutoruListener implements Listener {
 				if (abil.equalsIgnoreCase("glassshards")) {
 					new GlassShards(player, true);
 				} else if (abil.equalsIgnoreCase("lavaflow") && player.getInventory().getItemInMainHand().getType() == Material.AIR) {
-					if (LavaWalk.isActive()) {
-						LavaWalk.setActive(false);
+					if (LavaWalk.isActive(player)) {
+						LavaWalk.setActive(player, false);
 						player.sendMessage(ChatColor.DARK_GREEN + "LavaWalk is now disabled.");
 					} else {
-						LavaWalk.setActive(true);
+						LavaWalk.setActive(player, true);
 						player.sendMessage(ChatColor.DARK_GREEN + "LavaWalk is now enabled.");
 					}
 				}
@@ -364,6 +387,14 @@ public class AzutoruListener implements Listener {
 			if (coreAbil instanceof FireAbility && bPlayer.isElementToggled(Element.FIRE) == true) {
 				if (GeneralMethods.isWeapon(player.getInventory().getItemInMainHand().getType()) && !ProjectKorra.plugin.getConfig().getBoolean("Properties.Fire.CanBendWithWeapons")) {
 					return;
+				}
+				
+				if (coreAbil.equals(CoreAbility.getAbility(FireJet.class))) {
+					if (CoreAbility.hasAbility(player, FireJet.class)) {
+						CoreAbility.getAbility(player, FireJet.class).onRightClick();
+					} else {
+						new FireJet(player, ClickType.RIGHT_CLICK);
+					}
 				}
 			}
 		}
