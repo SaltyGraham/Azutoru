@@ -63,7 +63,7 @@ public class FireStreams extends FireAbility implements AddonAbility, ComboAbili
 		start();
 	}
 	
-	public void applyModifiers() {
+	private void applyModifiers() {
 		if (bPlayer.canUseSubElement(SubElement.BLUE_FIRE)) {
 			cooldown *= BlueFireAbility.getCooldownFactor();
 			damage *= BlueFireAbility.getDamageFactor();

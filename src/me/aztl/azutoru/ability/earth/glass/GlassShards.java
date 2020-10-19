@@ -36,6 +36,10 @@ public class GlassShards extends GlassAbility implements AddonAbility {
 			return;
 		}
 		
+		if (hasAbility(player, GlassShards.class)) {
+			return;
+		}
+		
 		cooldown = Azutoru.az.getConfig().getLong("Abilities.Earth.GlassShards.Cooldown");
 		sourceRange = Azutoru.az.getConfig().getDouble("Abilities.Earth.GlassShards.SourceRange");
 		remaining = Azutoru.az.getConfig().getInt("Abilities.Earth.GlassShards.MaxShards");

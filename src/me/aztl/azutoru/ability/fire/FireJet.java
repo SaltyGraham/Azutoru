@@ -199,10 +199,12 @@ public class FireJet extends FireAbility implements AddonAbility {
 			blazeDamage *= BlueFireAbility.getDamageFactor();
 		}
 		
-		propelSpeed = getDayFactor(propelSpeed);
-		skiSpeed = getDayFactor(skiSpeed);
-		driftSpeed = getDayFactor(driftSpeed);
-		blazeDamage = getDayFactor(blazeDamage);
+		if (isDay(player.getWorld())) {
+			propelSpeed = getDayFactor(propelSpeed);
+			skiSpeed = getDayFactor(skiSpeed);
+			driftSpeed = getDayFactor(driftSpeed);
+			blazeDamage = getDayFactor(blazeDamage);
+		}
 		
 		if (bPlayer.isAvatarState()) {
 			avatarState = true;
