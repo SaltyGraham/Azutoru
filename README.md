@@ -147,7 +147,7 @@ While these moves can be bound, they are meant to be used on any slot, so there 
   * Demonstrated by Unalaq and Korra, healers will be able to "pacify" mobs with spiritbending, effectively just removing them from the world. If used on a human or passive mob, it will attempt to destroy their soul, slowly killing them.
 #### Ice
 * IceRidge
-  * This ability will create a wall of ice that extend in a certain controllable direction like JedCore's EarthLine
+  * This ability will create a wall of ice that extends in a certain controllable direction like JedCore's EarthLine
 * IceShots
   * Demonstrated by Kya during her fight with Zaheer, this combo creates a ring of water around the user and shoots ice shards from the ring
 #### Plant
