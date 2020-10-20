@@ -46,6 +46,8 @@ While these moves can be bound, they are meant to be used on any slot, so there 
 * Parry
   * Another defensive chi move, Parry lets chiblockers who are sneaking to block attacks that originate close to them (up to 5 blocks away). This allows for some close-ranged defensive capabilities
 ### Earth
+* RaiseEarth
+  * A rework of ProjectKorra's RaiseEarth. It combines the multiple orientations of JedCore's EarthPillar move (horizontal walls, walls coming from the ceiling, etc.) with a new function, the throwing of a RaiseEarth column or wall. Right-clicking a RaiseEarth wall will throw it forward horizontally until it hits a solid block and disintegrates.
 #### Combos
 * EarthShift
   * Allows an earthbender to displace a target on the ground, disorienting them
@@ -73,6 +75,8 @@ While these moves can be bound, they are meant to be used on any slot, so there 
 ### Fire
 * FireDaggers
   * Demonstrated by Zuko and Azula, this ability gives fire more short-ranged capabilities. The daggers can be thrown a short distance or be used to block incoming attacks. More functionality to come.
+* FireJet
+  * A rework of ProjectKorra's FireJet, this ability combines the great ideas that have gone into jet addons over the years into one cool ability. There are different modes of jet travel, each with their own configurable durations and other specifications.
 * FireWhips
   * Not yet started
 * Meteor
@@ -86,6 +90,12 @@ While these moves can be bound, they are meant to be used on any slot, so there 
   * I will eventually make my own FireBreath with completely configurable colors and high functionality
 * FireStreams
   * Demonstrated by Zuko during his fight with Aang in the Crystal Catacombs and similar to Vahagn's FireStream, this combo gives a firebender long-ranged damage capabilities.
+* JetBlast
+  * A rework of ProjectKorra's JetBlast just for the purpose of adapting it to my new FireJet
+* JetBlaze
+  * A rework of ProjectKorra's JetBlaze just for the purpose of adapting it to my new FireJet. Also, the hit radius is based on the location of the jet particles rather than the location of the player.
+* JetStepping
+  * Soon to be a new jet combo, part of my upcoming "stepping" combo series, along with MistStepping for water and DustStepping for earth
 #### Blue Fire
 * Evaporate
   * The very first blue fire ability, Evaporate (combo), was demonstrated by Azula against Katara in the Crystal Catacombs. It is a defensive fire ability that evaporates all incoming water attacks and can even block some other abilities.
