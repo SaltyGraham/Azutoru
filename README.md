@@ -52,7 +52,7 @@ While these moves can be bound, they are meant to be used on any slot, so there 
 * EarthShift
   * Allows an earthbender to displace a target on the ground, disorienting them
 #### Multiabilities
-* EarthLevitation
+* Terraform
   * Still in its conceptual phase, EarthLevitation will be an earth utility multiability that lets earthbenders place earth blocks in various shapes and sizes that have permanent effects on the world. Right now, earthbenders are limited to raising temporary walls, but what if they could raise all kinds of shapes from the earth?
 #### Glass
 * GlassShards
@@ -79,15 +79,11 @@ While these moves can be bound, they are meant to be used on any slot, so there 
   * A rework of ProjectKorra's FireJet, this ability combines the great ideas that have gone into jet addons over the years into one cool ability. There are different modes of jet travel, each with their own configurable durations and other specifications.
 * FireWhips
   * Not yet started
-* Meteor
-  * This might be converted into an icebending ability, but the concept behind Meteor is based on the meteor hammer weapon in Chinese martial arts.
 #### Combos
 * FireAugmentation
   * Demonstrated by Zuko during his fight with Aang on Ember Island, this combo allows a firebender to create a long snake-like circle of fire that places fire wherever it goes.
 * FireBlade
   * An offensive combo that works like AirSweep, allowing the user to draw an arc in the air that advances towards the direction they're looking.
-* FireBreath
-  * I will eventually make my own FireBreath with completely configurable colors and high functionality
 * FireStreams
   * Demonstrated by Zuko during his fight with Aang in the Crystal Catacombs and similar to Vahagn's FireStream, this combo gives a firebender long-ranged damage capabilities.
 * JetBlast
@@ -100,8 +96,6 @@ While these moves can be bound, they are meant to be used on any slot, so there 
 * Evaporate
   * The very first blue fire ability, Evaporate (combo), was demonstrated by Azula against Katara in the Crystal Catacombs. It is a defensive fire ability that evaporates all incoming water attacks and can even block some other abilities.
 #### Lightning
-* ElectricField
-  * This ability will be a Lightning AoE move that creates a small storm that summons lightning bolts from the sky.
 * Electrify
   * Similar to JedCore's Discharge, Electrify will be a short-ranged left-click Lightning ability whose main purpose will be to charge water and metallic blocks with electricity. More functionality to come.
 ### Water
