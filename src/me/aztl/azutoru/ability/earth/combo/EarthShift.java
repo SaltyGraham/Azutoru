@@ -139,7 +139,7 @@ public class EarthShift extends EarthAbility implements AddonAbility, ComboAbili
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Earth.EarthShift.Enabled");
 	}
 
 }

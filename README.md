@@ -46,14 +46,20 @@ While these moves can be bound, they are meant to be used on any slot, so there 
 * Parry
   * Another defensive chi move, Parry lets chiblockers who are sneaking to block attacks that originate close to them (up to 5 blocks away). This allows for some close-ranged defensive capabilities
 ### Earth
+* EarthRidge
+  * Creates a wall that extends along the ground like JedCore's EarthLine
 * RaiseEarth
   * A rework of ProjectKorra's RaiseEarth. It combines the multiple orientations of JedCore's EarthPillar move (horizontal walls, walls coming from the ceiling, etc.) with a new function, the throwing of a RaiseEarth column or wall. Right-clicking a RaiseEarth wall will throw it forward horizontally until it hits a solid block and disintegrates.
 #### Combos
+* Crumble
+  * Destroys RaiseEarth walls, EarthSmashes, EarthRidges, and EarthBlasts and can deflect falling blocks.
 * EarthShift
   * Allows an earthbender to displace a target on the ground, disorienting them
+* EarthTent
+  * Creates a tent made out of earth for defense or shelter
 #### Multiabilities
 * Terraform
-  * Still in its conceptual phase, EarthLevitation will be an earth utility multiability that lets earthbenders place earth blocks in various shapes and sizes that have permanent effects on the world. Right now, earthbenders are limited to raising temporary walls, but what if they could raise all kinds of shapes from the earth?
+  * Still in its conceptual phase, Terraform will be an earth utility multiability that lets earthbenders place earth blocks in various shapes and sizes that have permanent effects on the world. Right now, earthbenders are limited to raising temporary walls, but what if they could raise all kinds of shapes from the earth?
 #### Glass
 * GlassShards
   * Allows glassbenders to use a glass block to circle tiny shards of glass around them and even throw them towards an enemy. Right-clicking with it also shatters glass blocks and any glass connected to it.
@@ -69,7 +75,7 @@ While these moves can be bound, they are meant to be used on any slot, so there 
 * DustDevilRush
   * Just like AirSpout and WaterSpout, this new spout gets its own "rush" combo, allowing people to increase the spout speed temporarily.
 * DustStepping
-  * Demonstrated by Lek in the Kyoshi novels, DustStepping (combo) will allow earthbenders to climb stairs of dust
+  * Demonstrated by Lek in the Kyoshi novels, DustStepping (combo) allows earthbenders to climb stairs of dust
 * Sandstorm
   * Similar to Hiro3's Mist or Vahagn's DustCloud, Sandstorm (combo) will allow sandbenders to become invisible. There will be more functions later on.
 ### Fire
@@ -91,7 +97,7 @@ While these moves can be bound, they are meant to be used on any slot, so there 
 * JetBlaze
   * A rework of ProjectKorra's JetBlaze just for the purpose of adapting it to my new FireJet. Also, the hit radius is based on the location of the jet particles rather than the location of the player.
 * JetStepping
-  * Soon to be a new jet combo, part of my upcoming "stepping" combo series, along with MistStepping for water and DustStepping for earth
+  * New jet combo, part of my "stepping" combo series, along with MistStepping for water and DustStepping for earth
 #### Blue Fire
 * Evaporate
   * The very first blue fire ability, Evaporate (combo), was demonstrated by Azula against Katara in the Crystal Catacombs. It is a defensive fire ability that evaporates all incoming water attacks and can even block some other abilities.
@@ -144,6 +150,8 @@ While these moves can be bound, they are meant to be used on any slot, so there 
   * This ability will create a wall of ice that extends in a certain controllable direction like JedCore's EarthLine
 * IceShots
   * Demonstrated by Kya during her fight with Zaheer, this combo creates a ring of water around the user and shoots ice shards from the ring
+* MistStepping
+  * Similar to DustStepping and JetStepping, but for icebenders
 #### Plant
 * PlantWhip
   * Summon a whip of plants that does damage

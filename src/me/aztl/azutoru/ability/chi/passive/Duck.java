@@ -94,13 +94,13 @@ public class Duck extends ChiAbility implements AddonAbility {
 		}
 	}
 	
-	public void startGliding() {
+	private void startGliding() {
 		if (!player.isGliding()) {
 			player.setGliding(true);
 		}
 	}
 	
-	public void stopGliding() {
+	private void stopGliding() {
 		if (player.isGliding()) {
 			player.setGliding(false);
 		}
@@ -170,7 +170,7 @@ public class Duck extends ChiAbility implements AddonAbility {
 
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Chi.Duck.Enabled");
 	}
 	
 }

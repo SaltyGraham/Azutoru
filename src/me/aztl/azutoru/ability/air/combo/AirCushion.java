@@ -182,7 +182,7 @@ public class AirCushion extends AirAbility implements AddonAbility, ComboAbility
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Air.AirCushion.Enabled");
 	}
 
 }

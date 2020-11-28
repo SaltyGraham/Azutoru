@@ -110,14 +110,18 @@ public class FireStreams extends FireAbility implements AddonAbility, ComboAbili
 			return;
 		}
 		
+		if (GeneralMethods.checkDiagonalWall(location, direction)) {
+			explode();
+			remove();
+			return;
+		}
+		
 		if (player.isSneaking()) {
-			direction.add(player.getEyeLocation().getDirection().multiply(0.5));
-		} else {
-			direction = origin.getDirection();
+			direction.add(player.getEyeLocation().getDirection().multiply(0.5)).normalize().multiply(speed);
 		}
 		
 		for (int i = 0; i < 3; i++) {
-			location.add(direction.multiply(speed / 3));
+			location.add(direction.clone().multiply(speed / 3));
 			
 			playFirebendingParticles(location, 3, 0.2, 0.2, 0.2);
 			
@@ -126,13 +130,11 @@ public class FireStreams extends FireAbility implements AddonAbility, ComboAbili
 				Location helixLoc = location.clone().add(ortho);
 				playFirebendingParticles(helixLoc, 1, 0, 0, 0);
 			}
-			
 			rotation += 10;
 			
 			if (counter % 6 == 0) {
 				playFirebendingSound(location);
 			}
-			
 			counter++;
 			
 			for (Entity e : GeneralMethods.getEntitiesAroundPoint(location, hitRadius)) {
@@ -145,7 +147,7 @@ public class FireStreams extends FireAbility implements AddonAbility, ComboAbili
 		}
 	}
 	
-	public void explode() {
+	private void explode() {
 		ParticleEffect.EXPLOSION_HUGE.display(location, 1);
 		location.getWorld().playSound(location, Sound.ENTITY_GENERIC_EXPLODE, 5, 1);
 		
@@ -248,7 +250,7 @@ public class FireStreams extends FireAbility implements AddonAbility, ComboAbili
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Fire.FireStreams.Enabled");
 	}
 
 }

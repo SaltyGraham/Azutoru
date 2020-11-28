@@ -14,7 +14,7 @@ public class CloudSurf extends AirAbility implements AddonAbility {
 
 	private long cooldown, duration;
 	private boolean forceCloudParticles, allowSneakMoves;
-	private double breakDamage;
+	private double damageThreshold;
 	
 	private Location cloudLoc;
 	private double health;
@@ -35,13 +35,13 @@ public class CloudSurf extends AirAbility implements AddonAbility {
 		cooldown = Azutoru.az.getConfig().getLong("Abilities.Air.CloudSurf.Cooldown");
 		forceCloudParticles = Azutoru.az.getConfig().getBoolean("Abilities.Air.CloudSurf.ForceCloudParticles");
 		allowSneakMoves = Azutoru.az.getConfig().getBoolean("Abilities.Air.CloudSurf.AllowSneakMoves");
-		breakDamage = Azutoru.az.getConfig().getDouble("Abilities.Air.CloudSurf.BreakDamage");
+		damageThreshold = Azutoru.az.getConfig().getDouble("Abilities.Air.CloudSurf.DamageThreshold");
 		health = player.getHealth();
 		
 		if (bPlayer.isAvatarState()) {
 			duration = 0;
 			cooldown = 0;
-			breakDamage = breakDamage * 5;
+			damageThreshold = damageThreshold * 5;
 		}
 		
 		flightHandler.createInstance(player, getName());
@@ -61,12 +61,12 @@ public class CloudSurf extends AirAbility implements AddonAbility {
 			return;
 		}
 		
-		if (player.isSneaking() && !bPlayer.getBoundAbilityName().equalsIgnoreCase("cloudsurf") && !allowSneakMoves) {
+		if (player.isSneaking() && !bPlayer.getBoundAbilityName().equals("CloudSurf") && !allowSneakMoves) {
 			remove();
 			return;
 		}
 		
-		if (player.getHealth() + breakDamage <= health) {
+		if (player.getHealth() + damageThreshold <= health) {
 			remove();
 			return;
 		}
@@ -156,7 +156,7 @@ public class CloudSurf extends AirAbility implements AddonAbility {
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Air.CloudSurf.Enabled");
 	}
 
 }

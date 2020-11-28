@@ -1,12 +1,14 @@
 package me.aztl.azutoru.ability.water.plant;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.util.Vector;
 
 import com.projectkorra.projectkorra.GeneralMethods;
@@ -15,7 +17,6 @@ import com.projectkorra.projectkorra.ability.PlantAbility;
 import com.projectkorra.projectkorra.ability.WaterAbility;
 import com.projectkorra.projectkorra.util.DamageHandler;
 import com.projectkorra.projectkorra.util.TempBlock;
-import com.projectkorra.projectkorra.waterbending.ice.PhaseChange;
 import com.projectkorra.projectkorra.waterbending.plant.PlantRegrowth;
 
 import me.aztl.azutoru.Azutoru;
@@ -30,6 +31,7 @@ public class PlantWhip extends PlantAbility implements AddonAbility {
 	private Material material;
 	private Vector direction;
 	private boolean launching;
+	private static Set<TempBlock> affectedBlocks = new HashSet<>();
 
 	public PlantWhip(Player player) {
 		super(player);
@@ -58,7 +60,6 @@ public class PlantWhip extends PlantAbility implements AddonAbility {
 	}
 
 	public void setFields() {
-		
 		damage = Azutoru.az.getConfig().getDouble("Abilities.Water.PlantWhip.Damage");
 		cooldown = Azutoru.az.getConfig().getLong("Abilities.Water.PlantWhip.Cooldown");
 		range = Azutoru.az.getConfig().getDouble("Abilities.Water.PlantWhip.Range");
@@ -70,7 +71,6 @@ public class PlantWhip extends PlantAbility implements AddonAbility {
 		knockup = Azutoru.az.getConfig().getDouble("Abilities.Water.PlantWhip.Knockup");
 		
 		applyModifiers();
-		
 	}
 	
 	private void applyModifiers() {
@@ -159,11 +159,11 @@ public class PlantWhip extends PlantAbility implements AddonAbility {
 		}
 		
 		if (launching) {
-			if (isPlant(this.sourceBlock)) {
-				if (!isDecayablePlant(this.sourceBlock)) {
-					this.sourceBlock.setType(Material.AIR);
-				}
-				new PlantRegrowth(this.player, this.sourceBlock, 2);
+			if (isDecayablePlant(sourceBlock)) {
+				new PlantRegrowth(player, sourceBlock, 3);
+			} else if (isPlant(sourceBlock)) {
+				new PlantRegrowth(player, sourceBlock);
+				sourceBlock.setType(Material.AIR);
 			}
 			
 			direction = player.getLocation().getDirection();
@@ -171,15 +171,25 @@ public class PlantWhip extends PlantAbility implements AddonAbility {
 		}
 	}
 	
-	public void launch() {
+	private void launch() {
 		location.add(direction.multiply(speed));
+
+		Block b = location.getBlock();
+		boolean isDecayed = TempBlock.isTempBlock(b) && PlantRegrowth.getDecayedBlocks().contains(TempBlock.get(b));
 		
-		if (GeneralMethods.isSolid(location.getBlock()) && !GeneralMethods.isTransparent(location.getBlock()) && !location.getBlock().getType().toString().contains("LEAVES")) {
+		if (isDecayed) {
+			location.add(0, 1, 0);
+			b = location.getBlock();
+		}
+		
+		if (GeneralMethods.isSolid(b) 
+				&& !GeneralMethods.isTransparent(b) 
+				&& !b.getType().toString().contains("LEAVES")) {
 			remove();
 			return;
 		}
 		
-		addLeaves();
+		addLeaves(b);
 		
 		for (Entity entity : GeneralMethods.getEntitiesAroundPoint(location, hitRadius)) {
 			if ((entity instanceof LivingEntity) && entity.getUniqueId() != player.getUniqueId()) {
@@ -190,17 +200,25 @@ public class PlantWhip extends PlantAbility implements AddonAbility {
 		}
 	}
 	
-	public void addLeaves() {
-		TempBlock tb = new TempBlock(location.getBlock(), material);
+	private void addLeaves(Block b) {
+		TempBlock tb = new TempBlock(b, material);
 		tb.setRevertTime(duration);
-		
-		tb.getBlock().setMetadata("PlantWhip", new FixedMetadataValue(Azutoru.az, ""));
-		
-		if (tb.getBlock().getType() == Material.AIR) {
-			tb.getBlock().removeMetadata("PlantWhip", Azutoru.az);
-		}
-		
-		PhaseChange.getFrozenBlocksMap().put(tb, player);
+		addBlock(tb);
+		tb.setRevertTask(() -> removeBlock(tb));
+	}
+	
+	public static void addBlock(TempBlock tempBlock) {
+		affectedBlocks.add(tempBlock);
+		addWaterbendableTempBlock(tempBlock);
+	}
+	
+	public static void removeBlock(TempBlock tempBlock) {
+		affectedBlocks.remove(tempBlock);
+		removeWaterbendableTempBlock(tempBlock);
+	}
+	
+	public static Set<TempBlock> getAffectedBlocks() {
+		return affectedBlocks;
 	}
 	
 	@Override
@@ -268,7 +286,7 @@ public class PlantWhip extends PlantAbility implements AddonAbility {
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Water.PlantWhip.Enabled");
 	}
 
 }

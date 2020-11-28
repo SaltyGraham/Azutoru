@@ -13,24 +13,14 @@ public class IceRidge extends IceAbility implements AddonAbility {
 	public IceRidge(Player player) {
 		super(player);
 	}
-	
+
 	@Override
 	public void progress() {
 	}
 
 	@Override
-	public long getCooldown() {
-		return 0;
-	}
-
-	@Override
-	public Location getLocation() {
-		return null;
-	}
-
-	@Override
-	public String getName() {
-		return "IceRidge";
+	public boolean isSneakAbility() {
+		return false;
 	}
 
 	@Override
@@ -39,8 +29,26 @@ public class IceRidge extends IceAbility implements AddonAbility {
 	}
 
 	@Override
-	public boolean isSneakAbility() {
-		return false;
+	public long getCooldown() {
+		return 0;
+	}
+
+	@Override
+	public String getName() {
+		return "IceRidge";
+	}
+
+	@Override
+	public Location getLocation() {
+		return null;
+	}
+
+	@Override
+	public void load() {
+	}
+
+	@Override
+	public void stop() {
 	}
 
 	@Override
@@ -51,14 +59,6 @@ public class IceRidge extends IceAbility implements AddonAbility {
 	@Override
 	public String getVersion() {
 		return Azutoru.az.version();
-	}
-
-	@Override
-	public void load() {
-	}
-
-	@Override
-	public void stop() {
 	}
 	
 	@Override

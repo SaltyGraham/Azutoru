@@ -1,20 +1,16 @@
-package me.aztl.azutoru.ability.water.multiability;
-
-import java.util.ArrayList;
+package me.aztl.azutoru.ability.water.ice;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 import com.projectkorra.projectkorra.ability.AddonAbility;
-import com.projectkorra.projectkorra.ability.MultiAbility;
-import com.projectkorra.projectkorra.ability.WaterAbility;
-import com.projectkorra.projectkorra.ability.util.MultiAbilityManager.MultiAbilityInfoSub;
+import com.projectkorra.projectkorra.ability.IceAbility;
 
 import me.aztl.azutoru.Azutoru;
 
-public class OctopusForm extends WaterAbility implements AddonAbility, MultiAbility {
+public class IceMeteor extends IceAbility implements AddonAbility {
 
-	public OctopusForm(Player player) {
+	public IceMeteor(Player player) {
 		super(player);
 	}
 
@@ -39,16 +35,11 @@ public class OctopusForm extends WaterAbility implements AddonAbility, MultiAbil
 
 	@Override
 	public String getName() {
-		return "OctopusForm";
+		return "IceMeteor";
 	}
 
 	@Override
 	public Location getLocation() {
-		return null;
-	}
-
-	@Override
-	public ArrayList<MultiAbilityInfoSub> getMultiAbilities() {
 		return null;
 	}
 

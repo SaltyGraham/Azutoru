@@ -1,6 +1,7 @@
 package me.aztl.azutoru.ability.air.combo;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import org.bukkit.Location;
@@ -35,6 +36,8 @@ public class AirSpoutRush extends AirAbility implements AddonAbility, ComboAbili
 	private float initFlySpeed;
 	private float speedModifier;
 	
+	private List<Location> locations;
+	
 	public AirSpoutRush(Player player) {
 		super(player);
 		
@@ -58,6 +61,8 @@ public class AirSpoutRush extends AirAbility implements AddonAbility, ComboAbili
 		initFlySpeed = player.getFlySpeed();
 		speedModifier = 2;
 		
+		locations = new ArrayList<>();
+		
 		double heightRemoveThreshold = 2;
 		if (!isWithinMaxSpoutHeight(heightRemoveThreshold)) {
 			return;
@@ -67,6 +72,8 @@ public class AirSpoutRush extends AirAbility implements AddonAbility, ComboAbili
 		
 		if (bPlayer.isAvatarState()) {
 			height = getConfig().getDouble("Abilities.Avatar.AvatarState.Air.AirSpout.Height");
+			cooldown = 0;
+			duration = 0;
 		}
 		
 		start();
@@ -133,10 +140,12 @@ public class AirSpoutRush extends AirAbility implements AddonAbility, ComboAbili
 			double dy = Math.min(playerLoc.getY() - block.getY(), height);
 			angle = angle >= DIRECTIONS.length ? 0 : angle + 1;
 			
+			locations.clear();
 			for (int i = 1; i <= dy; i++) {
 				index = index >= DIRECTIONS.length ? 0 : index + 1;
 				Location effectLoc2 = new Location(location.getWorld(),location.getX(), block.getY() + i, location.getZ());
 				playAirbendingParticles(effectLoc2, 3, 0.4F, 0.4F, 0.4F);
+				locations.add(effectLoc2);
 			}
 		}
 	}
@@ -181,6 +190,11 @@ public class AirSpoutRush extends AirAbility implements AddonAbility, ComboAbili
 	@Override
 	public Location getLocation() {
 		return player != null ? player.getLocation() : null;
+	}
+	
+	@Override
+	public List<Location> getLocations() {
+		return locations;
 	}
 
 	@Override
@@ -244,7 +258,9 @@ public class AirSpoutRush extends AirAbility implements AddonAbility, ComboAbili
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		boolean enabled = Azutoru.az.getConfig().getBoolean("Abilities.Air.AirSpoutRush.Enabled")
+				&& ProjectKorra.plugin.getConfig().getBoolean("Abilities.Air.AirSpout.Enabled");
+		return enabled;
 	}
 
 }

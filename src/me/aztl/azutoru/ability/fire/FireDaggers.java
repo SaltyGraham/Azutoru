@@ -6,17 +6,13 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 
-import com.projectkorra.projectkorra.BendingPlayer;
 import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.Element.SubElement;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.BlueFireAbility;
 import com.projectkorra.projectkorra.ability.FireAbility;
-import com.projectkorra.projectkorra.airbending.AirShield;
 import com.projectkorra.projectkorra.firebending.FireBlast;
-import com.projectkorra.projectkorra.firebending.FireShield;
 import com.projectkorra.projectkorra.firebending.util.FireDamageTimer;
-import com.projectkorra.projectkorra.util.DamageHandler;
 
 import me.aztl.azutoru.Azutoru;
 import me.aztl.azutoru.AzutoruMethods;
@@ -34,12 +30,12 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 	}
 	
 	private long cooldown, duration, blockDuration, usageCooldown;
-	private double hitRadius, damage, range, throwSpeed;
+	private double damage, range, throwSpeed;
 	private int maxThrows;
 	
 	private Dagger activeDagger, lastActiveDagger;
 	private Ability activeAbility;
-	private Location left, right, location, handLoc;
+	private Location left, right, location;
 	private long time;
 	public boolean blocking;
 	private int counter;
@@ -55,7 +51,6 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 		duration = Azutoru.az.getConfig().getLong("Abilities.Fire.FireDaggers.Duration");
 		blockDuration = Azutoru.az.getConfig().getLong("Abilities.Fire.FireDaggers.BlockDuration");
 		usageCooldown = Azutoru.az.getConfig().getLong("Abilities.Fire.FireDaggers.UsageCooldown");
-		hitRadius = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireDaggers.HitRadius");
 		damage = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireDaggers.Damage");
 		range = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireDaggers.Range");
 		throwSpeed = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireDaggers.ThrowSpeed");
@@ -132,10 +127,6 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 				playFirebendingParticles(left, 1, 0, 0, 0);
 				playFirebendingParticles(right, 1, 0, 0, 0);
 			}
-			
-			if (activeAbility == Ability.ATTACK) {
-				progressAttack(activeDagger);
-			}
 		} else {
 			progressBlock();
 			if (!isBlocking()) {
@@ -144,57 +135,7 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 		}
 	}
 	
-	public void progressAttack(Dagger dagger) {
-		if (handLoc == null) {
-			if (dagger == Dagger.RIGHT) {
-				handLoc = right;
-			} else if (dagger == Dagger.LEFT) {
-				handLoc = left;
-			}
-		}
-		
-		if (location == null) {
-			location = handLoc.clone();
-		}
-		
-		if (location.distanceSquared(handLoc) > range * range) {
-			reset();
-			return;
-		}
-		
-		if (GeneralMethods.isRegionProtectedFromBuild(this, location)) {
-			reset();
-			return;
-		}
-		
-		if (GeneralMethods.isSolid(location.getBlock()) || location.getBlock().isLiquid()) {
-			reset();
-			return;
-		}
-		
-		for (int i = 1; i < 9; i++) {
-			location.add(GeneralMethods.getDirection(location, GeneralMethods.getTargetedLocation(player, range).add(player.getEyeLocation().getDirection())).multiply(0.125).multiply(throwSpeed));
-			playFirebendingParticles(location, 1, 0, 0, 0);
-		}
-		
-		if (counter % 6 == 0) {
-			playFirebendingSound(location);
-		}
-		
-		for (Entity e : GeneralMethods.getEntitiesAroundPoint(location, hitRadius + 1)) {
-			if (e instanceof LivingEntity && e.getUniqueId() != player.getUniqueId()) {
-				if (e instanceof Player && e instanceof BendingPlayer) {
-					Player victim = (Player) e;
-					checkForCollisions(victim);
-				}
-				DamageHandler.damageEntity(e, damage, this);
-				reset();
-				return;
-			}
-		}
-	}
-	
-	public void progressBlock() {
+	private void progressBlock() {
 		while (System.currentTimeMillis() >= time) {
 			left = left.subtract(0, 0.3, 0);
 			right = right.subtract(0, 0.3, 0);
@@ -222,7 +163,7 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 		}
 	}
 	
-	public void blockEntitiesAroundPoint(Entity entity, Location location) {
+	private void blockEntitiesAroundPoint(Entity entity, Location location) {
 		if (entity instanceof LivingEntity && entity.getUniqueId() != player.getUniqueId()) {
 			entity.setFireTicks(40);
 			new FireDamageTimer(entity, player);
@@ -231,30 +172,15 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 		}
 	}
 	
-	public void checkForCollisions(Player victim) {
-		if (hasAbility(victim, FireDaggers.class) && getAbility(victim, FireDaggers.class).isBlocking()) {
-			reset();
-			getAbility(victim, FireDaggers.class).setBlocking(false);
-			return;
-		} else if (hasAbility(victim, FireShield.class)) {
-			reset();
-			return;
-		} else if (hasAbility(victim, AirShield.class)) {
-			reset();
-			return;
-		}
-	}
-	
 	public void reset() {
 		checkForAmmo();
-		handLoc = null;
 		location = null;
 		lastActiveDagger = activeDagger;
 		activeDagger = null;
 		activeAbility = null;
 	}
 	
-	public void checkForAmmo() {
+	private void checkForAmmo() {
 		if (maxThrows < 1) {
 			remove();
 			return;
@@ -275,7 +201,7 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 			activeDagger = Dagger.RIGHT;
 		}
 		
-		activeAbility = Ability.ATTACK;
+		new FireBlade(player, range, damage, throwSpeed, 1, 35, true);
 		
 		bPlayer.addCooldown(getName() + "_ATTACK", usageCooldown);
 		maxThrows--;
@@ -402,7 +328,7 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Fire.FireDaggers.Enabled");
 	}
 
 }

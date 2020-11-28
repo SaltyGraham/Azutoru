@@ -1,16 +1,16 @@
-package me.aztl.azutoru.ability.fire.lightning;
+package me.aztl.azutoru.ability.earth.multiability;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 import com.projectkorra.projectkorra.ability.AddonAbility;
-import com.projectkorra.projectkorra.ability.LightningAbility;
+import com.projectkorra.projectkorra.ability.EarthAbility;
 
 import me.aztl.azutoru.Azutoru;
 
-public class ElectricField extends LightningAbility implements AddonAbility {
+public class Terraform extends EarthAbility implements AddonAbility {
 
-	public ElectricField(Player player) {
+	public Terraform(Player player) {
 		super(player);
 	}
 
@@ -26,7 +26,7 @@ public class ElectricField extends LightningAbility implements AddonAbility {
 
 	@Override
 	public String getName() {
-		return "ElectricField";
+		return "Terraform";
 	}
 
 	@Override

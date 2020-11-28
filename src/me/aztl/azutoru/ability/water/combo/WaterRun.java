@@ -10,7 +10,6 @@ import org.bukkit.util.Vector;
 import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
-import com.projectkorra.projectkorra.ability.ElementalAbility;
 import com.projectkorra.projectkorra.ability.WaterAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
 import com.projectkorra.projectkorra.util.ClickType;
@@ -32,6 +31,14 @@ public class WaterRun extends WaterAbility implements AddonAbility, ComboAbility
 	public WaterRun(Player player) {
 		super(player);
 		
+		if (!bPlayer.canBendIgnoreBinds(this) || bPlayer.isOnCooldown(this)) {
+			return;
+		}
+		
+		if (hasAbility(player, WaterSpout.class) || hasAbility(player, WaterSpoutRush.class)) {
+			return;
+		}
+		
 		speed = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterRun.Speed");
 		cooldown = Azutoru.az.getConfig().getLong("Abilities.Water.WaterRun.Cooldown");
 		duration = Azutoru.az.getConfig().getLong("Abilities.Water.WaterRun.Duration");
@@ -43,16 +50,8 @@ public class WaterRun extends WaterAbility implements AddonAbility, ComboAbility
 		topBlock = GeneralMethods.getTopBlock(player.getLocation(), 3);
 		headBlock = player.getLocation().add(0, 1.5, 0).getBlock();
 		
-		if (!bPlayer.canBendIgnoreBinds(this) || bPlayer.isOnCooldown(this)) {
-			return;
-		}
-		
-		if (hasAbility(player, WaterSpout.class) || hasAbility(player, WaterSpoutRush.class)) {
-			return;
-		}
-		
 		Block topBlock = GeneralMethods.getTopBlock(player.getLocation(), 3);
-		if (!WaterAbility.isWater(topBlock) && !WaterAbility.isIce(topBlock)) {
+		if (!isWater(topBlock) && !isIce(topBlock) && !isSnow(topBlock)) {
 			return;
 		}
 		
@@ -77,10 +76,12 @@ public class WaterRun extends WaterAbility implements AddonAbility, ComboAbility
 	
 	@Override
 	public void progress() {
-		if (!player.isOnline() || player.isDead()) {
+		if (!bPlayer.canBendIgnoreBinds(this)) {
 			remove();
 			return;
-		} else if (player.getHealth() + damageThreshold <= health) {
+		}
+		
+		if (player.getHealth() + damageThreshold <= health) {
 			remove();
 			return;
 		}
@@ -91,16 +92,13 @@ public class WaterRun extends WaterAbility implements AddonAbility, ComboAbility
 		}
 		
 		topBlock = GeneralMethods.getTopBlock(player.getLocation(), 3);
-		if (topBlock == null) {
-			remove();
-			return;
-		} else if (!WaterAbility.isWater(topBlock) && !WaterAbility.isIce(topBlock) && !AzutoruMethods.isIgnoredPlant(topBlock)) {
+		if (!isWater(topBlock) && !isIce(topBlock) && !isSnow(topBlock) && !AzutoruMethods.isIgnoredPlant(topBlock)) {
 			remove();
 			return;
 		}
 		
 		headBlock = player.getLocation().add(0, 1.5, 0).getBlock();
-		if (!ElementalAbility.isAir(headBlock.getType()) && !(WaterAbility.isWater(headBlock) && TempBlock.isTempBlock(headBlock))) {
+		if (!isAir(headBlock.getType()) && !(isWater(headBlock) && TempBlock.isTempBlock(headBlock))) {
 			if (!surfaced) {
 				Vector velocity = player.getEyeLocation().getDirection().clone().normalize().multiply(speed).setY(0.25);
 				player.setVelocity(velocity);
@@ -130,37 +128,22 @@ public class WaterRun extends WaterAbility implements AddonAbility, ComboAbility
 		playWakeAnimation();
 	}
 	
-	public void playWakeAnimation() {
+	private void playWakeAnimation() {
+		Location leftWake = AzutoruMethods.getModifiedLocation(player.getLocation().clone(), -150, -5);
+		Location rightWake = AzutoruMethods.getModifiedLocation(player.getLocation().clone(), 150, -5);
 		
-		Location leftWake = player.getLocation();
-		if (leftWake.getYaw() > -30) {
-			leftWake.setYaw(leftWake.getYaw() - 150);
-		} else {
-			leftWake.setYaw(leftWake.getYaw() + 180 + 40);
-		}
-		leftWake.setPitch(-5);
-		Vector leftDir = leftWake.getDirection();
-		
-		Location rightWake = player.getLocation();
-		if (rightWake.getYaw() < 30) {
-			rightWake.setYaw(rightWake.getYaw() + 150);
-		} else {
-			rightWake.setYaw(rightWake.getYaw() - 180 - 40);
-		}
-		rightWake.setPitch(-5);
-		Vector rightDir = rightWake.getDirection();
-		
+		displayWake(leftWake, leftWake.getDirection());
+		displayWake(rightWake, rightWake.getDirection());
+	}
+	
+	private void displayWake(Location loc, Vector dir) {
 		for (double i = 0; i <= 3; i += 0.5) {
-			leftWake.add(leftDir);
-			rightWake.add(rightDir);
-			if (WaterAbility.isWater(topBlock)) {
-				ParticleEffect.WATER_SPLASH.display(leftWake, 5, 0, 0, 0, 10);
-				ParticleEffect.WATER_SPLASH.display(rightWake, 5, 0, 0, 0, 10);
-				ParticleEffect.SPIT.display(leftWake, 1, 0, .2, 0);
-				ParticleEffect.SPIT.display(rightWake, 1, 0, 0.2, 0);
-			} else if (WaterAbility.isIce(topBlock)) {
-				ParticleEffect.SNOW_SHOVEL.display(leftWake, 1);
-				ParticleEffect.SNOW_SHOVEL.display(rightWake, 1);
+			loc.add(dir);
+			if (isWater(topBlock)) {
+				ParticleEffect.WATER_SPLASH.display(loc, 5, 0, 0, 0, 10);
+				ParticleEffect.SPIT.display(loc, 1, 0, 0.2, 0);
+			} else if (isIce(topBlock) || isSnow(topBlock)) {
+				ParticleEffect.SNOW_SHOVEL.display(loc, 1);
 			}
 		}
 	}
@@ -240,7 +223,7 @@ public class WaterRun extends WaterAbility implements AddonAbility, ComboAbility
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Water.WaterRun.Enabled");
 	}
 
 }

@@ -92,7 +92,7 @@ public class AirWake extends AirAbility implements AddonAbility, ComboAbility {
 		for (Entity entity : GeneralMethods.getEntitiesAroundPoint(location, hitRadius)) {
 			if (entity.getUniqueId() != player.getUniqueId()) {
 				Vector travelVec = GeneralMethods.getDirection(location, location.add(location.getDirection()));
-				entity.setVelocity(travelVec.setY(knockup).multiply(knockback));
+				entity.setVelocity(travelVec.setY(travelVec.getY() * knockup).multiply(knockback));
 				if (entity instanceof LivingEntity) {
 					DamageHandler.damageEntity(entity, damage, this);
 					remove();
@@ -102,7 +102,7 @@ public class AirWake extends AirAbility implements AddonAbility, ComboAbility {
 		}
 	}
 	
-	public void displayBody() {
+	private void displayBody() {
 		Location loc = location.clone().add(0, 0.5, 0);
 		for (double i = 0; i <= Math.PI; i += Math.PI / 7) {
 			double radius = Math.sin(i);
@@ -117,7 +117,7 @@ public class AirWake extends AirAbility implements AddonAbility, ComboAbility {
 		}
 	}
 	
-	public void displayHead() {
+	private void displayHead() {
 		Location loc = head.clone().add(0, 1, 0);
 		for (double i = 0; i <= Math.PI; i += Math.PI / 5) {
 			double radius = Math.sin(i) / 2;
@@ -132,7 +132,7 @@ public class AirWake extends AirAbility implements AddonAbility, ComboAbility {
 		}
 	}
 	
-	public void displayLeftArm() {
+	private void displayLeftArm() {
 		Location loc = lArm.clone();
 		for (double i = 0; i <= Math.PI; i += Math.PI / 5) {
 			double radius = Math.sin(i) / 2;
@@ -147,7 +147,7 @@ public class AirWake extends AirAbility implements AddonAbility, ComboAbility {
 		}
 	}
 	
-	public void displayRightArm() {
+	private void displayRightArm() {
 		Location loc = rArm.clone();
 		for (double i = 0; i <= Math.PI; i += Math.PI / 5) {
 			double radius = Math.sin(i) / 2;
@@ -236,7 +236,7 @@ public class AirWake extends AirAbility implements AddonAbility, ComboAbility {
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Air.AirWake.Enabled");
 	}
 
 }

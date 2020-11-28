@@ -1,9 +1,10 @@
 package me.aztl.azutoru.ability.water.blood;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -30,8 +31,7 @@ public class BloodStrangle extends BloodAbility implements AddonAbility {
 	private long cooldown, duration;
 	
 	private Location location;
-	private List<Entity> grabbedEntities;
-	private HashMap<Entity, Vector> offsets;
+	private Map<Entity, Vector> grabbedEntities;
 	private long time, init;
 	
 	public BloodStrangle(Player player) {
@@ -56,8 +56,7 @@ public class BloodStrangle extends BloodAbility implements AddonAbility {
 	}
 	
 	public boolean grabEntities() {
-		grabbedEntities = new ArrayList<>();
-		offsets = new HashMap<>();
+		grabbedEntities = new HashMap<>();
 		
 		for (int i = 1; i < range; i++) {
 			location = GeneralMethods.getTargetedLocation(player, i, getTransparentMaterials());
@@ -71,10 +70,10 @@ public class BloodStrangle extends BloodAbility implements AddonAbility {
 						BendingPlayer bVictim = (BendingPlayer) victim;
 						if (bVictim.canBeBloodbent()
 								&& !Commands.invincible.contains(bVictim.getName())) {
-							grabbedEntities.add(e);
+							grabbedEntities.put(e, GeneralMethods.getDirection(location, e.getLocation()));
 						}
 					} else {
-						grabbedEntities.add(e);
+						grabbedEntities.put(e, GeneralMethods.getDirection(location, e.getLocation()));
 					}
 				}
 			}
@@ -89,13 +88,15 @@ public class BloodStrangle extends BloodAbility implements AddonAbility {
 			return false;
 		}
 		
-		for (Entity e : grabbedEntities) {
+		for (Entity e : grabbedEntities.keySet()) {
+			if (grabbedEntities.size() == 1) {
+				grabbedEntities.replace(e, new Vector (0, 0, 0));
+			}
 			DamageHandler.damageEntity(e, 0, this);
 			if (e instanceof Player && e instanceof BendingPlayer) {
 				BendingPlayer bVictim = BendingPlayer.getBendingPlayer((Player) e);
 				bVictim.blockChi();
 			}
-			offsets.put(e, GeneralMethods.getDirection(location, e.getLocation()));
 		}
 		
 		return true;
@@ -130,11 +131,15 @@ public class BloodStrangle extends BloodAbility implements AddonAbility {
 			remove();
 			return;
 		} else {
-			for (Entity e : grabbedEntities) {
-				checkForRemoval(e);
+			Set<Entity> removal = new HashSet<>();
+			for (Entity e : grabbedEntities.keySet()) {
+				removal = checkForRemoval(e, removal);
+				if (removal.contains(e)) {
+					continue;
+				}
 				
 				Location eLoc = e.getLocation();
-				Location destination = location.add(offsets.get(e));
+				Location destination = location.add(grabbedEntities.get(e));
 				double dx, dy, dz;
 				dx = destination.getX() - eLoc.getX();
 				dy = destination.getY() - eLoc.getY();
@@ -150,6 +155,9 @@ public class BloodStrangle extends BloodAbility implements AddonAbility {
 				
 				applyEffects((LivingEntity) e);
 			}
+			for (Entity e : removal) {
+				grabbedEntities.remove(e);
+			}
 		}
 	}
 	
@@ -164,21 +172,22 @@ public class BloodStrangle extends BloodAbility implements AddonAbility {
 		}
 	}
 	
-	public void checkForRemoval(Entity e) {
+	public Set<Entity> checkForRemoval(Entity e, Set<Entity> removal) {
 		if (e.isDead()) {
-			grabbedEntities.remove(e);
+			removal.add(e);
 		} else if (e instanceof Player) {
 			Player victim = (Player) e;
 			if (!victim.isOnline()) {
-				grabbedEntities.remove(e);
+				removal.add(e);
 			} else if (victim.getWorld() != player.getWorld()) {
-				grabbedEntities.remove(e);
+				removal.add(e);
 			} else if (victim.getLocation().distanceSquared(player.getLocation()) > range + 5) {
-				grabbedEntities.remove(e);
+				removal.add(e);
 			} else if (GeneralMethods.isRegionProtectedFromBuild(this, victim.getLocation())) {
-				grabbedEntities.remove(e);
+				removal.add(e);
 			}
 		}
+		return removal;
 	}
 	
 	public void remove() {
@@ -241,7 +250,7 @@ public class BloodStrangle extends BloodAbility implements AddonAbility {
 	
 	@Override
 	public boolean isEnabled() {
-		return false;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Water.BloodStrangle.Enabled");
 	}
 
 }

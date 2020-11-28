@@ -2,6 +2,7 @@ package me.aztl.azutoru.ability.water.combo;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -39,6 +40,7 @@ public class RazorRings extends WaterAbility implements AddonAbility, ComboAbili
 	private HashMap<Integer, Vector> directions;
 	private HashMap<Integer, ArrayList<TempBlock>> affectedBlocks;
 	private HashMap<Integer, Double> radiusMap;
+	private List<Location> locList;
 
 	public RazorRings(Player player) {
 		super(player);
@@ -119,6 +121,7 @@ public class RazorRings extends WaterAbility implements AddonAbility, ComboAbili
 		directions = new HashMap<Integer, Vector>();
 		affectedBlocks = new HashMap<Integer, ArrayList<TempBlock>>();
 		radiusMap = new HashMap<Integer, Double>();
+		locList = new ArrayList<>();
 	}
 	
 	private void applyModifiers() {
@@ -240,6 +243,7 @@ public class RazorRings extends WaterAbility implements AddonAbility, ComboAbili
 		for (TempBlock tb : affectedBlocks.get(id))
 			tb.revertBlock();
 		affectedBlocks.get(id).clear();
+		locList.clear();
 		
 		for (int i = 0; i <= 180; i += 1) {
 			sign = 1;
@@ -258,6 +262,7 @@ public class RazorRings extends WaterAbility implements AddonAbility, ComboAbili
 			
 			TempBlock tb = new TempBlock(loc.getBlock(), Material.WATER);
 			affectedBlocks.get(id).add(tb);
+			locList.add(loc);
 			
 			loc.subtract(x, y, sign * z);
 		}
@@ -319,6 +324,11 @@ public class RazorRings extends WaterAbility implements AddonAbility, ComboAbili
 	@Override
 	public Location getLocation() {
 		return origin;
+	}
+
+	@Override
+	public List<Location> getLocations() {
+		return locList;
 	}
 
 	@Override
@@ -392,7 +402,7 @@ public class RazorRings extends WaterAbility implements AddonAbility, ComboAbili
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Water.RazorRings.Enabled");
 	}
 	
 }

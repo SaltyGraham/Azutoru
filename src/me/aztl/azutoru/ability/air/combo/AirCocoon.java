@@ -71,7 +71,7 @@ public class AirCocoon extends AirAbility implements AddonAbility, ComboAbility 
 		}
 	}
 	
-	public void displayCocoon() {
+	private void displayCocoon() {
 		Location loc = player.getLocation().add(0, 0.5, 0);
 		for (double i = 0; i <= Math.PI; i += Math.PI / 5) {
 			double radius = Math.sin(i);
@@ -164,6 +164,6 @@ public class AirCocoon extends AirAbility implements AddonAbility, ComboAbility 
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Air.AirCocoon.Enabled");
 	}
 }

@@ -38,6 +38,10 @@ public class JetBlaze extends FireAbility implements AddonAbility, ComboAbility 
 			return;
 		}
 		
+		if (hasAbility(player, JetBlast.class)) {
+			return;
+		}
+		
 		if (!hasAbility(player, FireJet.class)) {
 			new FireJet(player, ClickType.LEFT_CLICK);
 			madeNewJet = true;

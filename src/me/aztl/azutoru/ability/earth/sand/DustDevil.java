@@ -49,6 +49,12 @@ public class DustDevil extends SandAbility implements AddonAbility {
 		damage = Azutoru.az.getConfig().getDouble("Abilities.Earth.DustDevil.Damage");
 		blindnessTime = Azutoru.az.getConfig().getInt("Abilities.Earth.DustDevil.BlindnessTime");
 		
+		if (bPlayer.isAvatarState()) {
+			cooldown = 0;
+			height *= 1.25;
+			duration = 0;
+		}
+		
 		topBlock = GeneralMethods.getTopBlock(player.getLocation(), (int) height);
 		world = player.getWorld();
 		locations = new ArrayList<>();
@@ -152,7 +158,7 @@ public class DustDevil extends SandAbility implements AddonAbility {
 		}
 	}
 	
-	public void updateLocations() {
+	private void updateLocations() {
 		locations.clear();
 		
 		List<Location> newLocations = new ArrayList<>();
@@ -245,7 +251,7 @@ public class DustDevil extends SandAbility implements AddonAbility {
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Earth.DustDevil.Enabled");
 	}
 
 }

@@ -105,7 +105,7 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 			if (!isDecayablePlant(sourceBlock)) {
 				sourceBlock.setType(Material.AIR);
 			}
-			new PlantRegrowth(player, sourceBlock, 2);
+			new PlantRegrowth(player, sourceBlock, 3);
 		}
 		
 		if (TempBlock.isTempBlock(sourceBlock)) {
@@ -299,7 +299,7 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Water.IceShots.Enabled");
 	}
 
 }

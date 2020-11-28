@@ -30,6 +30,7 @@ import com.projectkorra.projectkorra.util.TimeUtil;
 import me.aztl.azutoru.Azutoru;
 import me.aztl.azutoru.AzutoruMethods;
 import me.aztl.azutoru.AzutoruMethods.Hand;
+import me.aztl.azutoru.ability.air.CloudSurf;
 import me.aztl.azutoru.ability.fire.combo.JetBlast;
 import me.aztl.azutoru.ability.fire.combo.JetBlaze;
 import me.aztl.azutoru.ability.fire.combo.JetStepping;
@@ -88,6 +89,10 @@ public class FireJet extends FireAbility implements AddonAbility {
 		
 		if (hasAbility(player, AirSpout.class)) {
 			getAbility(player, AirSpout.class).remove();
+		}
+		
+		if (hasAbility(player, CloudSurf.class)) {
+			getAbility(player, CloudSurf.class).remove();
 		}
 		
 		cooldown = Azutoru.az.getConfig().getLong("Abilities.Fire.FireJet.Cooldown");
@@ -344,7 +349,7 @@ public class FireJet extends FireAbility implements AddonAbility {
 		}
 	}
 	
-	public void propel() {
+	private void propel() {
 		if (propelDuration > 0 && System.currentTimeMillis() > time + propelDuration) {
 			removeWithCooldown();
 			return;
@@ -362,8 +367,8 @@ public class FireJet extends FireAbility implements AddonAbility {
 		if (isOnSlot) {
 			speed *= onSlotModifier;
 			
-			Location r = getJetAngles(right, 150, pitch);
-			Location l = getJetAngles(left, -150, pitch);
+			Location r = AzutoruMethods.getModifiedLocation(right, 150, pitch);
+			Location l = AzutoruMethods.getModifiedLocation(left, -150, pitch);
 			Vector rv = r.getDirection();
 			Vector lv = l.getDirection();
 			displayJets(r, l, rv, lv, length, 0.5);
@@ -378,7 +383,7 @@ public class FireJet extends FireAbility implements AddonAbility {
 		player.setVelocity(direction);
 	}
 	
-	public void ski() {
+	private void ski() {
 		if (skiDuration > 0 && System.currentTimeMillis() > time + skiDuration) {
 			removeWithCooldown();
 			return;
@@ -389,8 +394,8 @@ public class FireJet extends FireAbility implements AddonAbility {
 		if (isOnSlot) {
 			speed = speed * onSlotModifier;
 			
-			Location r = getJetAngles(right, 150, pitch);
-			Location l = getJetAngles(left, -150, pitch);
+			Location r = AzutoruMethods.getModifiedLocation(right, 150, pitch);
+			Location l = AzutoruMethods.getModifiedLocation(left, -150, pitch);
 			Vector rv = r.getDirection().multiply(skiTurningSpeed);
 			Vector lv = l.getDirection().multiply(skiTurningSpeed);
 			displayJets(r, l, rv, lv, length, 0.5);
@@ -432,7 +437,7 @@ public class FireJet extends FireAbility implements AddonAbility {
 		displayJet(loc, dir, length, 0.5);
 	}
 	
-	public void hover() {
+	private void hover() {
 		if (hoverDuration > 0 && System.currentTimeMillis() > time + hoverDuration) {
 			removeWithCooldown();
 			return;
@@ -446,7 +451,7 @@ public class FireJet extends FireAbility implements AddonAbility {
 		Location loc = location.clone();
 		loc.setPitch(90);
 		Vector dir = loc.getDirection();
-		displayJet(loc, dir, 1, 0.25);
+		displayJet(loc, dir, 1, 0.1);
 		
 		if (isOnSlot) {
 			Location r = right.clone();
@@ -475,7 +480,7 @@ public class FireJet extends FireAbility implements AddonAbility {
 		}
 	}
 	
-	public void displayJet(Location loc, Vector dir, double length, double stepSize) {
+	private void displayJet(Location loc, Vector dir, double length, double stepSize) {
 		for (double d = 0; d <= length; d += stepSize) {
 			Block b = loc.getBlock();
 			if (GeneralMethods.isSolid(b) || b.isLiquid()) {
@@ -492,7 +497,7 @@ public class FireJet extends FireAbility implements AddonAbility {
 		}
 	}
 	
-	public void displayJets(Location r, Location l, Vector rv, Vector lv, double length, double stepSize) {
+	private void displayJets(Location r, Location l, Vector rv, Vector lv, double length, double stepSize) {
 		for (double d = 0; d <= length; d += stepSize) {
 			Block br = r.getBlock();
 			if (GeneralMethods.isSolid(br) || br.isLiquid()) {
@@ -534,22 +539,7 @@ public class FireJet extends FireAbility implements AddonAbility {
 		}
 	}
 	
-	public Location getJetAngles(Location location, float yawDiff, float pitch) {
-		Location loc = location.clone();
-		float yaw = loc.getYaw() + yawDiff;
-		if (yaw < 0) {
-			yaw += 360;
-		} else if (yaw > 360) {
-			yaw -= 360;
-		}
-		
-		loc.setYaw(yaw);
-		loc.setPitch(pitch);
-		
-		return loc;
-	}
-	
-	public double getTimeFactor(long currentDuration) {
+	private double getTimeFactor(long currentDuration) {
 		if (currentDuration <= 0) {
 			return 1;
 		}
@@ -585,13 +575,21 @@ public class FireJet extends FireAbility implements AddonAbility {
 	@Override
 	public void remove() {
 		super.remove();
+		if (combo == JetCombo.BLAST) {
+			getAbility(player, JetBlast.class).remove();
+		} else if (combo == JetCombo.BLAZE) {
+			getAbility(player, JetBlaze.class).remove();
+		}
+		
 		affectedEntities.clear();
+		
 		if (topBar != null) {
 			topBar.removeAll();
 		}
 		if (bottomBar != null) {
 			bottomBar.removeAll();
 		}
+		
 		if (!recovery) {
 			flightHandler.removeInstance(player, getName());
 			AzutoruMethods.removeFlight(player);

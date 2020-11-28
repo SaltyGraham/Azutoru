@@ -15,7 +15,6 @@ import org.bukkit.util.Vector;
 import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
-import com.projectkorra.projectkorra.ability.ElementalAbility;
 import com.projectkorra.projectkorra.ability.WaterAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
 import com.projectkorra.projectkorra.util.BlockSource;
@@ -141,7 +140,7 @@ public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbil
 			}
 			
 			for (Block b : GeneralMethods.getBlocksAroundPoint(location, radius)) {
-				if (ElementalAbility.isAir(b.getType()) && !GeneralMethods.isRegionProtectedFromBuild(this, b.getLocation())) {
+				if (isAir(b.getType()) && !GeneralMethods.isRegionProtectedFromBuild(this, b.getLocation())) {
 					new TempBlock(b, Material.WATER);
 				}
 			}
@@ -163,17 +162,17 @@ public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbil
 			location.add(direction.normalize().multiply(speed));
 			
 			for (Block b : GeneralMethods.getBlocksAroundPoint(location, radius)) {
-				if (ElementalAbility.isAir(b.getType()) && !GeneralMethods.isRegionProtectedFromBuild(this, b.getLocation())) {
+				if (isAir(b.getType()) && !GeneralMethods.isRegionProtectedFromBuild(this, b.getLocation())) {
 					createBlock(b, Material.WATER);
 				}
 				if (GeneralMethods.isRegionProtectedFromBuild(this, b.getLocation())) {
 					remove();
 					return;
 				}
-				if (ElementalAbility.isWater(b) && !TempBlock.isTempBlock(b)) {
+				if (isWater(b) && !TempBlock.isTempBlock(b)) {
 					AzutoruMethods.displayWaterBubble(b.getLocation());
 				}
-				if (ElementalAbility.isLava(b)) {
+				if (isLava(b)) {
 					b.setType(Material.OBSIDIAN);
 				}
 			}
@@ -290,7 +289,7 @@ public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbil
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Water.WaterSphere.Enabled");
 	}
 
 }

@@ -107,9 +107,11 @@ public class GlassShards extends GlassAbility implements AddonAbility {
 		
 		location = player.getEyeLocation();
 		direction = location.getDirection();
+		Location right = GeneralMethods.getRightSide(player.getLocation().add(0, 1, 0), 1.5);
+		Location left = GeneralMethods.getLeftSide(player.getLocation().add(0, 1, 0), 1.5);
 		
-		displayLeftRing();
-		displayRightRing();
+		displayRing(right, left);
+		displayRing(left, right);
 			
 		if (counter % 6 == 0) {
 			playGlassbendingSound(location);
@@ -117,43 +119,22 @@ public class GlassShards extends GlassAbility implements AddonAbility {
 		counter++;
 	}
 	
-	public void displayLeftRing() {
+	public void displayRing(Location side, Location other) {
 		Location loc = player.getLocation().add(0, 1, 0);
 		double radius = 1.5;
 		for (double a = 0; a <= Math.PI * 2; a += Math.PI / 8) {
 			double x = Math.cos(a) * radius;
 			double z = Math.sin(a) * radius;
 			loc.add(x, 0, z);
-			double y = -loc.add(0, 1, 0).distance(GeneralMethods.getLeftSide(player.getLocation().add(0, 1, 0), 1.5)) + 1;
+			double y = -loc.add(0, 1, 0).distance(side) + 1;
 			loc.add(0, y, 0);
 			ParticleEffect.BLOCK_DUST.display(loc, 1, 0, 0, 0, 1, glassType.createBlockData());
 			loc.subtract(x, 0, z);
-			double y2 = -loc.add(0, 1, 0).distance(GeneralMethods.getRightSide(player.getLocation().add(0, 1, 0), 1.5)) + 1;
+			double y2 = -loc.add(0, 1, 0).distance(other) + 1;
 			loc.subtract(0, y2, 0);
-			for (Entity entity : GeneralMethods.getEntitiesAroundPoint(loc, 1)) {
-				if (entity instanceof LivingEntity && entity.getUniqueId() != player.getUniqueId()) {
-					DamageHandler.damageEntity(entity, 1, this);
-				}
-			}
-		}
-	}
-	
-	public void displayRightRing() {
-		Location loc = player.getLocation().add(0, 1, 0);
-		double radius = 1.5;
-		for (double a = 0; a <= Math.PI * 2; a += Math.PI / 8) {
-			double x = Math.cos(a) * radius;
-			double z = Math.sin(a) * radius;
-			loc.add(x, 0, z);
-			double y = -loc.add(0, 1, 0).distance(GeneralMethods.getRightSide(player.getLocation().add(0, 1, 0), 1.5)) + 1;
-			loc.add(0, y, 0);
-			ParticleEffect.BLOCK_DUST.display(loc, 1, 0, 0, 0, 1, glassType.createBlockData());
-			loc.subtract(x, 0, z);
-			double y2 = -loc.add(0, 1, 0).distance(GeneralMethods.getLeftSide(player.getLocation().add(0, 1, 0), 1.5)) + 1;
-			loc.subtract(0, y2, 0);
-			for (Entity entity : GeneralMethods.getEntitiesAroundPoint(loc, 1)) {
-				if (entity instanceof LivingEntity && entity.getUniqueId() != player.getUniqueId()) {
-					DamageHandler.damageEntity(entity, 1, this);
+			for (Entity e : GeneralMethods.getEntitiesAroundPoint(loc, 1)) {
+				if (e instanceof LivingEntity && e.getUniqueId() != player.getUniqueId()) {
+					DamageHandler.damageEntity(e, 1, this);
 				}
 			}
 		}
@@ -186,7 +167,7 @@ public class GlassShards extends GlassAbility implements AddonAbility {
 
 	@Override
 	public Location getLocation() {
-		return null;
+		return player.getLocation().add(0, 1, 0);
 	}
 
 	@Override
@@ -234,7 +215,7 @@ public class GlassShards extends GlassAbility implements AddonAbility {
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Earth.GlassShards.Enabled");
 	}
 
 }

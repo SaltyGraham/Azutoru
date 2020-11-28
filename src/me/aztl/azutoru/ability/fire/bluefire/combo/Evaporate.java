@@ -1,6 +1,7 @@
 package me.aztl.azutoru.ability.fire.bluefire.combo;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -27,6 +28,7 @@ public class Evaporate extends BlueFireAbility implements AddonAbility, ComboAbi
 	private int particleAmount;
 	
 	private Location location;
+	private List<Location> locations = new ArrayList<>();
 	
 	public Evaporate(Player player) {
 		super(player);
@@ -87,7 +89,7 @@ public class Evaporate extends BlueFireAbility implements AddonAbility, ComboAbi
 		displayCone();
 	}
 	
-	public void displayCone() {
+	private void displayCone() {
 		location.add(location.getDirection().multiply(speed));
 		shieldRadius += radiusIncreaseRate;
 		
@@ -98,6 +100,8 @@ public class Evaporate extends BlueFireAbility implements AddonAbility, ComboAbi
 				
 				if (!GeneralMethods.isSolid(tendrilLoc.getBlock()) && !tendrilLoc.getBlock().isLiquid()) {
 					playFirebendingParticles(tendrilLoc, particleAmount, particleSpread, particleSpread, particleSpread);
+					
+					locations.add(tendrilLoc);
 				}
 				
 				for (Entity e : GeneralMethods.getEntitiesAroundPoint(location, length)) {
@@ -160,6 +164,11 @@ public class Evaporate extends BlueFireAbility implements AddonAbility, ComboAbi
 	}
 	
 	@Override
+	public List<Location> getLocations() {
+		return locations;
+	}
+	
+	@Override
 	public double getCollisionRadius() {
 		return collisionRadius;
 	}
@@ -197,7 +206,7 @@ public class Evaporate extends BlueFireAbility implements AddonAbility, ComboAbi
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Fire.Evaporate.Enabled");
 	}
 
 }

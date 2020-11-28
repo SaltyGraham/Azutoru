@@ -154,7 +154,7 @@ public class Dodge extends ChiAbility implements AddonAbility {
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Multi-Elemental.Dodge.Enabled");
 	}
 
 }

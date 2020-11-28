@@ -15,14 +15,13 @@ import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformatio
 import com.projectkorra.projectkorra.util.ClickType;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
 import me.aztl.azutoru.ability.fire.FireJet;
 
 public class JetStepping extends FireAbility implements AddonAbility, ComboAbility {
 
-	private long cooldown, duration, usageCooldown;
-	private int steps, amount;
-	private double lift, length, spread;
+	private long cooldown, duration;
+	private double horizontal, vertical;
+	private int maxSteps;
 	
 	public JetStepping(Player player) {
 		super(player);
@@ -37,12 +36,9 @@ public class JetStepping extends FireAbility implements AddonAbility, ComboAbili
 		
 		cooldown = Azutoru.az.getConfig().getLong("Abilities.Fire.JetStepping.Cooldown");
 		duration = Azutoru.az.getConfig().getLong("Abilities.Fire.JetStepping.Duration");
-		steps = Azutoru.az.getConfig().getInt("Abilities.Fire.JetStepping.MaxSteps");
-		usageCooldown = Azutoru.az.getConfig().getLong("Abilities.Fire.JetStepping.StepCooldown");
-		lift = Azutoru.az.getConfig().getDouble("Abilities.Fire.JetStepping.Lift");
-		length = Azutoru.az.getConfig().getDouble("Abilities.Fire.JetStepping.ParticleLength");
-		amount = Azutoru.az.getConfig().getInt("Abilities.Fire.JetStepping.ParticleAmount");
-		spread = Azutoru.az.getConfig().getDouble("Abilities.Fire.JetStepping.ParticleSpread");
+		horizontal = Azutoru.az.getConfig().getDouble("Abilities.Fire.JetStepping.HorizontalPush");
+		vertical = Azutoru.az.getConfig().getDouble("Abilities.Fire.JetStepping.VerticalPush");
+		maxSteps = Azutoru.az.getConfig().getInt("Abilities.Fire.JetStepping.MaxSteps");
 		
 		applyModifiers();
 		
@@ -53,23 +49,23 @@ public class JetStepping extends FireAbility implements AddonAbility, ComboAbili
 		if (bPlayer.canUseSubElement(SubElement.BLUE_FIRE)) {
 			cooldown *= BlueFireAbility.getCooldownFactor();
 			duration *= BlueFireAbility.getRangeFactor();
-			usageCooldown *= BlueFireAbility.getCooldownFactor();
-			lift *= BlueFireAbility.getDamageFactor();
+			horizontal *= BlueFireAbility.getRangeFactor();
+			vertical *= BlueFireAbility.getRangeFactor();
 		}
 		
 		if (isDay(player.getWorld())) {
 			cooldown -= ((long) getDayFactor(cooldown) - cooldown);
 			duration = (long) getDayFactor(duration);
-			usageCooldown -= ((long) getDayFactor(usageCooldown) - usageCooldown);
-			lift = getDayFactor(lift);
+			horizontal = getDayFactor(horizontal);
+			vertical = getDayFactor(vertical);
 		}
 		
 		if (bPlayer.isAvatarState()) {
 			cooldown /= 2;
 			duration *= 2;
-			usageCooldown /= 2;
-			lift *= 1.5;
-			steps += 10;
+			horizontal *= 2;
+			vertical *= 2;
+			maxSteps += 10;
 		}
 	}
 
@@ -80,53 +76,41 @@ public class JetStepping extends FireAbility implements AddonAbility, ComboAbili
 			return;
 		}
 		
-		if (player.isSneaking()) {
-			remove();
-			return;
-		}
-		
-		if (!bPlayer.getBoundAbilityName().equals("FireJet")) {
-			remove();
-			return;
-		}
-		
 		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
 			remove();
 			return;
 		}
 		
-		if (AzutoruMethods.isOnGround(player)) {
+		if (maxSteps == 0) {
 			remove();
 			return;
 		}
 		
-		if (steps < 1) {
+		if (player.getLocation().getBlock().isLiquid()) {
 			remove();
 			return;
 		}
 	}
 	
-	public void onClick() {
-		if (bPlayer.isOnCooldown(getName() + "Step")) {
-			return;
+	private void playStepAnimation() {
+		Location playerLoc = player.getLocation();
+		for (double d = 0; d <= 2; d += 0.5) {
+			playerLoc.subtract(0, d, 0);
+			playFirebendingParticles(playerLoc, 1, 0.2, 0.2, 0.2);
 		}
+	}
+	
+	public void step() {
+		Vector direction = player.getEyeLocation().getDirection().setY(0).normalize();
+		direction.setX(direction.getX() * horizontal);
+		direction.setY(vertical);
+		direction.setZ(direction.getZ() * horizontal);
 		
-		Vector direction = player.getEyeLocation().getDirection();
-		if (direction.getY() < 0) {
-			direction.setY(direction.getY() * -1);
-		}
+		player.setVelocity(direction);
 		
-		player.setVelocity(direction.multiply(lift));
+		playStepAnimation();
 		
-		Location loc = player.getLocation();
-		Vector opposite = direction.multiply(-1);
-		for (double d = 0; d <= length; d += 0.5) {
-			loc.add(opposite);
-			playFirebendingParticles(loc, amount, spread, spread, spread);
-		}
-		
-		bPlayer.addCooldown(getName() + "Step", usageCooldown);
-		steps--;
+		maxSteps--;
 	}
 	
 	@Override
@@ -142,7 +126,7 @@ public class JetStepping extends FireAbility implements AddonAbility, ComboAbili
 
 	@Override
 	public boolean isHarmlessAbility() {
-		return false;
+		return true;
 	}
 
 	@Override
@@ -153,6 +137,17 @@ public class JetStepping extends FireAbility implements AddonAbility, ComboAbili
 	@Override
 	public String getName() {
 		return "JetStepping";
+	}
+	
+	@Override
+	public String getDescription() {
+		return "This combo allows a firebender to propel themselves in small bursts that push the bender's feet upwards, acting as steps.";
+	}
+	
+	@Override
+	public String getInstructions() {
+		return "(Activation) FireJet (Tap sneak) > FireJet (Tap sneak) > Blaze (Left-click)"
+				+ "\nRepeatedly left-click with Blaze to keep stepping.";
 	}
 
 	@Override
@@ -168,9 +163,11 @@ public class JetStepping extends FireAbility implements AddonAbility, ComboAbili
 	@Override
 	public ArrayList<AbilityInformation> getCombination() {
 		ArrayList<AbilityInformation> combo = new ArrayList<>();
-		combo.add(new AbilityInformation("FireBlast", ClickType.SHIFT_DOWN));
+		combo.add(new AbilityInformation("FireJet", ClickType.SHIFT_DOWN));
 		combo.add(new AbilityInformation("FireJet", ClickType.SHIFT_UP));
-		combo.add(new AbilityInformation("FireJet", ClickType.LEFT_CLICK));
+		combo.add(new AbilityInformation("FireJet", ClickType.SHIFT_DOWN));
+		combo.add(new AbilityInformation("FireJet", ClickType.SHIFT_UP));
+		combo.add(new AbilityInformation("Blaze", ClickType.LEFT_CLICK));
 		return combo;
 	}
 
@@ -194,7 +191,7 @@ public class JetStepping extends FireAbility implements AddonAbility, ComboAbili
 	
 	@Override
 	public boolean isEnabled() {
-		return false;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Fire.JetStepping.Enabled");
 	}
 
 }

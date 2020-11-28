@@ -17,24 +17,14 @@ public class AirVortex extends AirAbility implements AddonAbility, ComboAbility 
 	public AirVortex(Player player) {
 		super(player);
 	}
-	
+
 	@Override
 	public void progress() {
 	}
 
 	@Override
-	public long getCooldown() {
-		return 0;
-	}
-
-	@Override
-	public Location getLocation() {
-		return null;
-	}
-
-	@Override
-	public String getName() {
-		return "AirVortex";
+	public boolean isSneakAbility() {
+		return false;
 	}
 
 	@Override
@@ -43,8 +33,18 @@ public class AirVortex extends AirAbility implements AddonAbility, ComboAbility 
 	}
 
 	@Override
-	public boolean isSneakAbility() {
-		return false;
+	public long getCooldown() {
+		return 0;
+	}
+
+	@Override
+	public String getName() {
+		return "AirVortex";
+	}
+
+	@Override
+	public Location getLocation() {
+		return null;
 	}
 
 	@Override
@@ -58,6 +58,14 @@ public class AirVortex extends AirAbility implements AddonAbility, ComboAbility 
 	}
 
 	@Override
+	public void load() {
+	}
+
+	@Override
+	public void stop() {
+	}
+
+	@Override
 	public String getAuthor() {
 		return Azutoru.az.dev();
 	}
@@ -65,14 +73,6 @@ public class AirVortex extends AirAbility implements AddonAbility, ComboAbility 
 	@Override
 	public String getVersion() {
 		return Azutoru.az.version();
-	}
-
-	@Override
-	public void load() {
-	}
-
-	@Override
-	public void stop() {
 	}
 	
 	@Override

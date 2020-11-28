@@ -20,12 +20,16 @@ permissions:
       bending.ability.sandstorm: true
       bending.ability.metalcables: true
       bending.ability.lavawalk: true
+      bending.ability.earthshield: true
       bending.ability.dustdevil: true
       bending.ability.dustdevilrush: true
       bending.ability.duststepping: true
+      bending.ability.crumble: true
       bending.ability.earthshift: true
-      bending.ability.earthlevitation: true
+      bending.ability.earthtent: true
       bending.ability.glassshards: true
+      bending.ability.earthridge: true
+      bending.ability.raiseearth: true
       bending.ability.electrify: true
       bending.ability.evaporate: true
       bending.ability.fireaugmentation: true
@@ -42,6 +46,7 @@ permissions:
       bending.ability.meteor: true
       bending.ability.shot: true
       bending.ability.iceshots: true
+      bending.ability.miststepping: true
       bending.ability.iceridge: true
       bending.ability.razorrings: true
       bending.ability.waterpinwheel: true

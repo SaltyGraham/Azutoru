@@ -34,7 +34,7 @@ public class FireAugmentation extends FireAbility implements AddonAbility, Combo
 	private Block sourceBlock;
 	private Location location, destination;
 	private Vector direction;
-	private boolean clicked, launching, pulling;
+	private boolean launching, pulling;
 	private ArrayList<BukkitRunnable> tasks;
 	
 	public FireAugmentation(Player player) {
@@ -56,8 +56,7 @@ public class FireAugmentation extends FireAbility implements AddonAbility, Combo
 		
 		applyModifiers();
 		
-		clicked = false;
-		launching = false;
+		launching = true;
 		pulling = false;
 		
 		sourceBlock = player.getTargetBlock((HashSet<Material>) null, (int) sourceRange);
@@ -116,12 +115,10 @@ public class FireAugmentation extends FireAbility implements AddonAbility, Combo
 			return;
 		}
 		
-		if (clicked) {
-			progressStream();
-		}
+		progressStream();
 	}
 	
-	public void progressStream() {
+	private void progressStream() {
 		if (launching) {
 			destination = GeneralMethods.getTargetedLocation(player, range, getTransparentMaterials());
 			
@@ -187,11 +184,6 @@ public class FireAugmentation extends FireAbility implements AddonAbility, Combo
 		}
 	}
 	
-	public void onClick() {
-		clicked = true;
-		launching = true;
-	}
-	
 	public void remove() {
 		super.remove();
 		bPlayer.addCooldown(this);
@@ -204,7 +196,7 @@ public class FireAugmentation extends FireAbility implements AddonAbility, Combo
 
 	@Override
 	public Location getLocation() {
-		return location != null ? location : null;
+		return location;
 	}
 
 	@Override
@@ -214,7 +206,7 @@ public class FireAugmentation extends FireAbility implements AddonAbility, Combo
 	
 	@Override
 	public String getDescription() {
-		return "This combo allows a firebender to increase the size of their flames and spread fire wherever they look..";
+		return "This combo allows a firebender to increase the size of their flames and spread fire wherever they look.";
 	}
 	
 	@Override
@@ -242,6 +234,7 @@ public class FireAugmentation extends FireAbility implements AddonAbility, Combo
 		ArrayList<AbilityInformation> combo = new ArrayList<>();
 		combo.add(new AbilityInformation("FireShield", ClickType.SHIFT_DOWN));
 		combo.add(new AbilityInformation("HeatControl", ClickType.SHIFT_UP));
+		combo.add(new AbilityInformation("HeatControl", ClickType.LEFT_CLICK));
 		return combo;
 	}
 
@@ -265,7 +258,7 @@ public class FireAugmentation extends FireAbility implements AddonAbility, Combo
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Fire.FireAugmentation.Enabled");
 	}
 
 }

@@ -52,14 +52,6 @@ public class Parry extends ChiAbility implements AddonAbility {
 		}
 	}
 	
-	@Override
-	public void remove() {
-		super.remove();
-		if (player.isSneaking()) {
-			player.setSneaking(false);
-		}
-	}
-	
 	public void removeWithCooldown() {
 		remove();
 		bPlayer.addCooldown(this);
@@ -118,7 +110,7 @@ public class Parry extends ChiAbility implements AddonAbility {
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Chi.Parry.Enabled");
 	}
 
 }

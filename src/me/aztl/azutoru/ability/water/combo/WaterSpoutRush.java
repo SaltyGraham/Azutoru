@@ -319,6 +319,15 @@ public class WaterSpoutRush extends WaterAbility implements AddonAbility, ComboA
 	public Location getLocation() {
 		return player != null ? player.getLocation() : null;
 	}
+	
+	@Override
+	public List<Location> getLocations() {
+		List<Location> locations = new ArrayList<>();
+		for (TempBlock tb : blocks) {
+			locations.add(tb.getLocation());
+		}
+		return locations;
+	}
 
 	@Override
 	public String getName() {
@@ -381,7 +390,9 @@ public class WaterSpoutRush extends WaterAbility implements AddonAbility, ComboA
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		boolean enabled = Azutoru.az.getConfig().getBoolean("Abilities.Water.WaterSpoutRush.Enabled")
+				&& ProjectKorra.plugin.getConfig().getBoolean("Abilities.Water.WaterSpout.Enabled");
+		return enabled;
 	}
 
 }

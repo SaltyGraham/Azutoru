@@ -125,7 +125,9 @@ public class DustDevilRush extends SandAbility implements AddonAbility, ComboAbi
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		boolean enabled = Azutoru.az.getConfig().getBoolean("Abilities.Earth.DustDevilRush.Enabled")
+				&& Azutoru.az.getConfig().getBoolean("Abilities.Earth.DustDevil.Enabled");
+		return enabled;
 	}
 
 }

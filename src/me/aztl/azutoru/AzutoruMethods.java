@@ -8,6 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
@@ -29,6 +31,150 @@ public class AzutoruMethods {
 		return plugin;
 	}
 	
+	public static void allowFlight(Player player) {
+		if (!player.getAllowFlight()) {
+			player.setAllowFlight(true);
+		}
+		if (!player.isFlying()) {
+			player.setFlying(true);
+		}
+	}
+	
+	public static void removeFlight(Player player) {
+		if (player.getAllowFlight()) {
+			player.setAllowFlight(false);
+		}
+		if (player.isFlying()) {
+			player.setFlying(false);
+		}
+	}
+	
+	public static boolean canPlaceWaterBlock(Block block) {
+		return ElementalAbility.isWater(block) || ElementalAbility.isIce(block) || ElementalAbility.isAir(block.getType());
+	}
+	
+	public static void displayWaterBubble(Location loc) {
+		ParticleEffect.WATER_BUBBLE.display(loc, 1, 0.5, 0.5, 0.5);
+	}
+	
+	public static BlockFace getCardinalDirection(float yaw) {
+		if (yaw >= -135 && yaw <= -45) {
+			return BlockFace.EAST;
+		} else if (yaw >= -45 && yaw <= 45) {
+			return BlockFace.SOUTH;
+		} else if (yaw >= 45 && yaw <= 135) {
+			return BlockFace.WEST;
+		} else {
+			return BlockFace.NORTH;
+		}
+	}
+	
+	public static Vector getFaceDirection(BlockFace face) {
+		switch (face) {
+		case UP:
+			return new Vector(0, 1, 0);
+		case DOWN:
+			return new Vector(0, -1, 0);
+		case NORTH:
+			return new Vector(0, 0, -1);
+		case EAST:
+			return new Vector(1, 0, 0);
+		case SOUTH:
+			return new Vector(0, 0, 1);
+		case WEST:
+			return new Vector(-1, 0, 0);
+		default:
+			return null;
+		}
+	}
+	
+	public static enum Hand {
+		RIGHT, LEFT;
+	}
+	
+	public static Location getHandPos(Player player, Hand hand) {
+		if (hand == Hand.RIGHT) {
+			Location loc = GeneralMethods.getRightSide(player.getLocation(), 0.5).add(0, 1, 0).add(player.getEyeLocation().getDirection().multiply(0.6));
+			loc.setPitch(0);
+			return loc;
+		} else if (hand == Hand.LEFT) {
+			Location loc = GeneralMethods.getLeftSide(player.getLocation(), 0.5).add(0, 1, 0).add(player.getEyeLocation().getDirection().multiply(0.6));
+			loc.setPitch(0);
+			return loc;
+		}
+		return null;
+	}
+	
+	public static List<Location> getLinePoints(Player player, Location startLoc, Location endLoc, int steps) {
+		List<Location> locations = new ArrayList<Location>();
+		Location diff = endLoc.clone().subtract(startLoc);
+		double diffX = diff.getX() / steps;
+		double diffY = diff.getY() / steps;
+		double diffZ = diff.getZ() / steps;
+		Location loc = startLoc.clone();
+		for (int i = 0; i < steps; i++) {
+			loc.add(diffX, diffY, diffZ);
+			loc.setDirection(loc.clone().subtract(player.getEyeLocation()).toVector().normalize());
+			locations.add(loc.clone());
+		}
+		return locations;
+	}
+	
+	public static Location getModifiedLocation(Location location, float yawDiff) {
+		Location loc = location.clone();
+		float yaw = loc.getYaw() + yawDiff;
+		if (yaw < 0) {
+			yaw += 360;
+		} else if (yaw > 360) {
+			yaw -= 360;
+		}
+		
+		loc.setYaw(yaw);
+		
+		return loc;
+	}
+	
+	public static Location getModifiedLocation(Location location, float yawDiff, float newPitch) {
+		Location loc = getModifiedLocation(location.clone(), yawDiff);
+		
+		loc.setPitch(newPitch);
+		
+		return loc;
+	}
+	
+	public static float getOppositeYaw(float yaw) {
+		float opposite = yaw += 180;
+		if (opposite >= 360) {
+			opposite -= 360;
+		}
+		return opposite;
+	}
+	
+	public static Block getTopBlock(Location loc, BlockFace face, int range) {
+		Block currentBlock = loc.getBlock();
+		
+		int i = 0;
+		
+		while (!ElementalAbility.isAir(currentBlock.getType()) && i < range) {
+			Block b = currentBlock.getRelative(face, i);
+			if (ElementalAbility.isAir(b.getType())) {
+				return currentBlock;
+			}
+			currentBlock = b;
+			i++;
+		}
+		
+		while (ElementalAbility.isAir(currentBlock.getType()) && i < range) {
+			Block b = currentBlock.getRelative(face, i);
+			if (!ElementalAbility.isAir(b.getType())) {
+				return b;
+			}
+			i++;
+		}
+		
+		return currentBlock;
+	}
+	
 	public static boolean isDust(Block block) {
 		return block != null ? isDust(block.getType()) : false;
 	}
@@ -37,11 +183,6 @@ public class AzutoruMethods {
 		return Azutoru.az.getConfig().getStringList("Properties.Earth.DustBlocks").contains(material.toString());
 	}
 	
-	/*
-	 * "Ignored" plants are plants that DustDevil skips over while finding its top block.
-	 * This is so DustDevil doesn't cancel when you go over a flower or something,
-	 * and also so that the block data for DustDevil doesn't use a plant.
-	 */
 	public static boolean isIgnoredPlant(Block block) {
 		return block != null ? isIgnoredPlant(block.getType()) : false;
 	}
@@ -89,58 +230,30 @@ public class AzutoruMethods {
 		return ignoredPlants.contains(material.toString());
 	}
 	
-	public static List<EntityType> getNonParryableMobs() {
-		List<EntityType> nonParryables = new ArrayList<>();
-		nonParryables.add(EntityType.CREEPER);
-		nonParryables.add(EntityType.ELDER_GUARDIAN);
-		nonParryables.add(EntityType.ENDER_DRAGON);
-		nonParryables.add(EntityType.GUARDIAN);
-		nonParryables.add(EntityType.HOGLIN);
-		nonParryables.add(EntityType.IRON_GOLEM);
-		nonParryables.add(EntityType.PHANTOM);
-		nonParryables.add(EntityType.POLAR_BEAR);
-		nonParryables.add(EntityType.RAVAGER);
-		nonParryables.add(EntityType.SILVERFISH);
-		nonParryables.add(EntityType.WITHER);
-		nonParryables.add(EntityType.WOLF);
-		return nonParryables;
+    public static boolean isOnGround(Player player) {
+    	Block b = player.getLocation().subtract(0, 0.2, 0).getBlock();
+    	if (GeneralMethods.isSolid(b) && !player.getLocation().getBlock().isLiquid()) {
+    		return true;
+    	}
+    	return false;
+    }
+	
+	public static boolean isNonParryableMob(Entity e) {
+		return e != null ? isNonParryableMob(e.getType()) : false;
 	}
 	
-	public static enum Hand {
-		RIGHT, LEFT;
+	public static boolean isNonParryableMob(EntityType eType) {
+		return Azutoru.az.getConfig().getStringList("Abilities.Chi.Parry.NonParryableMobs").contains(eType.toString());
 	}
 	
-	public static Location getHandPos(Player player, Hand hand) {
-		if (hand == Hand.RIGHT) {
-			Location loc = GeneralMethods.getRightSide(player.getLocation(), 0.5).add(0, 1, 0).add(player.getEyeLocation().getDirection().multiply(0.6));
-			loc.setPitch(0);
-			return loc;
-		} else if (hand == Hand.LEFT) {
-			Location loc = GeneralMethods.getLeftSide(player.getLocation(), 0.5).add(0, 1, 0).add(player.getEyeLocation().getDirection().multiply(0.6));
-			loc.setPitch(0);
-			return loc;
+    public static void revertBlocks(ConcurrentHashMap<Block, TempBlock> affectedBlocks) {
+    	Enumeration<Block> keys = affectedBlocks.keys();
+		while (keys.hasMoreElements()) {
+			Block block = keys.nextElement();
+			affectedBlocks.get(block).revertBlock();
+			affectedBlocks.remove(block);
 		}
-		return null;
-	}
-	
-	public static void displayWaterBubble(Location loc) {
-		ParticleEffect.WATER_BUBBLE.display(loc, 1, 0.5, 0.5, 0.5);
-	}
-	
-	public static List<Location> getLinePoints(Player player, Location startLoc, Location endLoc, int steps) {
-		List<Location> locations = new ArrayList<Location>();
-		Location diff = endLoc.clone().subtract(startLoc);
-		double diffX = diff.getX() / steps;
-		double diffY = diff.getY() / steps;
-		double diffZ = diff.getZ() / steps;
-		Location loc = startLoc.clone();
-		for (int i = 0; i < steps; i++) {
-			loc.add(diffX, diffY, diffZ);
-			loc.setDirection(loc.clone().subtract(player.getEyeLocation()).toVector().normalize());
-			locations.add(loc.clone());
-		}
-		return locations;
-	}
+    }
 	
 	public static Vector rotateAroundAxisX(Vector v, double cos, double sin) {
 		double y = v.getY() * cos - v.getZ() * sin;
@@ -160,51 +273,13 @@ public class AzutoruMethods {
         return v.setX(x).setY(y);
     }
     
-    public static boolean isOnGround(Player player) {
-    	Block b = player.getLocation().subtract(0, 0.2, 0).getBlock();
-    	if (GeneralMethods.isSolid(b) && !player.getLocation().getBlock().isLiquid()) {
-    		return true;
-    	}
-    	return false;
+    public static Vector rotateAroundAxesXZ(Vector v, double degrees) {
+    	Vector rotated = new Vector(-v.getZ(), 0, v.getX());
+    	double radian = Math.toRadians(degrees);
+    	Vector v1 = v.clone().multiply(Math.cos(radian));
+    	Vector v2 = v.clone().crossProduct(rotated);
+    	v2.multiply(Math.sin(radian));
+    	return v1.add(v2);
     }
-    
-    public static void revertBlocks(ConcurrentHashMap<Block, TempBlock> affectedBlocks) {
-    	Enumeration<Block> keys = affectedBlocks.keys();
-		while (keys.hasMoreElements()) {
-			Block block = keys.nextElement();
-			affectedBlocks.get(block).revertBlock();
-			affectedBlocks.remove(block);
-		}
-    }
-    
-	public static boolean canPlaceWaterBlock(Block block) {
-		return ElementalAbility.isWater(block) || ElementalAbility.isIce(block) || ElementalAbility.isAir(block.getType());
-	}
-	
-	public static void allowFlight(Player player) {
-		if (!player.getAllowFlight()) {
-			player.setAllowFlight(true);
-		}
-		if (!player.isFlying()) {
-			player.setFlying(true);
-		}
-	}
-	
-	public static void removeFlight(Player player) {
-		if (player.getAllowFlight()) {
-			player.setAllowFlight(false);
-		}
-		if (player.isFlying()) {
-			player.setFlying(false);
-		}
-	}
-	
-	public static float getOppositeYaw(float yaw) {
-		float opposite = yaw += 180;
-		if (opposite >= 360) {
-			opposite -= 360;
-		}
-		return opposite;
-	}
 	
 }

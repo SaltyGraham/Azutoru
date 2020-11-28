@@ -16,7 +16,6 @@ import org.bukkit.util.Vector;
 import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
-import com.projectkorra.projectkorra.ability.ElementalAbility;
 import com.projectkorra.projectkorra.ability.WaterAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
 import com.projectkorra.projectkorra.util.BlockSource;
@@ -35,12 +34,14 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 
 	private long cooldown, duration;
 	private double sourceRange, speed, hitRadius, damage, range;
+	private float maxAngle;
 	
 	private Location startLoc, endLoc;
 	private int id = 0;
 	private HashMap<Integer, Location> locations;
 	private HashMap<Integer, Vector> directions;
 	private ConcurrentHashMap<Block, TempBlock> affectedBlocks;
+	private List<Location> locList;
 	private boolean clicked, setup, progressing;
 	private long time;
 	
@@ -66,12 +67,14 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 		damage = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterSlash.Damage");
 		range = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterSlash.Range");
 		duration = Azutoru.az.getConfig().getLong("Abilities.Water.WaterSlash.Duration");
+		maxAngle = Azutoru.az.getConfig().getInt("Abilities.Water.WaterSlash.MaxAngle");
 		
 		applyModifiers();
 		
-		locations = new HashMap<Integer, Location>();
-		directions = new HashMap<Integer, Vector>();
-		affectedBlocks = new ConcurrentHashMap<Block, TempBlock>();
+		locations = new HashMap<>();
+		directions = new HashMap<>();
+		affectedBlocks = new ConcurrentHashMap<>();
+		locList = new ArrayList<>();
 		
 		if (sourced) {
 			Block sourceBlock = BlockSource.getWaterSourceBlock(player, sourceRange, ClickType.SHIFT_UP, true, true, true, true, true);
@@ -122,10 +125,10 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 				
 				endLoc = GeneralMethods.getTargetedLocation(player, 3);
 
-				if (Math.abs(endLoc.getYaw() - startLoc.getYaw()) >= 50) {
+				if (Math.abs(endLoc.getYaw() - startLoc.getYaw()) >= maxAngle) {
 					setup = true;
 				}
-				if (Math.abs(endLoc.getPitch() - startLoc.getPitch()) >= 50) {
+				if (Math.abs(endLoc.getPitch() - startLoc.getPitch()) >= maxAngle) {
 					setup = true;
 				}
 				
@@ -149,11 +152,15 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 			}
 			
 			AzutoruMethods.revertBlocks(affectedBlocks);
+			locList.clear();
+			
 			for (Integer i : locations.keySet()) {
 				Block b = locations.get(i).getBlock();
-				if (GeneralMethods.isSolid(b) || ElementalAbility.isLava(b)) {
+				if (GeneralMethods.isSolid(b) || isLava(b)) {
 					continue;
-				} else if (WaterAbility.isWater(b) && !TempBlock.isTempBlock(b)) {
+				} else if (GeneralMethods.checkDiagonalWall(locations.get(i), directions.get(i))) {
+					continue;
+				} else if (isWater(b) && !TempBlock.isTempBlock(b)) {
 					AzutoruMethods.displayWaterBubble(locations.get(i));
 				}
 				
@@ -166,6 +173,7 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 				TempBlock tb = new TempBlock(b, Material.WATER);
 				tb.setRevertTime(50);
 				affectedBlocks.put(b, tb);
+				locList.add(locations.get(i));
 				
 				for (Entity e : GeneralMethods.getEntitiesAroundPoint(locations.get(i), hitRadius)) {
 					if (e instanceof LivingEntity && e.getUniqueId() != player.getUniqueId()) {
@@ -199,6 +207,11 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 	@Override
 	public Location getLocation() {
 		return startLoc;
+	}
+	
+	@Override
+	public List<Location> getLocations() {
+		return locList;
 	}
 
 	@Override
@@ -261,7 +274,7 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Water.WaterSlash.Enabled");
 	}
 
 }

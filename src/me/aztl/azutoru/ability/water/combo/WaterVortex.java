@@ -17,29 +17,9 @@ public class WaterVortex extends WaterAbility implements AddonAbility, ComboAbil
 	public WaterVortex(Player player) {
 		super(player);
 	}
-	
+
 	@Override
 	public void progress() {
-	}
-
-	@Override
-	public long getCooldown() {
-		return 0;
-	}
-
-	@Override
-	public Location getLocation() {
-		return null;
-	}
-
-	@Override
-	public String getName() {
-		return "WaterVortex";
-	}
-
-	@Override
-	public boolean isHarmlessAbility() {
-		return false;
 	}
 
 	@Override
@@ -48,13 +28,41 @@ public class WaterVortex extends WaterAbility implements AddonAbility, ComboAbil
 	}
 
 	@Override
+	public boolean isHarmlessAbility() {
+		return false;
+	}
+
+	@Override
+	public long getCooldown() {
+		return 0;
+	}
+
+	@Override
+	public String getName() {
+		return "WaterVortex";
+	}
+
+	@Override
+	public Location getLocation() {
+		return null;
+	}
+
+	@Override
 	public Object createNewComboInstance(Player player) {
-		return new WaterVortex(player);
+		return null;
 	}
 
 	@Override
 	public ArrayList<AbilityInformation> getCombination() {
 		return null;
+	}
+
+	@Override
+	public void load() {
+	}
+
+	@Override
+	public void stop() {
 	}
 
 	@Override
@@ -65,19 +73,6 @@ public class WaterVortex extends WaterAbility implements AddonAbility, ComboAbil
 	@Override
 	public String getVersion() {
 		return Azutoru.az.version();
-	}
-
-	@Override
-	public void load() {
-	}
-
-	@Override
-	public void stop() {
-	}
-	
-	@Override
-	public boolean isEnabled() {
-		return false;
 	}
 
 }

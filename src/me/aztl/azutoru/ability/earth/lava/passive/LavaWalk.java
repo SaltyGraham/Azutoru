@@ -153,7 +153,7 @@ public class LavaWalk extends LavaAbility implements AddonAbility, PassiveAbilit
 	
 	@Override
 	public boolean isEnabled() {
-		return true;
+		return Azutoru.az.getConfig().getBoolean("Abilities.Earth.LavaWalk.Enabled");
 	}
 
 	@Override
