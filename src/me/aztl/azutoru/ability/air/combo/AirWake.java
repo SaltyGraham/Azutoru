@@ -1,6 +1,7 @@
 package me.aztl.azutoru.ability.air.combo;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
@@ -18,13 +19,15 @@ import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.DamageHandler;
 
 import me.aztl.azutoru.Azutoru;
+import me.aztl.azutoru.AzutoruMethods;
 
 public class AirWake extends AirAbility implements AddonAbility, ComboAbility {
 
 	private long cooldown, duration;
 	private double range, speed, knockback, knockup, damage, hitRadius;
+	private int particleAmount, particleSpread;
 	
-	private Location location, origin, head, lArm, rArm;
+	private Location location, origin;
 	private Vector direction;
 	private double counter = 0;
 	
@@ -43,10 +46,11 @@ public class AirWake extends AirAbility implements AddonAbility, ComboAbility {
 		knockup = Azutoru.az.getConfig().getDouble("Abilities.Air.AirWake.Knockup");
 		damage = Azutoru.az.getConfig().getDouble("Abilities.Air.AirWake.Damage");
 		hitRadius = Azutoru.az.getConfig().getDouble("Abilities.Air.AirWake.HitRadius");
+		particleAmount = Azutoru.az.getConfig().getInt("Abilities.Air.AirWake.ParticleAmount");
+		particleSpread = Azutoru.az.getConfig().getInt("Abilities.Air.AirWake.ParticleSpread");
 		
-		location = player.getLocation();
+		location = player.getEyeLocation();
 		origin = location.clone();
-		head = location.clone().add(0, 1, 0);
 		direction = location.getDirection().multiply(speed);
 		
 		start();
@@ -73,26 +77,23 @@ public class AirWake extends AirAbility implements AddonAbility, ComboAbility {
 		for (int i = 0; i < 2; i++) {
 			if (!isTransparent(location.getBlock().getRelative(BlockFace.DOWN, i))) {
 				location.setPitch(0);
-				Vector newdirection = location.getDirection().multiply(speed);
-				location.add(newdirection);
-				head.add(newdirection);
+				Vector newDirection = location.getDirection().multiply(speed);
+				location.add(newDirection);
 			} else {
 				location.add(direction);
-				head.add(direction);
 			}
+			
 		}
 		
-		lArm = GeneralMethods.getLeftSide(location, 1.5);
-		rArm = GeneralMethods.getRightSide(location, 1.5);
-		displayBody();
-		displayHead();
-		displayLeftArm();
-		displayRightArm();
+		displayWake(location, 0.5, 1.375);
+		displayWake(location.clone().add(0, 1, 0), 0.5, 0.5);
+		displayWake(GeneralMethods.getLeftSide(location, 0.75), 0.125, 0.5);
+		displayWake(GeneralMethods.getRightSide(location, 0.75), 0.125, 0.5);
 		
 		for (Entity entity : GeneralMethods.getEntitiesAroundPoint(location, hitRadius)) {
 			if (entity.getUniqueId() != player.getUniqueId()) {
-				Vector travelVec = GeneralMethods.getDirection(location, location.add(location.getDirection()));
-				entity.setVelocity(travelVec.setY(travelVec.getY() * knockup).multiply(knockback));
+				Vector travelVec = direction.clone().multiply(knockback).setY(direction.getY() * knockup);
+				entity.setVelocity(travelVec);
 				if (entity instanceof LivingEntity) {
 					DamageHandler.damageEntity(entity, damage, this);
 					remove();
@@ -102,63 +103,30 @@ public class AirWake extends AirAbility implements AddonAbility, ComboAbility {
 		}
 	}
 	
-	private void displayBody() {
-		Location loc = location.clone().add(0, 0.5, 0);
-		for (double i = 0; i <= Math.PI; i += Math.PI / 7) {
-			double radius = Math.sin(i);
-			double y = Math.cos(i) * 2;
-			for (double a = 0; a < Math.PI * 2; a += Math.PI / 7) {
-				double x = Math.cos(a) * radius;
-				double z = Math.sin(a) * radius;
-				loc.add(x, y, z);
-				getAirbendingParticles().display(loc, 1);
-				loc.subtract(x, y, z);
+	private void displayWake(Location location, double width, double height) {
+		List<Location> vertices = new ArrayList<>();
+		for (int i = -1; i <= 1; i += 2) {
+			for (int j = -1; j <= 1; j += 2) {
+				vertices.add(GeneralMethods.getLeftSide(location, width * i).add(0, height * j, 0));
 			}
 		}
-	}
-	
-	private void displayHead() {
-		Location loc = head.clone().add(0, 1, 0);
-		for (double i = 0; i <= Math.PI; i += Math.PI / 5) {
-			double radius = Math.sin(i) / 2;
-			double y = Math.cos(i);
-			for (double a = 0; a < Math.PI * 2; a += Math.PI / 5) {
-				double x = Math.cos(a) * radius;
-				double z = Math.sin(a) * radius;
-				loc.add(x, y, z);
-				getAirbendingParticles().display(loc, 1);
-				loc.subtract(x, y, z);
-			}
+		
+		Location bottomRight = vertices.get(0);
+		Location topRight = vertices.get(1);
+		Location bottomLeft = vertices.get(2);
+		Location topLeft = vertices.get(3);
+		
+		for (Location loc : AzutoruMethods.getLinePoints(player, bottomRight, topRight, particleSpread)) {
+			getAirbendingParticles().display(loc, particleAmount);
 		}
-	}
-	
-	private void displayLeftArm() {
-		Location loc = lArm.clone();
-		for (double i = 0; i <= Math.PI; i += Math.PI / 5) {
-			double radius = Math.sin(i) / 2;
-			double y = Math.cos(i) * 2;
-			for (double a = 0; a < Math.PI * 2; a += Math.PI / 5) {
-				double x = Math.cos(a) * radius;
-				double z = Math.sin(a) * radius;
-				loc.add(x, y, z);
-				getAirbendingParticles().display(loc, 1);
-				loc.subtract(x, y, z);
-			}
+		for (Location loc : AzutoruMethods.getLinePoints(player, topRight, topLeft, particleSpread)) {
+			getAirbendingParticles().display(loc, particleAmount);
 		}
-	}
-	
-	private void displayRightArm() {
-		Location loc = rArm.clone();
-		for (double i = 0; i <= Math.PI; i += Math.PI / 5) {
-			double radius = Math.sin(i) / 2;
-			double y = Math.cos(i) * 2;
-			for (double a = 0; a < Math.PI * 2; a += Math.PI / 5) {
-				double x = Math.cos(a) * radius;
-				double z = Math.sin(a) * radius;
-				loc.add(x, y, z);
-				getAirbendingParticles().display(loc, 1);
-				loc.subtract(x, y, z);
-			}
+		for (Location loc : AzutoruMethods.getLinePoints(player, topLeft, bottomLeft, particleSpread)) {
+			getAirbendingParticles().display(loc, particleAmount);
+		}
+		for (Location loc : AzutoruMethods.getLinePoints(player, bottomLeft, bottomRight, particleSpread)) {
+			getAirbendingParticles().display(loc, particleAmount);
 		}
 	}
 

@@ -40,6 +40,7 @@ import com.projectkorra.projectkorra.event.BendingReloadEvent;
 import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.MovementHandler;
 import com.projectkorra.projectkorra.util.TempBlock;
+import com.projectkorra.projectkorra.waterbending.Torrent;
 import com.projectkorra.projectkorra.waterbending.blood.Bloodbending;
 
 import me.aztl.azutoru.ability.air.CloudSurf;
@@ -70,10 +71,12 @@ import me.aztl.azutoru.ability.water.combo.WaterRun;
 import me.aztl.azutoru.ability.water.combo.WaterSlash;
 import me.aztl.azutoru.ability.water.combo.WaterSphere;
 import me.aztl.azutoru.ability.water.combo.WaterSpoutRush;
+import me.aztl.azutoru.ability.water.ice.IceRidge;
 import me.aztl.azutoru.ability.water.ice.combo.IceShots;
 import me.aztl.azutoru.ability.water.ice.combo.MistStepping;
 import me.aztl.azutoru.ability.water.multiability.Transform;
 import me.aztl.azutoru.ability.water.plant.PlantWhip;
+import me.aztl.azutoru.util.TorrentRedirection;
 
 public class AzutoruListener implements Listener {
 
@@ -157,6 +160,8 @@ public class AzutoruListener implements Listener {
 					CoreAbility.getAbility(player, WaterSlash.class).onClick();
 				} else if (abil.equalsIgnoreCase("icespike") && CoreAbility.hasAbility(player, MistStepping.class)) {
 					CoreAbility.getAbility(player, MistStepping.class).step();
+				} else if (abil.equalsIgnoreCase("iceridge") && CoreAbility.hasAbility(player, IceRidge.class)) {
+					CoreAbility.getAbility(player, IceRidge.class).onClick();
 				}
 			}
 			
@@ -280,6 +285,11 @@ public class AzutoruListener implements Listener {
 					new WaterCanvas(player);
 				} else if (abil.equalsIgnoreCase("bloodstrangle")) {
 					new BloodStrangle(player);
+				} else if (abil.equalsIgnoreCase("torrent") && TorrentRedirection.canRedirect(player)) {
+					Torrent to = new Torrent(player, false);
+					to.setFormed(true);
+				} else if (abil.equalsIgnoreCase("iceridge")) {
+					new IceRidge(player);
 				}
 			}
 			
@@ -445,6 +455,7 @@ public class AzutoruListener implements Listener {
 				if (damager.getLocation().distanceSquared(player.getLocation()) < distance) {
 					event.setCancelled(true);
 					CoreAbility.getAbility(player, Parry.class).removeWithCooldown();
+					player.setSneaking(false);
 				}
 			}
 		}

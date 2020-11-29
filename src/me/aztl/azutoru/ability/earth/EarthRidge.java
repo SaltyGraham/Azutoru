@@ -82,8 +82,8 @@ public class EarthRidge extends EarthAbility implements AddonAbility {
 		if (sourceBlock.getType() == Material.STONE) tempMaterial = Material.COBBLESTONE;
 		sourceTempBlock = new TempBlock(sourceBlock, tempMaterial);
 		
-		origin = sourceBlock.getLocation();
-		location = origin.clone().add(AzutoruMethods.getFaceDirection(face));
+		origin = sourceBlock.getLocation().add(AzutoruMethods.getFaceDirection(face));
+		location = origin.clone();
 		direction = GeneralMethods.getDirection(origin, GeneralMethods.getTargetedLocation(player, range)).normalize();
 		locations = new ArrayList<>();
 		affectedEntities = new HashSet<>();
@@ -155,9 +155,9 @@ public class EarthRidge extends EarthAbility implements AddonAbility {
 			direction.setX(0).normalize();
 		}
 		
-		location.add(direction.clone());
+		location.add(direction);
 		
-		if (!isTransparent(location.getBlock().getRelative(BlockFace.UP))) {
+		if (!isTransparent(location.getBlock())) {
 			location.add(AzutoruMethods.getFaceDirection(face));
 		}
 		
@@ -167,7 +167,7 @@ public class EarthRidge extends EarthAbility implements AddonAbility {
 			return;
 		}
 		
-		int currentHeight = getRandomNumberInRange(minHeight, maxHeight);
+		int currentHeight = AzutoruMethods.getRandomNumberInRange(minHeight, maxHeight);
 		new RaiseEarth(player, topBlock, face, currentHeight, null);
 		
 		updateLocations(currentHeight);
@@ -184,10 +184,6 @@ public class EarthRidge extends EarthAbility implements AddonAbility {
 				}
 			}
 		}
-	}
-	
-	public static int getRandomNumberInRange(int min, int max) {
-		return (int) Math.round(Math.random() * (max - min) + min);
 	}
 	
 	public void onClick() {

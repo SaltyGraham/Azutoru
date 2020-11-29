@@ -65,7 +65,7 @@ public class AirCocoon extends AirAbility implements AddonAbility, ComboAbility 
 		
 		for (Entity entity : GeneralMethods.getEntitiesAroundPoint(player.getLocation().add(0, 0.5, 0), 1)) {
 			if (entity.getUniqueId() != player.getUniqueId()) {
-				Vector ortho = GeneralMethods.getOrthogonalVector(entity.getLocation().getDirection(), 90, 1);
+				Vector ortho = GeneralMethods.getOrthogonalVector(entity.getVelocity(), 90, 1);
 				entity.setVelocity(ortho);
 			}
 		}

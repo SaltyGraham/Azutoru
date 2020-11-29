@@ -150,6 +150,10 @@ public class AzutoruMethods {
 		return opposite;
 	}
 	
+	public static int getRandomNumberInRange(int min, int max) {
+		return (int) Math.round(Math.random() * (max - min) + min);
+	}
+	
 	public static Block getTopBlock(Location loc, BlockFace face, int range) {
 		Block currentBlock = loc.getBlock();
 		

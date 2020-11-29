@@ -24,6 +24,7 @@ import com.projectkorra.projectkorra.util.DamageHandler;
 
 import me.aztl.azutoru.Azutoru;
 import me.aztl.azutoru.AzutoruMethods;
+import me.aztl.azutoru.ability.fire.FireDaggers;
 
 public class FireBlade extends FireAbility implements AddonAbility, ComboAbility {
 
@@ -185,7 +186,7 @@ public class FireBlade extends FireAbility implements AddonAbility, ComboAbility
 				
 				for (Entity e : GeneralMethods.getEntitiesAroundPoint(locations.get(i), hitRadius)) {
 					if (e instanceof LivingEntity && e.getUniqueId() != player.getUniqueId()) {
-						DamageHandler.damageEntity(e, damage, this);
+						DamageHandler.damageEntity(e, damage, (hasAbility(player, FireDaggers.class) ? getAbility(player, FireDaggers.class) : this));
 						remove();
 						return;
 					}

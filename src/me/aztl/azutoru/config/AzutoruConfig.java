@@ -283,6 +283,9 @@ public class AzutoruConfig {
 		c.addDefault("Properties.PreventSuffocation.AllIceBlocks", false);
 		c.addDefault("Properties.PreventSuffocation.AllEarthBlocks", false);
 		
+		c.addDefault("Properties.TorrentRedirection.DetectionRange", 10);
+		c.addDefault("Properties.TorrentRedirection.DetectionRadius", 5);
+		
 		// ABILITIES
 		
 		// AIR
@@ -317,6 +320,8 @@ public class AzutoruConfig {
 		c.addDefault("Abilities.Air.AirWake.Range", 20);
 		c.addDefault("Abilities.Air.AirWake.Cooldown", 8000);
 		c.addDefault("Abilities.Air.AirWake.Duration", 3000);
+		c.addDefault("Abilities.Air.AirWake.ParticleAmount", 1);
+		c.addDefault("Abilities.Air.AirWake.ParticleSpread", 6);
 		
 		// CloudSurf
 		c.addDefault("Abilities.Air.CloudSurf.Enabled", true);
@@ -387,6 +392,18 @@ public class AzutoruConfig {
 		c.addDefault("Abilities.Water.Hexapod.Wings.RespectRegions", false);
 		
 		// IceRidge
+		c.addDefault("Abilities.Water.IceRidge.Enabled", true);
+		c.addDefault("Abilities.Water.IceRidge.Range", 20);
+		c.addDefault("Abilities.Water.IceRidge.Damage", 3);
+		c.addDefault("Abilities.Water.IceRidge.Knockback", 1);
+		c.addDefault("Abilities.Water.IceRidge.Knockup", 2);
+		c.addDefault("Abilities.Water.IceRidge.MinHeight", 2);
+		c.addDefault("Abilities.Water.IceRidge.MaxHeight", 4);
+		c.addDefault("Abilities.Water.IceRidge.HitRadius", 1.5);
+		c.addDefault("Abilities.Water.IceRidge.SourceRange", 7);
+		c.addDefault("Abilities.Water.IceRidge.Cooldown", 8000);
+		c.addDefault("Abilities.Water.IceRidge.Duration", 5000);
+		c.addDefault("Abilities.Water.IceRidge.RevertTime", 300000);
 		
 		// IceShots
 		c.addDefault("Abilities.Water.IceShots.Enabled", true);
@@ -675,9 +692,14 @@ public class AzutoruConfig {
 		c.addDefault("Abilities.Fire.FireStreams.Damage", 4);
 		c.addDefault("Abilities.Fire.FireStreams.Cooldown", 10000);
 		c.addDefault("Abilities.Fire.FireStreams.Range", 40);
-		c.addDefault("Abilities.Fire.FireStreams.HitRadius", 1);
+		c.addDefault("Abilities.Fire.FireStreams.HitRadius", 2);
 		c.addDefault("Abilities.Fire.FireStreams.Speed", 2);
 		c.addDefault("Abilities.Fire.FireStreams.ExplosionRadius", 2);
+		c.addDefault("Abilities.Fire.FireStreams.ParticleAmount", 3);
+		c.addDefault("Abilities.Fire.FireStreams.ParticleSpread", 0.2);
+		c.addDefault("Abilities.Fire.FireStreams.Helix.Radius", 2);
+		c.addDefault("Abilities.Fire.FireStreams.Helix.ParticleAmount", 1);
+		c.addDefault("Abilities.Fire.FireStreams.Helix.ParticleSpread", 0.1);
 		
 		// FireWhips
 		

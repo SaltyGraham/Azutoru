@@ -27,7 +27,8 @@ import me.aztl.azutoru.Azutoru;
 public class FireStreams extends FireAbility implements AddonAbility, ComboAbility {
 
 	private long cooldown;
-	private double damage, range, hitRadius, speed, explosionRadius;
+	private double damage, range, hitRadius, speed, explosionRadius, particleSpread, helixRadius, helixParticleSpread;
+	private int particleAmount, helixParticleAmount;
 	
 	private Location location, origin;
 	private Vector direction;
@@ -51,6 +52,11 @@ public class FireStreams extends FireAbility implements AddonAbility, ComboAbili
 		hitRadius = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireStreams.HitRadius");
 		speed = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireStreams.Speed");
 		explosionRadius = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireStreams.ExplosionRadius");
+		particleAmount = Azutoru.az.getConfig().getInt("Abilities.Fire.FireStreams.ParticleAmount");
+		particleSpread = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireStreams.ParticleSpread");
+		helixRadius = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireStreams.Helix.Radius");
+		helixParticleAmount = Azutoru.az.getConfig().getInt("Abilities.Fire.FireStreams.Helix.ParticleAmount");
+		helixParticleSpread = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireStreams.Helix.ParticleSpread");
 		
 		applyModifiers();
 		
@@ -123,12 +129,12 @@ public class FireStreams extends FireAbility implements AddonAbility, ComboAbili
 		for (int i = 0; i < 3; i++) {
 			location.add(direction.clone().multiply(speed / 3));
 			
-			playFirebendingParticles(location, 3, 0.2, 0.2, 0.2);
+			playFirebendingParticles(location, particleAmount, particleSpread, particleSpread, particleSpread);
 			
 			for (int j = 0; j < 2; j++) {
-				Vector ortho = GeneralMethods.getOrthogonalVector(direction, rotation + 180 * j, 1);
+				Vector ortho = GeneralMethods.getOrthogonalVector(direction, rotation + 180 * j, helixRadius);
 				Location helixLoc = location.clone().add(ortho);
-				playFirebendingParticles(helixLoc, 1, 0, 0, 0);
+				playFirebendingParticles(helixLoc, helixParticleAmount, helixParticleSpread, helixParticleSpread, helixParticleSpread);
 			}
 			rotation += 10;
 			
