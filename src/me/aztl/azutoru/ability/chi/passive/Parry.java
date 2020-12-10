@@ -5,13 +5,17 @@ import org.bukkit.entity.Player;
 
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.ChiAbility;
+import com.projectkorra.projectkorra.attribute.Attribute;
 
 import me.aztl.azutoru.Azutoru;
 import me.aztl.azutoru.AzutoruMethods;
 
 public class Parry extends ChiAbility implements AddonAbility {
 
-	private long cooldown, duration;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
 	
 	public Parry(Player player) {
 		super(player);

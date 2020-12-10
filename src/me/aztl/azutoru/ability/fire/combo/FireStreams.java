@@ -17,6 +17,7 @@ import com.projectkorra.projectkorra.ability.BlueFireAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.FireAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.firebending.FireShield;
 import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.DamageHandler;
@@ -26,9 +27,24 @@ import me.aztl.azutoru.Azutoru;
 
 public class FireStreams extends FireAbility implements AddonAbility, ComboAbility {
 
+	@Attribute(Attribute.COOLDOWN)
 	private long cooldown;
-	private double damage, range, hitRadius, speed, explosionRadius, particleSpread, helixRadius, helixParticleSpread;
-	private int particleAmount, helixParticleAmount;
+	@Attribute(Attribute.DAMAGE)
+	private double damage;
+	@Attribute(Attribute.RANGE)
+	private double range;
+	@Attribute(Attribute.RADIUS)
+	private double hitRadius;
+	@Attribute(Attribute.SPEED)
+	private double speed;
+	@Attribute(Attribute.RADIUS)
+	private double explosionRadius;
+	private double particleSpread;
+	@Attribute(Attribute.RADIUS)
+	private double helixRadius;
+	private double helixParticleSpread;
+	private int particleAmount;
+	private int helixParticleAmount;
 	
 	private Location location, origin;
 	private Vector direction;

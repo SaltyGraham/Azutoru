@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.ChiAbility;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.ActionBar;
 import com.projectkorra.projectkorra.util.TimeUtil;
 
@@ -18,7 +19,9 @@ public class Duck extends ChiAbility implements AddonAbility {
 		FIRST_SNEAK, FIRST_RELEASE, SECOND_SNEAK;
 	}
 	
+	@Attribute(Attribute.COOLDOWN)
 	private long cooldown;
+	@Attribute(Attribute.DURATION)
 	private long duration;
 	
 	private boolean ableToDuck;

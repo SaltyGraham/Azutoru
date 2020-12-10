@@ -16,6 +16,7 @@ import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.EarthAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.TempBlock;
 
@@ -24,8 +25,12 @@ import me.aztl.azutoru.AzutoruMethods;
 
 public class EarthTent extends EarthAbility implements AddonAbility, ComboAbility {
 	
-	private long cooldown, revertTime;
-	private int height, width, length;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	private long revertTime;
+	private int height;
+	private int width;
+	private int length;
 	
 	private Location location;
 	private static Set<TempBlock> affectedBlocks = new HashSet<>();

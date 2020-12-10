@@ -15,14 +15,23 @@ import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.AirAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.ClickType;
 
 import me.aztl.azutoru.Azutoru;
 
 public class AirCushion extends AirAbility implements AddonAbility, ComboAbility {
 
-	private long cooldown, duration;
-	private double range, radius, speed;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
+	@Attribute(Attribute.RANGE)
+	private double range;
+	@Attribute(Attribute.RADIUS)
+	private double radius;
+	@Attribute(Attribute.SPEED)
+	private double speed;
 	
 	private Location location, origin, center;
 	private Vector direction;

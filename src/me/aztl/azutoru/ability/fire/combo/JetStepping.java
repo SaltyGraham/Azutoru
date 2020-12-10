@@ -12,6 +12,7 @@ import com.projectkorra.projectkorra.ability.BlueFireAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.FireAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.ClickType;
 
 import me.aztl.azutoru.Azutoru;
@@ -19,8 +20,14 @@ import me.aztl.azutoru.ability.fire.FireJet;
 
 public class JetStepping extends FireAbility implements AddonAbility, ComboAbility {
 
-	private long cooldown, duration;
-	private double horizontal, vertical;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
+	@Attribute("HorizontalPush")
+	private double horizontal;
+	@Attribute("VerticalPush")
+	private double vertical;
 	private int maxSteps;
 	
 	public JetStepping(Player player) {

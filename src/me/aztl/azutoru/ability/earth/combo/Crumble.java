@@ -20,6 +20,7 @@ import com.projectkorra.projectkorra.ability.CoreAbility;
 import com.projectkorra.projectkorra.ability.EarthAbility;
 import com.projectkorra.projectkorra.ability.util.Collision;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.earthbending.EarthBlast;
 import com.projectkorra.projectkorra.earthbending.EarthSmash;
 import com.projectkorra.projectkorra.util.ClickType;
@@ -32,8 +33,12 @@ import me.aztl.azutoru.ability.earth.RaiseEarth.Column;
 
 public class Crumble extends EarthAbility implements AddonAbility, ComboAbility {
 	
+	@Attribute(Attribute.COOLDOWN)
 	private long cooldown;
-	private double range, detectionRadius;
+	@Attribute(Attribute.RANGE)
+	private double range;
+	@Attribute(Attribute.RADIUS)
+	private double detectionRadius;
 	private static double hitRadius = Azutoru.az.getConfig().getDouble("Abilities.Earth.Crumble.HitRadius");
 	private static double damage = Azutoru.az.getConfig().getDouble("Abilities.Earth.Crumble.Damage");
 	private int maxBlasts;

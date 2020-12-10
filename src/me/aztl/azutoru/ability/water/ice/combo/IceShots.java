@@ -17,6 +17,7 @@ import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.ElementalAbility;
 import com.projectkorra.projectkorra.ability.IceAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.BlockSource;
 import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.TempBlock;
@@ -34,8 +35,21 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 		RISE, TOWARD_PLAYER, CIRCLE;
 	}
 	
-	private long cooldown, duration;
-	private double sourceRange, range, damage, hitRadius, ringRadius, speed;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
+	@Attribute(Attribute.SELECT_RANGE)
+	private double sourceRange;
+	@Attribute(Attribute.RANGE)
+	private double range;
+	@Attribute(Attribute.DAMAGE)
+	private double damage;
+	@Attribute(Attribute.RADIUS)
+	private double hitRadius;
+	private double ringRadius;
+	@Attribute(Attribute.SPEED)
+	private double speed;
 	private int maxIceShots;
 	
 	private Block sourceBlock;

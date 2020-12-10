@@ -10,6 +10,7 @@ import org.bukkit.util.Vector;
 
 import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.DamageHandler;
 import com.projectkorra.projectkorra.util.ParticleEffect;
 
@@ -19,8 +20,20 @@ import me.aztl.azutoru.util.GlassAbility;
 
 public class GlassShards extends GlassAbility implements AddonAbility {
 
-	private long cooldown, duration;
-	private double sourceRange, damage, speed, range, hitRadius;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
+	@Attribute(Attribute.SELECT_RANGE)
+	private double sourceRange;
+	@Attribute(Attribute.DAMAGE)
+	private double damage;
+	@Attribute(Attribute.SPEED)
+	private double speed;
+	@Attribute(Attribute.RANGE)
+	private double range;
+	@Attribute(Attribute.RADIUS)
+	private double hitRadius;
 	private int remaining;
 	
 	private Material glassType;

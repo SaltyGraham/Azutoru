@@ -18,6 +18,7 @@ import com.projectkorra.projectkorra.ability.BlueFireAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.FireAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.firebending.FireShield;
 import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.DamageHandler;
@@ -28,8 +29,18 @@ import me.aztl.azutoru.ability.fire.FireDaggers;
 
 public class FireBlade extends FireAbility implements AddonAbility, ComboAbility {
 
-	private long cooldown, duration;
-	private double speed, hitRadius, damage, range;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
+	@Attribute(Attribute.SPEED)
+	private double speed;
+	@Attribute(Attribute.RADIUS)
+	private double hitRadius;
+	@Attribute(Attribute.DAMAGE)
+	private double damage;
+	@Attribute(Attribute.RANGE)
+	private double range;
 	private float maxAngle;
 	
 	private Location startLoc, endLoc;

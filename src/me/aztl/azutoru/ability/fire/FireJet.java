@@ -21,6 +21,7 @@ import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.BlueFireAbility;
 import com.projectkorra.projectkorra.ability.FireAbility;
 import com.projectkorra.projectkorra.airbending.AirSpout;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.firebending.util.FireDamageTimer;
 import com.projectkorra.projectkorra.util.ActionBar;
 import com.projectkorra.projectkorra.util.ClickType;
@@ -49,26 +50,52 @@ public class FireJet extends FireAbility implements AddonAbility {
 		BLAZE; // Using JetBlaze
 	}
 	
-	private long cooldown, duration, time;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
+	@Attribute(Attribute.SPEED)
 	private double propelSpeed;
+	@Attribute(Attribute.DURATION)
 	private long propelDuration;
-	private double skiSpeed, skiTurningSpeed;
+	@Attribute(Attribute.SPEED)
+	private double skiSpeed;
+	@Attribute(Attribute.SPEED)
+	private double skiTurningSpeed;
+	@Attribute(Attribute.DURATION)
 	private long skiDuration;
-	private double hoverSpeed, driftSpeed;
-	private long hoverDuration, recoveryDuration, recoveryCooldown;
-	private boolean skiEnabled, hoverEnabled, driftEnabled, recoveryEnabled;
+	@Attribute(Attribute.SPEED)
+	private double hoverSpeed;
+	@Attribute(Attribute.SPEED)
+	private double driftSpeed;
+	@Attribute(Attribute.DURATION)
+	private long hoverDuration;
+	@Attribute(Attribute.DURATION)
+	private long recoveryDuration;
+	@Attribute(Attribute.COOLDOWN)
+	private long recoveryCooldown;
 	private int particleAmount;
-	private double particleSpread, length;
+	private double particleSpread;
+	private double length;
 	private double onSlotModifier;
-	private double health, damageThreshold;
-	private double blastSpeedMod, blazeSpeedMod;
-	private double blazeHitRadius, blazeDamage;
+	@Attribute(Attribute.DAMAGE + "Threshold")
+	private double damageThreshold;
+	private double blastSpeedMod;
+	private double blazeSpeedMod;
+	@Attribute(Attribute.RADIUS)
+	private double blazeHitRadius;
+	@Attribute(Attribute.DAMAGE)
+	private double blazeDamage;
+	@Attribute(Attribute.FIRE_TICK)
 	private int blazeFireTicks;
-	private float yaw, pitch, initFlySpeed;
+	private boolean skiEnabled, hoverEnabled, driftEnabled, recoveryEnabled;
 	
 	private Location location, origin, right, left;
 	private Vector direction;
 	private int counter = 0;
+	private long time;
+	private float yaw, pitch, initFlySpeed;
+	private double health;
 	private World world;
 	private boolean avatarState, isOnSlot, recovery;
 	private JetState state;

@@ -15,6 +15,7 @@ import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.BlueFireAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.firebending.FireShield;
 import com.projectkorra.projectkorra.firebending.util.FireDamageTimer;
 import com.projectkorra.projectkorra.util.ClickType;
@@ -23,8 +24,18 @@ import me.aztl.azutoru.Azutoru;
 
 public class Evaporate extends BlueFireAbility implements AddonAbility, ComboAbility {
 
-	private long cooldown, duration;
-	private double shieldRadius, particleSpread, speed, radiusIncreaseRate, collisionRadius;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
+	@Attribute(Attribute.RADIUS)
+	private double shieldRadius;
+	private double particleSpread;
+	@Attribute(Attribute.SPEED)
+	private double speed;
+	private double radiusIncreaseRate;
+	@Attribute(Attribute.RADIUS)
+	private double collisionRadius;
 	private int particleAmount;
 	
 	private Location location;

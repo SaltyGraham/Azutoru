@@ -12,13 +12,18 @@ import org.bukkit.util.Vector;
 import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.EarthAbility;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.earthbending.EarthSmash;
 
 import me.aztl.azutoru.Azutoru;
 
 public class EarthShield extends EarthAbility implements AddonAbility {
 
-	private long cooldown, duration;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
+	@Attribute(Attribute.RADIUS)
 	private double blockRadius;
 	
 	private Set<FallingBlock> affectedBlocks;

@@ -13,7 +13,6 @@ import com.projectkorra.projectkorra.ability.CoreAbility;
 import me.aztl.azutoru.ability.earth.RaiseEarth;
 import me.aztl.azutoru.config.AzutoruConfig;
 import me.aztl.azutoru.manager.AzutoruManager;
-import me.aztl.azutoru.manager.ReversionManager;
 
 public class Azutoru extends JavaPlugin {
 	
@@ -31,7 +30,6 @@ public class Azutoru extends JavaPlugin {
 		CoreAbility.registerPluginAbilities(this, "me.aztl.azutoru.ability");
 		getServer().getPluginManager().registerEvents(new AzutoruListener(this), this);
 		getServer().getScheduler().scheduleSyncRepeatingTask(this, new AzutoruManager(this), 0, 1);
-		getServer().getScheduler().scheduleSyncRepeatingTask(this, new ReversionManager(this), 0, 1);
 		methods = new AzutoruMethods(this);
 		
 		glassElement = new SubElement("Glass", Element.EARTH, ElementType.BENDING, this) {

@@ -12,6 +12,7 @@ import com.projectkorra.projectkorra.ability.BlueFireAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.FireAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.ParticleEffect;
 
@@ -20,7 +21,10 @@ import me.aztl.azutoru.ability.fire.FireJet;
 
 public class JetBlaze extends FireAbility implements AddonAbility, ComboAbility {
 
-	private long cooldown, duration;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
 	private int particleAmount;
 	private double particleSpread;
 	

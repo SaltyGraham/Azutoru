@@ -5,6 +5,7 @@ import org.bukkit.entity.Player;
 
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.AirAbility;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.ParticleEffect;
 
 import me.aztl.azutoru.Azutoru;
@@ -12,8 +13,13 @@ import me.aztl.azutoru.AzutoruMethods;
 
 public class CloudSurf extends AirAbility implements AddonAbility {
 
-	private long cooldown, duration;
-	private boolean forceCloudParticles, allowSneakMoves;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
+	private boolean forceCloudParticles;
+	private boolean allowSneakMoves;
+	@Attribute(Attribute.DAMAGE + "Threshold")
 	private double damageThreshold;
 	
 	private Location cloudLoc;

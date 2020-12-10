@@ -12,6 +12,7 @@ import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.WaterAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.ParticleEffect;
 import com.projectkorra.projectkorra.util.TempBlock;
@@ -22,9 +23,16 @@ import me.aztl.azutoru.AzutoruMethods;
 
 public class WaterRun extends WaterAbility implements AddonAbility, ComboAbility {
 
-	private double speed, health, damageThreshold;
-	private long cooldown, duration;
+	@Attribute(Attribute.SPEED)
+	private double speed;
+	@Attribute(Attribute.DAMAGE + "Threshold")
+	private double damageThreshold;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
 	
+	private double health;
 	private Block topBlock, headBlock;
 	private boolean surfaced;
 	

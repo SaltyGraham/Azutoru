@@ -22,6 +22,7 @@ import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.CoreAbility;
 import com.projectkorra.projectkorra.ability.EarthAbility;
 import com.projectkorra.projectkorra.ability.util.Collision;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.earthbending.EarthSmash;
 import com.projectkorra.projectkorra.earthbending.EarthSmash.State;
 import com.projectkorra.projectkorra.firebending.FireBlastCharged;
@@ -47,9 +48,26 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 		WALL;
 	}
 	
-	private long cooldown, throwCooldown;
-	private double sourceRange, range, hitRadius, damage, knockback;
-	private int height, speed, width;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.COOLDOWN)
+	private long throwCooldown;
+	@Attribute(Attribute.SELECT_RANGE)
+	private double sourceRange;
+	@Attribute(Attribute.RANGE)
+	private double range;
+	@Attribute(Attribute.RADIUS)
+	private double hitRadius;
+	@Attribute(Attribute.DAMAGE)
+	private double damage;
+	@Attribute(Attribute.KNOCKBACK)
+	private double knockback;
+	@Attribute(Attribute.HEIGHT)
+	private int height;
+	@Attribute(Attribute.SPEED)
+	private int speed;
+	@Attribute(Attribute.WIDTH)
+	private int width;
 	private boolean throwEnabled;
 	private static double collisionRadius = Azutoru.az.getConfig().getDouble("Abilities.Earth.RaiseEarth.CollisionRadius");
 
@@ -562,20 +580,23 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 	}
 	
 	public void removeAllColumns() {
-		removeAllColumns(true);
+		removeAllColumns(true, true);
 	}
 	
 	public void removeAllColumns(boolean crumble) {
+		removeAllColumns(crumble, true);
+	}
+	
+	public void removeAllColumns(boolean crumble, boolean revert) {
 		if (columnsByInstance.get(instance) != null) {
 			for (Column c : columnsByInstance.get(instance)) {
 				for (Block b : c.getBlocks()) {
-					revertBlock(b);
-					if (crumble) {
+					if (revert)
+						revertBlock(b);
+					if (crumble)
 						playCrumbleEffect(b.getLocation().add(0.5, 0.5, 0.5));
-					}
-					if (affectedBlocks.containsKey(b)) {
+					if (affectedBlocks.containsKey(b))
 						affectedBlocks.remove(b);
-					}
 				}
 			}
 			columnsByInstance.remove(instance);
@@ -604,6 +625,10 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 		}
 	}
 	
+	public static boolean isRaiseEarthBlock(Block block) {
+		return affectedBlocks.containsKey(block);
+	}
+	
 	public static Map<Block, RaiseEarth> getAffectedBlocks() {
 		return affectedBlocks;
 	}
@@ -618,6 +643,10 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 	
 	public RaiseEarthShape getShape() {
 		return shape;
+	}
+	
+	public BlockFace getFace() {
+		return face;
 	}
 
 	@Override

@@ -17,6 +17,7 @@ import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.WaterAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.BlockSource;
 import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.DamageHandler;
@@ -29,9 +30,21 @@ import me.aztl.azutoru.AzutoruMethods;
 
 public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbility {
 
-	private double sourceRange, speed, range, radius, damage;
+	@Attribute(Attribute.SELECT_RANGE)
+	private double sourceRange;
+	@Attribute(Attribute.SPEED)
+	private double speed;
+	@Attribute(Attribute.RANGE)
+	private double range;
+	@Attribute(Attribute.RADIUS)
+	private double radius;
+	@Attribute(Attribute.DAMAGE)
+	private double damage;
 	private boolean iceSource, plantSource, snowSource, bottleSource;
-	private long cooldown, duration;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
 	
 	private Location location;
 	private Vector direction;

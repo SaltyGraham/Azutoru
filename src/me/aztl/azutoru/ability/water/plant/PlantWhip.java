@@ -15,6 +15,7 @@ import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.PlantAbility;
 import com.projectkorra.projectkorra.ability.WaterAbility;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.DamageHandler;
 import com.projectkorra.projectkorra.util.TempBlock;
 import com.projectkorra.projectkorra.waterbending.plant.PlantRegrowth;
@@ -23,8 +24,24 @@ import me.aztl.azutoru.Azutoru;
 
 public class PlantWhip extends PlantAbility implements AddonAbility {
 
-	private double sourceRange, damage, range, speed, hitRadius, knockback, knockup;
-	private long cooldown, duration;
+	@Attribute(Attribute.SELECT_RANGE)
+	private double sourceRange;
+	@Attribute(Attribute.DAMAGE)
+	private double damage;
+	@Attribute(Attribute.RANGE)
+	private double range;
+	@Attribute(Attribute.SPEED)
+	private double speed;
+	@Attribute(Attribute.RADIUS)
+	private double hitRadius;
+	@Attribute(Attribute.KNOCKBACK)
+	private double knockback;
+	@Attribute(Attribute.KNOCKUP)
+	private double knockup;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
 	
 	private Location origin, location;
 	private Block sourceBlock;

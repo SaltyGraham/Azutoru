@@ -36,6 +36,8 @@ import com.projectkorra.projectkorra.ability.FireAbility;
 import com.projectkorra.projectkorra.ability.WaterAbility;
 import com.projectkorra.projectkorra.ability.util.MultiAbilityManager;
 import com.projectkorra.projectkorra.airbending.Suffocate;
+import com.projectkorra.projectkorra.earthbending.Collapse;
+import com.projectkorra.projectkorra.event.AbilityStartEvent;
 import com.projectkorra.projectkorra.event.BendingReloadEvent;
 import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.MovementHandler;
@@ -51,6 +53,7 @@ import me.aztl.azutoru.ability.chi.passive.Duck;
 import me.aztl.azutoru.ability.chi.passive.Parry;
 import me.aztl.azutoru.ability.earth.EarthRidge;
 import me.aztl.azutoru.ability.earth.RaiseEarth;
+import me.aztl.azutoru.ability.earth.RaiseEarth.Orientation;
 import me.aztl.azutoru.ability.earth.glass.GlassShards;
 import me.aztl.azutoru.ability.earth.lava.passive.LavaWalk;
 import me.aztl.azutoru.ability.earth.passive.EarthShield;
@@ -59,6 +62,7 @@ import me.aztl.azutoru.ability.earth.sand.combo.DustDevilRush;
 import me.aztl.azutoru.ability.earth.sand.combo.DustStepping;
 import me.aztl.azutoru.ability.fire.FireDaggers;
 import me.aztl.azutoru.ability.fire.FireJet;
+import me.aztl.azutoru.ability.fire.FireWhips;
 import me.aztl.azutoru.ability.fire.combo.JetBlast;
 import me.aztl.azutoru.ability.fire.combo.JetBlaze;
 import me.aztl.azutoru.ability.fire.combo.JetStepping;
@@ -221,6 +225,12 @@ public class AzutoruListener implements Listener {
 					}
 				} else if (abil.equalsIgnoreCase("blaze") & CoreAbility.hasAbility(player, JetStepping.class)) {
 					CoreAbility.getAbility(player, JetStepping.class).step();
+				} else if (abil.equalsIgnoreCase("firewhips")) {
+					if (CoreAbility.hasAbility(player, FireWhips.class)) {
+						CoreAbility.getAbility(player, FireWhips.class).onClick();
+					} else {
+						new FireWhips(player);
+					}
 				}
 			}
 		}
@@ -407,6 +417,24 @@ public class AzutoruListener implements Listener {
 						new FireJet(player, ClickType.RIGHT_CLICK);
 					}
 				}
+			}
+		}
+	}
+	
+	@EventHandler
+	public void onAbilityStart(AbilityStartEvent event) {
+		if (event.getAbility() instanceof Collapse) {
+			Collapse collapse = (Collapse) event.getAbility();
+			Block block = collapse.getBlock();
+			if (RaiseEarth.isRaiseEarthBlock(block)) {
+				RaiseEarth re = RaiseEarth.getAffectedBlocks().get(block);
+				if (re.getColumns().get(0).getOrientation() == Orientation.HORIZONTAL || AzutoruMethods.getFaceDirection(re.getFace()).equals(new Vector(0, -1, 0))) {
+					re.removeAllColumns();
+					EarthAbility.playEarthbendingSound(block.getLocation());
+					event.setCancelled(true);
+					return;
+				}
+				re.removeAllColumns(false, false);
 			}
 		}
 	}

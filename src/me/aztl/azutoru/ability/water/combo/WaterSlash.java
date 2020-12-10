@@ -18,6 +18,7 @@ import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.WaterAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.BlockSource;
 import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.DamageHandler;
@@ -32,8 +33,20 @@ import me.aztl.azutoru.AzutoruMethods.Hand;
 
 public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbility {
 
-	private long cooldown, duration;
-	private double sourceRange, speed, hitRadius, damage, range;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
+	@Attribute(Attribute.SELECT_RANGE)
+	private double sourceRange;
+	@Attribute(Attribute.SPEED)
+	private double speed;
+	@Attribute(Attribute.RADIUS)
+	private double hitRadius;
+	@Attribute(Attribute.DAMAGE)
+	private double damage;
+	@Attribute(Attribute.RANGE)
+	private double range;
 	private float maxAngle;
 	
 	private Location startLoc, endLoc;

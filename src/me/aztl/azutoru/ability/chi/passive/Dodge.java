@@ -9,6 +9,7 @@ import com.projectkorra.projectkorra.Element;
 import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.ChiAbility;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.ActionBar;
 import com.projectkorra.projectkorra.util.ParticleEffect;
 import com.projectkorra.projectkorra.util.TimeUtil;
@@ -18,8 +19,12 @@ import me.aztl.azutoru.AzutoruMethods;
 
 public class Dodge extends ChiAbility implements AddonAbility {
 
+	@Attribute(Attribute.COOLDOWN)
 	private long cooldown;
-	private double horizontal, vertical;
+	@Attribute("HorizontalPush")
+	private double horizontal;
+	@Attribute("VerticalPush")
+	private double vertical;
 	
 	private boolean chi, air, fire, earth, water, dodged;
 	

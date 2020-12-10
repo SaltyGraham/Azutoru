@@ -17,6 +17,7 @@ import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.WaterAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.BlockSource;
 import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.DamageHandler;
@@ -29,8 +30,20 @@ import me.aztl.azutoru.Azutoru;
 
 public class RazorRings extends WaterAbility implements AddonAbility, ComboAbility {
 
-	private double damage, range, sourceRange, speed, radiusIncreaseRate;
-	private long cooldown, duration, timeBetweenShots;
+	@Attribute(Attribute.DAMAGE)
+	private double damage;
+	@Attribute(Attribute.RANGE)
+	private double range;
+	@Attribute(Attribute.SELECT_RANGE)
+	private double sourceRange;
+	@Attribute(Attribute.SPEED)
+	private double speed;
+	private double radiusIncreaseRate;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
+	private long timeBetweenShots;
 	private int remainingRings;
 	
 	private Location origin;

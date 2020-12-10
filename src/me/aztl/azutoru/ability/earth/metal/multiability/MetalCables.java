@@ -1,19 +1,15 @@
-package me.aztl.azutoru.ability.earth.metal;
+package me.aztl.azutoru.ability.earth.metal.multiability;
 
 import java.util.ArrayList;
+import java.util.function.Predicate;
 
-import org.bukkit.Color;
 import org.bukkit.Location;
-import org.bukkit.Particle;
-import org.bukkit.Particle.DustOptions;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import com.projectkorra.projectkorra.Element;
-import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
-import com.projectkorra.projectkorra.ability.CoreAbility;
 import com.projectkorra.projectkorra.ability.MetalAbility;
 import com.projectkorra.projectkorra.ability.MultiAbility;
 import com.projectkorra.projectkorra.ability.util.MultiAbilityManager;
@@ -23,30 +19,28 @@ import com.projectkorra.projectkorra.util.ClickType;
 import me.aztl.azutoru.Azutoru;
 import me.aztl.azutoru.AzutoruMethods;
 import me.aztl.azutoru.AzutoruMethods.Hand;
+import me.aztl.azutoru.util.Rope;
 
 public class MetalCables extends MetalAbility implements AddonAbility, MultiAbility {
 
-	public static enum Ability {
+	public static enum CableAbility {
 		GRAPPLE_LEFT, GRAPPLE_RIGHT, GRAPPLE_PULL, GRAB_LEFT, GRAB_RIGHT, GRAB_PULL, LEAP, RETRACT;
 	}
 	
-	public static enum Cable {
-		LEFT, RIGHT;
-	}
-	
-	private long cooldown, duration, usageCooldown;
+	private long cooldown, duration;
 	private int maxUses;
 	@SuppressWarnings("unused")
 	private double grappleRange, grabRange, grabRadius, speed;
 	
 	private World world;
-	private Ability ability;
-	@SuppressWarnings("unused")
-	private Cable cable;
-	@SuppressWarnings("unused")
-	private Location left, right, destination, location;
+	private CableAbility ability;
+	private Rope left, right;
+	private Location leftLoc, rightLoc;
 	private Vector direction;
+	@SuppressWarnings("unused")
 	private boolean leftInUse, rightInUse;
+	@SuppressWarnings("unused")
+	private Predicate<Location> removalPolicy;
 	
 	public MetalCables(Player player, ClickType type) {
 		super(player);
@@ -55,7 +49,7 @@ public class MetalCables extends MetalAbility implements AddonAbility, MultiAbil
 			return;
 		}
 		
-		MetalCables mc = CoreAbility.getAbility(player, MetalCables.class);
+		MetalCables mc = getAbility(player, MetalCables.class);
 		if (mc != null) {
 			mc.activate(player.getInventory().getHeldItemSlot(), type);
 			return;
@@ -70,7 +64,6 @@ public class MetalCables extends MetalAbility implements AddonAbility, MultiAbil
 			grabRange = Azutoru.az.getConfig().getDouble("Abilities.Earth.MetalCables.GrabRange");
 			grabRadius = Azutoru.az.getConfig().getDouble("Abilities.Earth.MetalCables.GrabRadius");
 			speed = Azutoru.az.getConfig().getDouble("Abilities.Earth.MetalCables.Speed");
-			usageCooldown = Azutoru.az.getConfig().getLong("Abilities.Earth.MetalCables.UsageCooldown");
 			
 			world = player.getWorld();
 			
@@ -80,42 +73,42 @@ public class MetalCables extends MetalAbility implements AddonAbility, MultiAbil
 	
 	public void activate(int slot, ClickType type) {
 		switch (slot) {
-		case 0:
+		case 0: // "Grapple Left"
 			if (type == ClickType.LEFT_CLICK) {
-				ability = Ability.GRAPPLE_LEFT;
+				ability = CableAbility.GRAPPLE_LEFT;
 			} else if (type == ClickType.SHIFT_DOWN) {
-				ability = Ability.GRAPPLE_PULL;
+				ability = CableAbility.GRAPPLE_PULL;
 			}
 			break;
-		case 1:
+		case 1: // "Grapple Right"
 			if (type == ClickType.LEFT_CLICK) {
-				ability = Ability.GRAPPLE_RIGHT;
+				ability = CableAbility.GRAPPLE_RIGHT;
 			} else if (type == ClickType.SHIFT_DOWN) {
-				ability = Ability.GRAPPLE_PULL;
+				ability = CableAbility.GRAPPLE_PULL;
 			}
 			break;
-		case 2:
+		case 2: // "Grab Left"
 			if (type == ClickType.LEFT_CLICK) {
-				ability = Ability.GRAB_LEFT;
+				ability = CableAbility.GRAB_LEFT;
 			} else if (type == ClickType.SHIFT_DOWN) {
-				ability = Ability.GRAB_PULL;
+				ability = CableAbility.GRAB_PULL;
 			}
 			break;
-		case 3:
+		case 3: // "Grab Right"
 			if (type == ClickType.LEFT_CLICK) {
-				ability = Ability.GRAB_RIGHT;
+				ability = CableAbility.GRAB_RIGHT;
 			} else if (type == ClickType.SHIFT_DOWN) {
-				ability = Ability.GRAB_PULL;
+				ability = CableAbility.GRAB_PULL;
 			}
 			break;
-		case 4:
+		case 4: // "Leap"
 			if (type == ClickType.LEFT_CLICK) {
-				ability = Ability.LEAP;
+				ability = CableAbility.LEAP;
 			}
 			break;
-		case 5:
+		case 5: // "Retract"
 			if (type == ClickType.LEFT_CLICK) {
-				ability = Ability.RETRACT;
+				ability = CableAbility.RETRACT;
 			}
 			break;
 		default:
@@ -150,72 +143,75 @@ public class MetalCables extends MetalAbility implements AddonAbility, MultiAbil
 			return;
 		}
 		
-		left = AzutoruMethods.getHandPos(player, Hand.LEFT);
-		right = AzutoruMethods.getHandPos(player, Hand.RIGHT);
+		leftLoc = AzutoruMethods.getHandPos(player, Hand.LEFT);
+		rightLoc = AzutoruMethods.getHandPos(player, Hand.RIGHT);
+		direction = player.getEyeLocation().getDirection();
 		
-		if (ability == Ability.GRAPPLE_LEFT) {
-			launchCable(Cable.LEFT);
-			
-		} else if (ability == Ability.GRAPPLE_RIGHT) {
-			
-		} else if (ability == Ability.GRAPPLE_PULL) {
-			
-		} else if (ability == Ability.GRAB_LEFT) {
-			
-		} else if (ability == Ability.GRAB_RIGHT) {
-			
-		} else if (ability == Ability.GRAB_PULL) {
-			
-		} else if (ability == Ability.RETRACT) {
-			
-		}
-	}
-	
-	public void launchCable(Cable cable) {
-		if (bPlayer.isOnCooldown("MetalCables_" + cable.toString())) {
-			return;
-		}
-		
-		if (isCableInUse(cable)) {
-			return;
-		}
-		
-		if (direction == null) {
-			setCableStartPos(cable);
-			bPlayer.addCooldown("MetalCables_" + cable.toString(), usageCooldown);
-		}
-		
-		if (ability == Ability.GRAPPLE_LEFT || ability == Ability.GRAPPLE_RIGHT) {
-			if (GeneralMethods.isSolid(location.getBlock())) {
-				
+		switch (ability) {
+		case GRAPPLE_LEFT:
+			if (left == null) {
+				left = new Rope(leftLoc, direction, 10, 100, 0.5, speed, null);
 			}
-		} else if (ability == Ability.GRAB_LEFT || ability == Ability.GRAB_RIGHT) {
-			
+			grapple(left);
+			break;
+		case GRAPPLE_RIGHT:
+			if (right == null) {
+				right = new Rope(rightLoc, direction, 10, 100, 0.5, speed, null);
+			}
+			grapple(right);
+			break;
+		case GRAPPLE_PULL:
+			grapplePull();
+			break;
+		case GRAB_LEFT:
+			grab(left);
+			break;
+		case GRAB_RIGHT:
+			grab(right);
+			break;
+		case GRAB_PULL:
+			grabPull();
+			break;
+		case LEAP:
+			leap();
+			break;
+		case RETRACT:
+			remove();
+			break;
+		default:
+			break;
 		}
-		
-		location.add(direction.multiply(speed));
-		location.getWorld().spawnParticle(Particle.REDSTONE, location, 1, 0, 0, 0, 0, new DustOptions(Color.fromRGB(171, 172, 171), 1));
+	}
+	
+	private void grapple(Rope cable) {
 		
 	}
 	
-	private void setCableStartPos(Cable cable) {
-		if (cable == Cable.LEFT) {
-			location = left.clone();
-			direction = left.getDirection();
-		} else if (cable == Cable.RIGHT) {
-			location = right.clone();
-			direction = right.getDirection();
-		}
+	private void grapplePull() {
+		
 	}
 	
-	private boolean isCableInUse(Cable cable) {
-		if (cable == Cable.LEFT) {
-			return leftInUse;
-		} else if (cable == Cable.RIGHT) {
-			return rightInUse;
-		} else {
-			return true;
-		}
+	private void grab(Rope cable) {
+		
+	}
+	
+	private void grabPull() {
+		
+	}
+	
+	private void leap() {
+		
+	}
+	
+	@Override
+	public void remove() {
+		super.remove();
+		bPlayer.addCooldown(this);
+		MultiAbilityManager.unbindMultiAbility(player);
+	}
+	
+	public CableAbility getAbility() {
+		return ability;
 	}
 
 	@Override

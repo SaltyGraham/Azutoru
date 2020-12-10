@@ -15,14 +15,17 @@ import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.EarthAbility;
 import com.projectkorra.projectkorra.ability.LavaAbility;
 import com.projectkorra.projectkorra.ability.PassiveAbility;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.TempBlock;
 
 import me.aztl.azutoru.Azutoru;
 
 public class LavaWalk extends LavaAbility implements AddonAbility, PassiveAbility {
 
+	@Attribute(Attribute.RADIUS)
 	private int radius;
 	private boolean canBendTempLava;
+	@Attribute(Attribute.RANGE)
 	private double range;
 	
 	private World world;

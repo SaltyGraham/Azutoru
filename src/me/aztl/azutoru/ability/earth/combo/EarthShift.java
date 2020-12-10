@@ -14,14 +14,19 @@ import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.EarthAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.ClickType;
 
 import me.aztl.azutoru.Azutoru;
 
 public class EarthShift extends EarthAbility implements AddonAbility, ComboAbility {
 
+	@Attribute(Attribute.COOLDOWN)
 	private long cooldown;
-	private double range, speed;
+	@Attribute(Attribute.RANGE)
+	private double range;
+	@Attribute(Attribute.SPEED)
+	private double speed;
 	
 	private Location target;
 	private Vector direction;

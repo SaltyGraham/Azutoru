@@ -19,6 +19,7 @@ import com.projectkorra.projectkorra.ability.BlueFireAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.FireAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.DamageHandler;
 import com.projectkorra.projectkorra.waterbending.plant.PlantRegrowth;
@@ -27,8 +28,18 @@ import me.aztl.azutoru.Azutoru;
 
 public class FireAugmentation extends FireAbility implements AddonAbility, ComboAbility {
 
-	private long cooldown, duration;
-	private double range, speed, damage, sourceRange;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
+	@Attribute(Attribute.RANGE)
+	private double range;
+	@Attribute(Attribute.SPEED)
+	private double speed;
+	@Attribute(Attribute.DAMAGE)
+	private double damage;
+	@Attribute(Attribute.SELECT_RANGE)
+	private double sourceRange;
 	private boolean allowSlotChange;
 	
 	private Block sourceBlock;

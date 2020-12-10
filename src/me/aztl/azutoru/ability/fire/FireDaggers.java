@@ -11,6 +11,7 @@ import com.projectkorra.projectkorra.Element.SubElement;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.BlueFireAbility;
 import com.projectkorra.projectkorra.ability.FireAbility;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.firebending.FireBlast;
 import com.projectkorra.projectkorra.firebending.util.FireDamageTimer;
 
@@ -29,8 +30,20 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 		ATTACK, BLOCK;
 	}
 	
-	private long cooldown, duration, blockDuration, usageCooldown;
-	private double damage, range, throwSpeed;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
+	@Attribute(Attribute.DURATION)
+	private long blockDuration;
+	@Attribute(Attribute.COOLDOWN)
+	private long usageCooldown;
+	@Attribute(Attribute.DAMAGE)
+	private double damage;
+	@Attribute(Attribute.RANGE)
+	private double range;
+	@Attribute(Attribute.SPEED)
+	private double throwSpeed;
 	private int maxThrows;
 	
 	private Dagger activeDagger, lastActiveDagger;

@@ -18,6 +18,7 @@ import org.bukkit.util.Vector;
 import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.IceAbility;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.BlockSource;
 import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.DamageHandler;
@@ -28,9 +29,25 @@ import me.aztl.azutoru.AzutoruMethods;
 
 public class IceRidge extends IceAbility implements AddonAbility {
 
-	private long cooldown, duration, revertTime;
-	private double sourceRange, range, damage, knockback, knockup, hitRadius;
-	private int minHeight, maxHeight;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
+	private long revertTime;
+	@Attribute(Attribute.SELECT_RANGE)
+	private double sourceRange;
+	@Attribute(Attribute.RANGE)
+	private double range;
+	@Attribute(Attribute.DAMAGE)
+	private double damage;
+	@Attribute(Attribute.KNOCKBACK)
+	private double knockback;
+	@Attribute(Attribute.KNOCKUP)
+	private double knockup;
+	@Attribute(Attribute.RADIUS)
+	private double hitRadius;
+	private int minHeight;
+	private int maxHeight;
 	
 	private boolean progressing;
 	private int counter = 0;

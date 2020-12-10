@@ -19,6 +19,7 @@ import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.AirAbility;
 import com.projectkorra.projectkorra.ability.BloodAbility;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.command.Commands;
 import com.projectkorra.projectkorra.util.DamageHandler;
 
@@ -26,9 +27,17 @@ import me.aztl.azutoru.Azutoru;
 
 public class BloodStrangle extends BloodAbility implements AddonAbility {
 
-	private double range, grabRadius, damage;
+	@Attribute(Attribute.RANGE)
+	private double range;
+	@Attribute(Attribute.RADIUS)
+	private double grabRadius;
+	@Attribute(Attribute.DAMAGE)
+	private double damage;
 	private boolean undeadMobs;
-	private long cooldown, duration;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
 	
 	private Location location;
 	private Map<Entity, Vector> grabbedEntities;

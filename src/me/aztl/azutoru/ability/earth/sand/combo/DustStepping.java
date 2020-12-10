@@ -12,6 +12,7 @@ import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.SandAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.ParticleEffect;
 
@@ -21,9 +22,17 @@ import me.aztl.azutoru.ability.earth.sand.DustDevil;
 
 public class DustStepping extends SandAbility implements AddonAbility, ComboAbility {
 
-	private long cooldown, duration;
-	private double horizontal, vertical;
-	private int maxSteps, maxDistance;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
+	@Attribute("HorizontalPush")
+	private double horizontal;
+	@Attribute("VerticalPush")
+	private double vertical;
+	private int maxSteps;
+	@Attribute(Attribute.RANGE)
+	private int maxDistance;
 	
 	private Block topBlock;
 	

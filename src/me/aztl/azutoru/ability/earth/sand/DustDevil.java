@@ -17,6 +17,7 @@ import org.bukkit.potion.PotionEffectType;
 import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.SandAbility;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.DamageHandler;
 import com.projectkorra.projectkorra.util.ParticleEffect;
 
@@ -26,8 +27,14 @@ import me.aztl.azutoru.ability.earth.sand.combo.DustDevilRush;
 
 public class DustDevil extends SandAbility implements AddonAbility {
 
-	private long cooldown, duration;
-	private double height, damage;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
+	@Attribute(Attribute.HEIGHT)
+	private double height;
+	@Attribute(Attribute.DAMAGE)
+	private double damage;
 	private int blindnessTime;
 	
 	private Block topBlock;

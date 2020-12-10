@@ -18,6 +18,7 @@ import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.ElementalAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
 import com.projectkorra.projectkorra.airbending.AirSpout;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.ClickType;
 
 import me.aztl.azutoru.Azutoru;
@@ -30,10 +31,14 @@ public class AirSpoutRush extends AirAbility implements AddonAbility, ComboAbili
 	private int angle;
 	private long animTime;
 	private long interval;
+	@Attribute(Attribute.DURATION)
 	private long duration;
+	@Attribute(Attribute.COOLDOWN)
 	private long cooldown;
+	@Attribute(Attribute.HEIGHT)
 	private double height;
 	private float initFlySpeed;
+	@Attribute(Attribute.SPEED)
 	private float speedModifier;
 	
 	private List<Location> locations;
