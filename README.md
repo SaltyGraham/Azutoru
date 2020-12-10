@@ -3,7 +3,7 @@
 Azutoru is a new Spigot plugin that adds onto [ProjectKorra](https://github.com/ProjectKorra/ProjectKorra), a bending plugin. Its purpose is to add interesting, unique, highly functional, and useful abilities and concepts that run smoothly. Made with competitive and casual benders alike in mind, the plugin prioritizes adding combos that use popular abilities for their activation sequences so that older benders won't have to adapt too much to be able to use new abilities.
 
 ## Development
-Currently, the project is still in its early-to-mid stages of development. Each element has been given considerable attention, some more than others. My priority right now is to add more abilities for the elements I have not given as much attention as others. After that, I will attempt to rework some of the ProjectKorra Core abilities that I feel need reworking. The final stage of development will be adding depth to the subelements, such as plantbending, metalbending, etc. These subelements have mostly been neglected by the core plugin, and most of the abilities that have been created by addon developers have lacked depth. My goal with the subelements is to add a hefty and unique moveset and style for each subelement to closely match what we've seen in the shows and to expand on the canon. Feel free to keep track of my progress with my Project [here](https://github.com/Aztlon/Azutoru/projects/1).
+Currently, the project is still in its middle stages of development. Each element has been given considerable attention, some more than others. My priority right now is to add more abilities for the elements I have not given as much attention as others. After that, I will be adding depth to the subelements, such as plantbending, metalbending, etc. These subelements have mostly been neglected by the core plugin, and most of the abilities that have been created by addon developers have lacked depth. My goal with the subelements is to add a hefty and unique moveset and style for each subelement to closely match what we've seen in the shows and to expand on the canon. Feel free to keep track of my progress with my Project [here](https://github.com/Aztlon/Azutoru/projects/1).
 
 ## Bug testing
 While the plugin is still in development, it will be available for bug testing on my server [Indigon](https://discord.gg/VYE5WWr), which you can access with the IP play.indigonmc.com with Minecraft 1.16.x. After I feel it is ready, I will release it publicly as I once promised. Until then, feel free to watch this repository as closely as you'd like, as I will try to update it frequently. Please do not try to compile the source code yourself or ask for the jar file. It's not ready for other servers to use.
@@ -84,7 +84,7 @@ While these moves can be bound, they are meant to be used on any slot, so there 
 * FireJet
   * A rework of ProjectKorra's FireJet, this ability combines the great ideas that have gone into jet addons over the years into one cool ability. There are different modes of jet travel, each with their own configurable durations and other specifications.
 * FireWhips
-  * Not yet started
+  * Demonstrated by Zuko in the Crystal Catacombs, this ability lets a firebender use long whips of fire that deal knockback and damage.
 #### Combos
 * FireAugmentation
   * Demonstrated by Zuko during his fight with Aang on Ember Island, this combo allows a firebender to create a long snake-like circle of fire that places fire wherever it goes.
