@@ -11,7 +11,7 @@ import com.projectkorra.projectkorra.util.ActionBar;
 import com.projectkorra.projectkorra.util.TimeUtil;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
+import me.aztl.azutoru.util.PlayerUtil;
 
 public class Duck extends ChiAbility implements AddonAbility {
 
@@ -46,7 +46,7 @@ public class Duck extends ChiAbility implements AddonAbility {
 	
 	@Override
 	public void progress() {
-		if (!AzutoruMethods.isOnGround(player)) {
+		if (!PlayerUtil.isOnGround(player)) {
 			ableToDuck = false;
 		} else {
 			ableToDuck = true;

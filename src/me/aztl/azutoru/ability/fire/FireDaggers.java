@@ -1,13 +1,15 @@
 package me.aztl.azutoru.ability.fire;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 
-import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.Element.SubElement;
+import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.BlueFireAbility;
 import com.projectkorra.projectkorra.ability.FireAbility;
@@ -16,9 +18,12 @@ import com.projectkorra.projectkorra.firebending.FireBlast;
 import com.projectkorra.projectkorra.firebending.util.FireDamageTimer;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
-import me.aztl.azutoru.AzutoruMethods.Hand;
 import me.aztl.azutoru.ability.fire.combo.FireBlade;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.util.PlayerUtil;
+import me.aztl.azutoru.util.PlayerUtil.Hand;
 
 public class FireDaggers extends FireAbility implements AddonAbility {
 
@@ -46,12 +51,12 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 	private double throwSpeed;
 	private int maxThrows;
 	
+	private Location left, right, location;
+	private RemovalPolicy policy;
 	private Dagger activeDagger, lastActiveDagger;
 	private Ability activeAbility;
-	private Location left, right, location;
 	private long time;
 	public boolean blocking;
-	private int counter;
 	
 	public FireDaggers(Player player) {
 		super(player);
@@ -72,6 +77,9 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 		applyModifiers();
 		
 		blocking = false;
+		policy = Policies.builder()
+					.add(Policies.IN_LIQUID)
+					.add(new ExpirationPolicy(duration)).build();
 		
 		start();
 	}
@@ -100,33 +108,16 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 	
 	@Override
 	public void progress() {
-		if (!bPlayer.canBend(this)) {
+		if (!bPlayer.canBend(this) || policy.test(player)) {
 			remove();
 			return;
 		}
 		
-		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
-			remove();
-			return;
-		}
+		left = PlayerUtil.getHandPos(player, Hand.LEFT);
+		right = PlayerUtil.getHandPos(player, Hand.RIGHT);
 		
-		if (GeneralMethods.isRegionProtectedFromBuild(this, player.getLocation())) {
-			remove();
-			return;
-		}
-		
-		left = AzutoruMethods.getHandPos(player, Hand.LEFT);
-		right = AzutoruMethods.getHandPos(player, Hand.RIGHT);
-		
-		if (left.getBlock().isLiquid() && right.getBlock().isLiquid()) {
-			remove();
-			return;
-		}
-		
-		if (counter % 6 == 0) {
+		if (ThreadLocalRandom.current().nextInt(6) == 0)
 			playFirebendingSound(right);
-		}
-		counter++;
 		
 		if (activeAbility != Ability.BLOCK) {
 			time = System.currentTimeMillis();
@@ -222,7 +213,7 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 	
 	// Sneaking while on the ground blocks attacks
 	public void onSneak() {
-		if (!AzutoruMethods.isOnGround(player)) {
+		if (!PlayerUtil.isOnGround(player)) {
 			return;
 		}
 		if (bPlayer.isOnCooldown(getName() + "_BLOCK")) {
@@ -237,7 +228,7 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 	// Sneaking midair gives the player the option to either shoot FireBlast or FireBlade from their feet
 	// Releasing sneak midair shoots a FireBlast
 	public void onJumpReleaseSneak() {
-		if (AzutoruMethods.isOnGround(player)) {
+		if (PlayerUtil.isOnGround(player)) {
 			return;
 		}
 		if (hasAbility(player, FireBlade.class) || hasAbility(player, FireJet.class)) {
@@ -248,7 +239,7 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 	
 	// Sneak-clicking midair shoots a FireBlade
 	public void onJumpSneakClick() {
-		if (AzutoruMethods.isOnGround(player)) {
+		if (PlayerUtil.isOnGround(player)) {
 			return;
 		}
 		if (hasAbility(player, FireBlast.class) || hasAbility(player, FireJet.class)) {

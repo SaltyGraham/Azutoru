@@ -1,4 +1,4 @@
-package me.aztl.azutoru;
+package me.aztl.azutoru.listener;
 
 import java.util.Set;
 
@@ -45,6 +45,7 @@ import com.projectkorra.projectkorra.util.TempBlock;
 import com.projectkorra.projectkorra.waterbending.Torrent;
 import com.projectkorra.projectkorra.waterbending.blood.Bloodbending;
 
+import me.aztl.azutoru.Azutoru;
 import me.aztl.azutoru.ability.air.CloudSurf;
 import me.aztl.azutoru.ability.air.combo.AirCocoon;
 import me.aztl.azutoru.ability.air.combo.AirSpoutRush;
@@ -56,6 +57,7 @@ import me.aztl.azutoru.ability.earth.RaiseEarth;
 import me.aztl.azutoru.ability.earth.RaiseEarth.Orientation;
 import me.aztl.azutoru.ability.earth.glass.GlassShards;
 import me.aztl.azutoru.ability.earth.lava.passive.LavaWalk;
+import me.aztl.azutoru.ability.earth.metal.multiability.MetalCables;
 import me.aztl.azutoru.ability.earth.passive.EarthShield;
 import me.aztl.azutoru.ability.earth.sand.DustDevil;
 import me.aztl.azutoru.ability.earth.sand.combo.DustDevilRush;
@@ -80,7 +82,10 @@ import me.aztl.azutoru.ability.water.ice.combo.IceShots;
 import me.aztl.azutoru.ability.water.ice.combo.MistStepping;
 import me.aztl.azutoru.ability.water.multiability.Transform;
 import me.aztl.azutoru.ability.water.plant.PlantWhip;
+import me.aztl.azutoru.util.MathUtil;
+import me.aztl.azutoru.util.PlayerUtil;
 import me.aztl.azutoru.util.TorrentRedirection;
+import me.aztl.azutoru.util.WorldUtil;
 
 public class AzutoruListener implements Listener {
 
@@ -120,8 +125,12 @@ public class AzutoruListener implements Listener {
 		CoreAbility coreAbil = bPlayer.getBoundAbility();
 		Material item = player.getInventory().getItemInMainHand().getType();
 		
-		if (coreAbil == null && !MultiAbilityManager.hasMultiAbilityBound(player)) {
-			return;
+		if (coreAbil == null) {
+			if (MultiAbilityManager.hasMultiAbilityBound(player)) {
+				if (MultiAbilityManager.hasMultiAbilityBound(player, "MetalCables")) {
+					new MetalCables(player, ClickType.LEFT_CLICK);
+				}
+			} else return;
 		} else if (bPlayer.canBendIgnoreCooldowns(coreAbil)) {
 			if (coreAbil instanceof AirAbility && bPlayer.isElementToggled(Element.AIR) == true) {
 				if (GeneralMethods.isWeapon(item) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.AIR)) {
@@ -194,6 +203,8 @@ public class AzutoruListener implements Listener {
 					CoreAbility.getAbility(player, EarthRidge.class).onClick();
 				} else if (abil.equalsIgnoreCase("earthblast") && CoreAbility.hasAbility(player, DustStepping.class)) {
 					CoreAbility.getAbility(player, DustStepping.class).step();
+				} else if (coreAbil.equals(CoreAbility.getAbility(MetalCables.class))) {
+					new MetalCables(player, ClickType.LEFT_CLICK);
 				}
 			}
 			
@@ -273,7 +284,11 @@ public class AzutoruListener implements Listener {
 		
 		CoreAbility coreAbil = bPlayer.getBoundAbility();
 		if (coreAbil == null) {
-			return;
+			if (MultiAbilityManager.hasMultiAbilityBound(player)) {
+				if (MultiAbilityManager.hasMultiAbilityBound(player, "MetalCables")) {
+					new MetalCables(player, ClickType.SHIFT_DOWN);
+				}
+			} else return;
 		}
 		Material item = player.getInventory().getItemInMainHand().getType();
 		
@@ -374,7 +389,7 @@ public class AzutoruListener implements Listener {
 			return;
 		}
 		
-		if (bPlayer.isToggled() && !AzutoruMethods.isOnGround(player) && player.isSneaking()) {
+		if (bPlayer.isToggled() && !PlayerUtil.isOnGround(player) && player.isSneaking()) {
 			new Dodge(player);
 		}
 		
@@ -428,7 +443,7 @@ public class AzutoruListener implements Listener {
 			Block block = collapse.getBlock();
 			if (RaiseEarth.isRaiseEarthBlock(block)) {
 				RaiseEarth re = RaiseEarth.getAffectedBlocks().get(block);
-				if (re.getColumns().get(0).getOrientation() == Orientation.HORIZONTAL || AzutoruMethods.getFaceDirection(re.getFace()).equals(new Vector(0, -1, 0))) {
+				if (re.getColumns().get(0).getOrientation() == Orientation.HORIZONTAL || MathUtil.getFaceDirection(re.getFace()).equals(new Vector(0, -1, 0))) {
 					re.removeAllColumns();
 					EarthAbility.playEarthbendingSound(block.getLocation());
 					event.setCancelled(true);
@@ -475,7 +490,7 @@ public class AzutoruListener implements Listener {
 			}
 			if (CoreAbility.hasAbility(player, Parry.class)) {
 				Entity damager = event.getDamager();
-				if (AzutoruMethods.isNonParryableMob(damager) || damager instanceof Projectile) {
+				if (WorldUtil.isNonParryableMob(damager) || damager instanceof Projectile) {
 					return;
 				}
 				
@@ -491,9 +506,6 @@ public class AzutoruListener implements Listener {
 	
 	@EventHandler
 	public void onPlayerDamage(EntityDamageEvent event) {
-		if (event.getEntity() instanceof Player) {
-			
-		}
 		if (event.getEntity() instanceof Player && event.getCause().equals(DamageCause.SUFFOCATION)) {
 			Player player = (Player) event.getEntity();
 			Block damager = player.getEyeLocation().getBlock();

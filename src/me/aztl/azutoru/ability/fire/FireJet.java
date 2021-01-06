@@ -1,11 +1,11 @@
 package me.aztl.azutoru.ability.fire;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
@@ -15,8 +15,9 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
-import com.projectkorra.projectkorra.GeneralMethods;
+import com.projectkorra.projectkorra.BendingPlayer;
 import com.projectkorra.projectkorra.Element.SubElement;
+import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.BlueFireAbility;
 import com.projectkorra.projectkorra.ability.FireAbility;
@@ -29,12 +30,18 @@ import com.projectkorra.projectkorra.util.DamageHandler;
 import com.projectkorra.projectkorra.util.TimeUtil;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
-import me.aztl.azutoru.AzutoruMethods.Hand;
 import me.aztl.azutoru.ability.air.CloudSurf;
 import me.aztl.azutoru.ability.fire.combo.JetBlast;
 import me.aztl.azutoru.ability.fire.combo.JetBlaze;
 import me.aztl.azutoru.ability.fire.combo.JetStepping;
+import me.aztl.azutoru.policy.DamagePolicy;
+import me.aztl.azutoru.policy.DifferentWorldPolicy;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.util.MathUtil;
+import me.aztl.azutoru.util.PlayerUtil;
+import me.aztl.azutoru.util.PlayerUtil.Hand;
 
 public class FireJet extends FireAbility implements AddonAbility {
 
@@ -89,28 +96,24 @@ public class FireJet extends FireAbility implements AddonAbility {
 	@Attribute(Attribute.FIRE_TICK)
 	private int blazeFireTicks;
 	private boolean skiEnabled, hoverEnabled, driftEnabled, recoveryEnabled;
-	
+
+	private List<Entity> affectedEntities;
 	private Location location, origin, right, left;
 	private Vector direction;
+	private BossBar topBar, bottomBar;
+	private RemovalPolicy policy;
+	private JetState state;
+	private JetCombo combo;
 	private int counter = 0;
 	private long time;
 	private float yaw, pitch, initFlySpeed;
 	private double health;
-	private World world;
-	private boolean avatarState, isOnSlot, recovery;
-	private JetState state;
-	private JetCombo combo;
-	private ArrayList<Entity> affectedEntities;
-	private BossBar topBar, bottomBar;
+	private boolean avatarState, isOnSlot, recovery, canFly, isFlying;
 	
 	public FireJet(Player player, ClickType clickType) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreCooldowns(this)) {
-			return;
-		}
-		
-		if (hasAbility(player, JetStepping.class)) {
+		if (!bPlayer.canBendIgnoreCooldowns(this) || hasAbility(player, JetStepping.class)) {
 			return;
 		}
 		
@@ -158,9 +161,16 @@ public class FireJet extends FireAbility implements AddonAbility {
 		direction = player.getEyeLocation().getDirection().clone().normalize().multiply(propelSpeed);
 		time = System.currentTimeMillis();
 		health = player.getHealth();
-		world = player.getWorld();
 		affectedEntities = new ArrayList<>();
+		canFly = player.getAllowFlight();
+		isFlying = player.isFlying();
 		initFlySpeed = player.getFlySpeed();
+		
+		policy = Policies.builder()
+					.add(Policies.IN_LIQUID)
+					.add(new DamagePolicy(damageThreshold, () -> this.player.getHealth(), p -> !BendingPlayer.getBendingPlayer(p).isAvatarState()))
+					.add(new DifferentWorldPolicy(() -> this.player.getWorld()))
+					.add(new ExpirationPolicy(duration)).build();
 		
 		Block b = origin.getBlock();
 		if (b.isLiquid()) {
@@ -181,7 +191,7 @@ public class FireJet extends FireAbility implements AddonAbility {
 			state = JetState.SKIING;
 			break;
 		case SHIFT_DOWN:
-			if (AzutoruMethods.isOnGround(player)) {
+			if (PlayerUtil.isOnGround(player)) {
 				return;
 			}
 			if (bPlayer.isOnCooldown(this)) {
@@ -209,7 +219,7 @@ public class FireJet extends FireAbility implements AddonAbility {
 		
 		if (!recovery) {
 			flightHandler.createInstance(player, getName());
-			AzutoruMethods.allowFlight(player);
+			PlayerUtil.allowFlight(player);
 			player.setFlySpeed(0);
 		}
 		
@@ -300,17 +310,7 @@ public class FireJet extends FireAbility implements AddonAbility {
 
 	@Override
 	public void progress() {
-		if (!bPlayer.canBendIgnoreBindsCooldowns(this)) {
-			removeWithCooldown();
-			return;
-		}
-		
-		if (!player.getWorld().equals(world)) {
-			removeWithCooldown();
-			return;
-		}
-		
-		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
+		if (!bPlayer.canBendIgnoreBindsCooldowns(this) || policy.test(player)) {
 			removeWithCooldown();
 			return;
 		}
@@ -321,11 +321,6 @@ public class FireJet extends FireAbility implements AddonAbility {
 		}
 		
 		if (avatarState && !bPlayer.isAvatarState()) {
-			removeWithCooldown();
-			return;
-		}
-		
-		if (player.getLocation().getBlock().isLiquid()) {
 			removeWithCooldown();
 			return;
 		}
@@ -354,9 +349,9 @@ public class FireJet extends FireAbility implements AddonAbility {
 		updateBars();
 		
 		location = player.getLocation();
-		right = AzutoruMethods.getHandPos(player, Hand.RIGHT);
-		left = AzutoruMethods.getHandPos(player, Hand.LEFT);
-		yaw = AzutoruMethods.getOppositeYaw(location.getYaw());
+		right = PlayerUtil.getHandPos(player, Hand.RIGHT);
+		left = PlayerUtil.getHandPos(player, Hand.LEFT);
+		yaw = MathUtil.getOppositeYaw(location.getYaw());
 		pitch = -1 * location.getPitch();
 		
 		player.setFallDistance(0);
@@ -394,8 +389,8 @@ public class FireJet extends FireAbility implements AddonAbility {
 		if (isOnSlot) {
 			speed *= onSlotModifier;
 			
-			Location r = AzutoruMethods.getModifiedLocation(right, 150, pitch);
-			Location l = AzutoruMethods.getModifiedLocation(left, -150, pitch);
+			Location r = MathUtil.getModifiedLocation(right, 150, pitch);
+			Location l = MathUtil.getModifiedLocation(left, -150, pitch);
 			Vector rv = r.getDirection();
 			Vector lv = l.getDirection();
 			displayJets(r, l, rv, lv, length, 0.5);
@@ -421,8 +416,8 @@ public class FireJet extends FireAbility implements AddonAbility {
 		if (isOnSlot) {
 			speed = speed * onSlotModifier;
 			
-			Location r = AzutoruMethods.getModifiedLocation(right, 150, pitch);
-			Location l = AzutoruMethods.getModifiedLocation(left, -150, pitch);
+			Location r = MathUtil.getModifiedLocation(right, 150, pitch);
+			Location l = MathUtil.getModifiedLocation(left, -150, pitch);
 			Vector rv = r.getDirection().multiply(skiTurningSpeed);
 			Vector lv = l.getDirection().multiply(skiTurningSpeed);
 			displayJets(r, l, rv, lv, length, 0.5);
@@ -470,7 +465,7 @@ public class FireJet extends FireAbility implements AddonAbility {
 			return;
 		}
 		
-		if (AzutoruMethods.isOnGround(player)) {
+		if (PlayerUtil.isOnGround(player)) {
 			removeWithCooldown();
 			return;
 		}
@@ -619,7 +614,7 @@ public class FireJet extends FireAbility implements AddonAbility {
 		
 		if (!recovery) {
 			flightHandler.removeInstance(player, getName());
-			AzutoruMethods.removeFlight(player);
+			PlayerUtil.removeFlight(player, canFly, isFlying);
 			player.setFlySpeed(initFlySpeed);
 		}
 	}

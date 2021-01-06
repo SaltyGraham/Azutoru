@@ -1,15 +1,25 @@
 package me.aztl.azutoru.ability.air;
 
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Predicate;
+
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
+import com.projectkorra.projectkorra.BendingPlayer;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.AirAbility;
 import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.ParticleEffect;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
+import me.aztl.azutoru.policy.DamagePolicy;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.policy.SneakingPolicy;
+import me.aztl.azutoru.policy.SneakingPolicy.ProhibitedState;
+import me.aztl.azutoru.util.PlayerUtil;
 
 public class CloudSurf extends AirAbility implements AddonAbility {
 
@@ -23,17 +33,13 @@ public class CloudSurf extends AirAbility implements AddonAbility {
 	private double damageThreshold;
 	
 	private Location cloudLoc;
-	private double health;
-	private double counter = 0;
+	private RemovalPolicy policy;
+	private boolean canFly, isFlying;
 	
 	public CloudSurf(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBend(this) || bPlayer.isOnCooldown(this)) {
-			return;
-		}
-		
-		if (AzutoruMethods.isOnGround(player)) {
+		if (!bPlayer.canBend(this) || PlayerUtil.isOnGround(player)) {
 			return;
 		}
 		
@@ -42,7 +48,6 @@ public class CloudSurf extends AirAbility implements AddonAbility {
 		forceCloudParticles = Azutoru.az.getConfig().getBoolean("Abilities.Air.CloudSurf.ForceCloudParticles");
 		allowSneakMoves = Azutoru.az.getConfig().getBoolean("Abilities.Air.CloudSurf.AllowSneakMoves");
 		damageThreshold = Azutoru.az.getConfig().getDouble("Abilities.Air.CloudSurf.DamageThreshold");
-		health = player.getHealth();
 		
 		if (bPlayer.isAvatarState()) {
 			duration = 0;
@@ -50,34 +55,28 @@ public class CloudSurf extends AirAbility implements AddonAbility {
 			damageThreshold = damageThreshold * 5;
 		}
 		
+		canFly = player.getAllowFlight();
+		isFlying = player.isFlying();
+		
+		Predicate<Player> sneakConditions = p -> {
+			return !BendingPlayer.getBendingPlayer(p).getBoundAbilityName().equals(getName()) && !allowSneakMoves;
+		};
+		
+		policy = Policies.builder()
+					.add(Policies.IN_LIQUID)
+					.add(Policies.ON_GROUND)
+					.add(new DamagePolicy(damageThreshold, () -> this.player.getHealth()))
+					.add(new ExpirationPolicy(duration))
+					.add(new SneakingPolicy(ProhibitedState.SNEAKING, sneakConditions)).build();
+		
 		flightHandler.createInstance(player, getName());
-		AzutoruMethods.allowFlight(player);
+		PlayerUtil.allowFlight(player);
 		start();
 	}
 	
 	@Override
 	public void progress() {
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			remove();
-			return;
-		}
-		
-		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
-			remove();
-			return;
-		}
-		
-		if (player.isSneaking() && !bPlayer.getBoundAbilityName().equals("CloudSurf") && !allowSneakMoves) {
-			remove();
-			return;
-		}
-		
-		if (player.getHealth() + damageThreshold <= health) {
-			remove();
-			return;
-		}
-		
-		if (AzutoruMethods.isOnGround(player)) {
+		if (!bPlayer.canBendIgnoreBinds(this) || policy.test(player)) {
 			remove();
 			return;
 		}
@@ -87,16 +86,14 @@ public class CloudSurf extends AirAbility implements AddonAbility {
 	
 	public void playCloudAnimation() {
 		cloudLoc = player.getLocation().subtract(0, 0.5, 0);
-		if (forceCloudParticles) {
-			ParticleEffect.CLOUD.display(cloudLoc, 5, 0.8, 0.5, 0.8);
-		} else {
-			playAirbendingParticles(cloudLoc, 5, 0.8, 0.5, 0.8);
-		}
 		
-		if (counter % 6 == 0) {
+		if (forceCloudParticles)
+			ParticleEffect.CLOUD.display(cloudLoc, 5, 0.8, 0.5, 0.8);
+		else
+			playAirbendingParticles(cloudLoc, 5, 0.8, 0.5, 0.8);
+		
+		if (ThreadLocalRandom.current().nextInt(6) == 0)
 			playAirbendingSound(cloudLoc);
-		}
-		counter++;
 	}
 	
 	@Override
@@ -104,7 +101,7 @@ public class CloudSurf extends AirAbility implements AddonAbility {
 		super.remove();
 		bPlayer.addCooldown(this);
 		flightHandler.removeInstance(player, getName());
-		AzutoruMethods.removeFlight(player);
+		PlayerUtil.removeFlight(player, canFly, isFlying);
 	}
 
 	@Override

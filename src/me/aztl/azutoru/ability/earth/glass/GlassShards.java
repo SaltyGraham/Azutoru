@@ -1,5 +1,7 @@
 package me.aztl.azutoru.ability.earth.glass;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -16,6 +18,10 @@ import com.projectkorra.projectkorra.util.ParticleEffect;
 
 import me.aztl.azutoru.Azutoru;
 import me.aztl.azutoru.ability.util.Shot;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.policy.UsedAmmoPolicy;
 import me.aztl.azutoru.util.GlassAbility;
 
 public class GlassShards extends GlassAbility implements AddonAbility {
@@ -35,12 +41,12 @@ public class GlassShards extends GlassAbility implements AddonAbility {
 	@Attribute(Attribute.RADIUS)
 	private double hitRadius;
 	private int remaining;
-	
-	private Material glassType;
-	private long lastShotTime, timeBetweenShots;
+
 	private Location location;
 	private Vector direction;
-	private double counter = 0;
+	private RemovalPolicy policy;
+	private Material glassType;
+	private long lastShotTime, timeBetweenShots;
 	
 	public GlassShards(Player player, boolean rightClick) {
 		super(player);
@@ -62,6 +68,10 @@ public class GlassShards extends GlassAbility implements AddonAbility {
 		range = Azutoru.az.getConfig().getDouble("Abilities.Earth.GlassShards.Range");
 		hitRadius = Azutoru.az.getConfig().getDouble("Abilities.Earth.GlassShards.HitRadius");
 		timeBetweenShots = Azutoru.az.getConfig().getLong("Abilities.Earth.GlassShards.ShotCooldown");
+		
+		policy = Policies.builder()
+					.add(new ExpirationPolicy(duration))
+					.add(new UsedAmmoPolicy(() -> remaining, UsedAmmoPolicy.NOT_SHOOTING)).build();
 		
 		double glassCrackRadius = Azutoru.az.getConfig().getDouble("Abilities.Earth.GlassShards.GlassCrackRadius");
 		
@@ -99,22 +109,9 @@ public class GlassShards extends GlassAbility implements AddonAbility {
 	
 	@Override
 	public void progress() {
-		if (!bPlayer.canBend(this)) {
-			remove();
-			return;
-		}
-		
-		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
+		if (!bPlayer.canBend(this) || policy.test(player)) {
 			remove();
 			bPlayer.addCooldown(this);
-			return;
-		}
-		
-		if (remaining < 1) {
-			if (!hasAbility(player, Shot.class)) {
-				remove();
-				bPlayer.addCooldown(this);
-			}
 			return;
 		}
 		
@@ -126,10 +123,8 @@ public class GlassShards extends GlassAbility implements AddonAbility {
 		displayRing(right, left);
 		displayRing(left, right);
 			
-		if (counter % 6 == 0) {
+		if (ThreadLocalRandom.current().nextInt(6) == 0)
 			playGlassbendingSound(location);
-		}
-		counter++;
 	}
 	
 	public void displayRing(Location side, Location other) {

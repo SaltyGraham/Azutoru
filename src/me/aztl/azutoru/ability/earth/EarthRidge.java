@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
@@ -25,7 +25,13 @@ import com.projectkorra.projectkorra.util.DamageHandler;
 import com.projectkorra.projectkorra.util.TempBlock;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
+import me.aztl.azutoru.policy.DifferentWorldPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.ProtectedRegionPolicy;
+import me.aztl.azutoru.policy.RangePolicy;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.util.MathUtil;
+import me.aztl.azutoru.util.WorldUtil;
 
 public class EarthRidge extends EarthAbility implements AddonAbility {
 
@@ -47,16 +53,16 @@ public class EarthRidge extends EarthAbility implements AddonAbility {
 	private double hitRadius;
 	private int minHeight;
 	private int maxHeight;
-	
-	private boolean progressing;
-	private BlockFace face;
-	private Block sourceBlock;
-	private World world;
+
 	private TempBlock sourceTempBlock;
 	private Location location, origin;
 	private Vector direction;
 	private List<Location> locations;
 	private Set<LivingEntity> affectedEntities;
+	private Block sourceBlock;
+	private RemovalPolicy policy;
+	private BlockFace face;
+	private boolean progressing;
 	
 	public EarthRidge(Player player) {
 		super(player);
@@ -87,23 +93,25 @@ public class EarthRidge extends EarthAbility implements AddonAbility {
 		applyModifiers();
 		
 		sourceBlock = BlockSource.getEarthSourceBlock(player, sourceRange, ClickType.SHIFT_DOWN, true);
-		if (sourceBlock == null) {
-			return;
-		}
+		if (sourceBlock == null) return;
 		
 		List<Block> targets = player.getLastTwoTargetBlocks(null, (int) sourceRange);
 		face = targets.get(1).getFace(targets.get(0));
 		
 		Material tempMaterial = Material.STONE;
-		if (sourceBlock.getType() == Material.STONE) tempMaterial = Material.COBBLESTONE;
+		if (sourceBlock.getType() == Material.STONE)
+			tempMaterial = Material.COBBLESTONE;
 		sourceTempBlock = new TempBlock(sourceBlock, tempMaterial);
 		
-		origin = sourceBlock.getLocation().add(AzutoruMethods.getFaceDirection(face));
+		origin = sourceBlock.getLocation().add(MathUtil.getFaceDirection(face));
 		location = origin.clone();
 		direction = GeneralMethods.getDirection(origin, GeneralMethods.getTargetedLocation(player, range)).normalize();
 		locations = new ArrayList<>();
 		affectedEntities = new HashSet<>();
-		world = player.getWorld();
+		policy = Policies.builder()
+					.add(new DifferentWorldPolicy(() -> this.player.getWorld()))
+					.add(new ProtectedRegionPolicy(this, () -> location))
+					.add(new RangePolicy(range, () -> location)).build();
 		
 		start();
 	}
@@ -122,26 +130,15 @@ public class EarthRidge extends EarthAbility implements AddonAbility {
 
 	@Override
 	public void progress() {
-		if (!bPlayer.canBend(this)) {
+		if (!bPlayer.canBend(this) || policy.test(player)) {
 			removeWithCooldown();
 			return;
 		}
 		
 		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
 			remove();
-			if (progressing) {
+			if (progressing)
 				bPlayer.addCooldown(this);
-			}
-			return;
-		}
-		
-		if (!player.getWorld().equals(world)) {
-			removeWithCooldown();
-			return;
-		}
-		
-		if (location.distanceSquared(origin) > range * range) {
-			removeWithCooldown();
 			return;
 		}
 		
@@ -174,16 +171,16 @@ public class EarthRidge extends EarthAbility implements AddonAbility {
 		location.add(direction);
 		
 		if (!isTransparent(location.getBlock())) {
-			location.add(AzutoruMethods.getFaceDirection(face));
+			location.add(MathUtil.getFaceDirection(face));
 		}
 		
-		Block topBlock = AzutoruMethods.getTopBlock(location, face.getOppositeFace(), 3);
+		Block topBlock = WorldUtil.getTopBlock(location, face.getOppositeFace(), 3);
 		if (!isEarthbendable(topBlock)) {
 			removeWithCooldown();
 			return;
 		}
 		
-		int currentHeight = AzutoruMethods.getRandomNumberInRange(minHeight, maxHeight);
+		int currentHeight = ThreadLocalRandom.current().nextInt(minHeight, maxHeight);
 		new RaiseEarth(player, topBlock, face, currentHeight, null);
 		
 		updateLocations(currentHeight);
@@ -209,7 +206,7 @@ public class EarthRidge extends EarthAbility implements AddonAbility {
 	private void updateLocations(int currentHeight) {
 		locations.clear();
 		for (int i = 1; i <= currentHeight; i++) {
-			Location loc = location.clone().add(AzutoruMethods.getFaceDirection(face).multiply(i));
+			Location loc = location.clone().add(MathUtil.getFaceDirection(face).multiply(i));
 			locations.add(loc);
 		}
 	}
@@ -217,9 +214,8 @@ public class EarthRidge extends EarthAbility implements AddonAbility {
 	@Override
 	public void remove() {
 		super.remove();
-		if (sourceTempBlock != null) {
+		if (sourceTempBlock != null)
 			sourceTempBlock.revertBlock();
-		}
 	}
 	
 	public void removeWithCooldown() {

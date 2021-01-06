@@ -26,8 +26,16 @@ import com.projectkorra.projectkorra.waterbending.ice.IceSpikeBlast;
 import com.projectkorra.projectkorra.waterbending.plant.PlantRegrowth;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
 import me.aztl.azutoru.ability.util.Shot;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.ProtectedRegionPolicy;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.policy.SneakingPolicy;
+import me.aztl.azutoru.policy.SneakingPolicy.ProhibitedState;
+import me.aztl.azutoru.policy.SwappedSlotsPolicy;
+import me.aztl.azutoru.policy.UsedAmmoPolicy;
+import me.aztl.azutoru.util.WorldUtil;
 
 public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 
@@ -51,12 +59,13 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 	@Attribute(Attribute.SPEED)
 	private double speed;
 	private int maxIceShots;
-	
-	private Block sourceBlock;
+
+	private ConcurrentHashMap<Block, TempBlock> affectedBlocks;
 	private Location location, eyeLoc;
 	private Vector direction;
+	private Block sourceBlock;
+	private RemovalPolicy policy;
 	private AnimateState animation;
-	private ConcurrentHashMap<Block, TempBlock> affectedBlocks;
 	private boolean decayableSource;
 	
 	public IceShots(Player player) {
@@ -85,6 +94,13 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 		
 		animation = AnimateState.RISE;
 		affectedBlocks = new ConcurrentHashMap<>();
+		
+		policy = Policies.builder()
+					.add(new ExpirationPolicy(duration))
+					.add(new ProtectedRegionPolicy(this, () -> location))
+					.add(new SneakingPolicy(ProhibitedState.NOT_SNEAKING))
+					.add(new SwappedSlotsPolicy("IceSpike"))
+					.add(new UsedAmmoPolicy(() -> maxIceShots, UsedAmmoPolicy.NOT_SHOOTING)).build();
 		
 		sourceBlock = BlockSource.getWaterSourceBlock(player, sourceRange, ClickType.SHIFT_DOWN, true, true, true, true, true);
 		if (sourceBlock != null && !GeneralMethods.isRegionProtectedFromBuild(this, sourceBlock.getLocation())) {
@@ -115,6 +131,11 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 	
 	@Override
 	public void progress() {
+		if (!bPlayer.canBendIgnoreBinds(this) || policy.test(player)) {
+			remove(true);
+			return;
+		}
+		
 		if (isPlant(sourceBlock) || isSnow(sourceBlock)) {
 			if (!isDecayablePlant(sourceBlock)) {
 				sourceBlock.setType(Material.AIR);
@@ -132,26 +153,6 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 			}
 		}
 		
-		if (!bPlayer.getBoundAbilityName().equalsIgnoreCase("icespike")) {
-			remove(true);
-			return;
-		}
-		
-		if (!player.isSneaking()) {
-			remove(true);
-			return;
-		}
-		
-		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
-			remove(true);
-			return;
-		}
-		
-		if (maxIceShots < 1 && !hasAbility(player, Shot.class)) {
-			remove(true);
-			return;
-		}
-		
 		if (direction == null) {
 			direction = player.getEyeLocation().getDirection();
 		}
@@ -160,7 +161,7 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 		eyeLoc.setY(player.getEyeLocation().getY());
 		
 		if (animation == AnimateState.RISE && location != null) {
-			AzutoruMethods.revertBlocks(affectedBlocks);
+			WorldUtil.revertBlocks(affectedBlocks);
 			location.add(0, 1, 0);
 			Block block = location.getBlock();
 			
@@ -176,7 +177,7 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 			}
 			
 		} else if (animation == AnimateState.TOWARD_PLAYER) {
-			AzutoruMethods.revertBlocks(affectedBlocks);
+			WorldUtil.revertBlocks(affectedBlocks);
 			Vector vec = GeneralMethods.getDirection(location, eyeLoc);
 			location.add(vec.normalize());
 			Block block = location.getBlock();
@@ -193,7 +194,7 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 				Vector tempDir = player.getLocation().getDirection();
 				tempDir.setY(0);
 				direction = tempDir.normalize();
-				AzutoruMethods.revertBlocks(affectedBlocks);
+				WorldUtil.revertBlocks(affectedBlocks);
 			}
 		} else if (animation == AnimateState.CIRCLE) {
 			drawCircle(120, 5);
@@ -202,7 +203,7 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 	
 	public void drawCircle(double theta, double increment) {
 		double rotateSpeed = 45;
-		AzutoruMethods.revertBlocks(affectedBlocks);
+		WorldUtil.revertBlocks(affectedBlocks);
 		direction = GeneralMethods.rotateXZ(direction, rotateSpeed);
 		for (double i = 0; i < theta; i += increment) {
 			Vector dir = GeneralMethods.rotateXZ(direction, i - theta / 2).normalize().multiply(ringRadius);
@@ -227,8 +228,8 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 	}
 	
 	public void remove(boolean addCooldown) {
-		super.remove();
-		AzutoruMethods.revertBlocks(affectedBlocks);
+		remove();
+		WorldUtil.revertBlocks(affectedBlocks);
 		affectedBlocks.clear();
 		if (addCooldown) {
 			bPlayer.addCooldown(this);

@@ -27,7 +27,6 @@ public class JetBlast extends FireAbility implements AddonAbility, ComboAbility 
 	private long duration;
 	
 	private boolean madeNewJet;
-	private boolean progressing;
 	
 	public JetBlast(Player player) {
 		super(player);
@@ -53,6 +52,9 @@ public class JetBlast extends FireAbility implements AddonAbility, ComboAbility 
 		duration = Azutoru.az.getConfig().getLong("Abilities.Fire.JetBlast.Duration");
 		
 		applyModifiers();
+		
+		ParticleEffect.EXPLOSION_LARGE.display(player.getLocation(), 1);
+		player.getWorld().playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 15, 0);
 		
 		start();
 	}
@@ -92,12 +94,6 @@ public class JetBlast extends FireAbility implements AddonAbility, ComboAbility 
 			}
 			remove();
 			return;
-		}
-		
-		if (!progressing) {
-			progressing = true;
-			ParticleEffect.EXPLOSION_LARGE.display(player.getLocation(), 1);
-			player.getWorld().playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 15, 0);
 		}
 	}
 	

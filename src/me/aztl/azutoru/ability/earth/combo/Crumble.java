@@ -27,9 +27,9 @@ import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.TempBlock;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
 import me.aztl.azutoru.ability.earth.RaiseEarth;
 import me.aztl.azutoru.ability.earth.RaiseEarth.Column;
+import me.aztl.azutoru.util.MathUtil;
 
 public class Crumble extends EarthAbility implements AddonAbility, ComboAbility {
 	
@@ -166,7 +166,7 @@ public class Crumble extends EarthAbility implements AddonAbility, ComboAbility 
 	
 	public static void crumble(Block b, Vector direction) {
 		FallingBlock fb = GeneralMethods.spawnFallingBlock(b.getLocation().add(0.5, 0.5, 0.5), b.getType(), b.getBlockData());
-		fb.setVelocity(AzutoruMethods.rotateAroundAxesXZ(direction, Math.random() * 60 - 20).multiply(0.5));
+		fb.setVelocity(MathUtil.rotateAroundAxesXZ(direction, Math.random() * 60 - 20).multiply(0.5));
 		fb.setMetadata("Crumble", new FixedMetadataValue(Azutoru.az, 0));
 		fb.setHurtEntities(false);
 		fb.setDropItem(false);

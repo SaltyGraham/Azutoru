@@ -3,6 +3,7 @@ package me.aztl.azutoru.ability.water.combo;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.Location;
@@ -28,8 +29,15 @@ import com.projectkorra.projectkorra.waterbending.Torrent;
 import com.projectkorra.projectkorra.waterbending.WaterManipulation;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
-import me.aztl.azutoru.AzutoruMethods.Hand;
+import me.aztl.azutoru.policy.DifferentWorldPolicy;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.policy.SwappedSlotsPolicy;
+import me.aztl.azutoru.util.MathUtil;
+import me.aztl.azutoru.util.PlayerUtil;
+import me.aztl.azutoru.util.PlayerUtil.Hand;
+import me.aztl.azutoru.util.WorldUtil;
 
 public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbility {
 
@@ -49,13 +57,14 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 	private double range;
 	private float maxAngle;
 	
-	private Location startLoc, endLoc;
-	private int id = 0;
-	private HashMap<Integer, Location> locations;
-	private HashMap<Integer, Vector> directions;
-	private ConcurrentHashMap<Block, TempBlock> affectedBlocks;
+	private Map<Integer, Location> locations;
+	private Map<Integer, Vector> directions;
 	private List<Location> locList;
+	private ConcurrentHashMap<Block, TempBlock> affectedBlocks;
+	private Location startLoc, endLoc;
+	private RemovalPolicy policy;
 	private boolean clicked, setup, progressing;
+	private int id = 0;
 	private long time;
 	
 	public WaterSlash(Player player, boolean sourced) {
@@ -89,6 +98,11 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 		affectedBlocks = new ConcurrentHashMap<>();
 		locList = new ArrayList<>();
 		
+		policy = Policies.builder()
+					.add(new DifferentWorldPolicy(() -> player.getWorld()))
+					.add(new ExpirationPolicy(duration))
+					.add(new SwappedSlotsPolicy("Torrent", p -> !clicked)).build();
+		
 		if (sourced) {
 			Block sourceBlock = BlockSource.getWaterSourceBlock(player, sourceRange, ClickType.SHIFT_UP, true, true, true, true, true);
 			if (sourceBlock != null) {
@@ -114,22 +128,13 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 	
 	@Override
 	public void progress() {
-		if (!bPlayer.canBendIgnoreBindsCooldowns(this)) {
-			remove();
-			return;
-		}
-		
-		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
+		if (!bPlayer.canBendIgnoreBindsCooldowns(this) || policy.test(player)) {
 			remove();
 			return;
 		}
 		
 		if (!clicked) {
-			if (!bPlayer.getBoundAbilityName().equalsIgnoreCase("torrent")) {
-				remove();
-				return;
-			}
-			ParticleEffect.WATER_SPLASH.display(AzutoruMethods.getHandPos(player, Hand.RIGHT), 2);
+			ParticleEffect.WATER_SPLASH.display(PlayerUtil.getHandPos(player, Hand.RIGHT), 2);
 			return;
 		}
 		
@@ -151,7 +156,7 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 		
 		if (!progressing) {
 			List<Location> linePoints = new ArrayList<Location>();
-			linePoints = AzutoruMethods.getLinePoints(player, startLoc, endLoc, (int) range * 3);
+			linePoints = MathUtil.getLinePoints(player, startLoc, endLoc, (int) range * 3);
 			for (Location loc : linePoints) {
 				locations.put(id, loc);
 				directions.put(id, loc.getDirection());
@@ -164,17 +169,19 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 				return;
 			}
 			
-			AzutoruMethods.revertBlocks(affectedBlocks);
+			WorldUtil.revertBlocks(affectedBlocks);
 			locList.clear();
 			
 			for (Integer i : locations.keySet()) {
 				Block b = locations.get(i).getBlock();
-				if (GeneralMethods.isSolid(b) || isLava(b)) {
+				if (GeneralMethods.isSolid(b) || b.isLiquid()
+						|| GeneralMethods.checkDiagonalWall(locations.get(i), directions.get(i))
+						|| GeneralMethods.isRegionProtectedFromBuild(this, locations.get(i))) {
 					continue;
-				} else if (GeneralMethods.checkDiagonalWall(locations.get(i), directions.get(i))) {
-					continue;
-				} else if (isWater(b) && !TempBlock.isTempBlock(b)) {
-					AzutoruMethods.displayWaterBubble(locations.get(i));
+				}
+				
+				if (isWater(b) && !TempBlock.isTempBlock(b)) {
+					WorldUtil.displayWaterBubble(locations.get(i));
 				}
 				
 				if (locations.get(i).distanceSquared(startLoc) > range * range) {
@@ -201,7 +208,7 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 	
 	public void remove() {
 		super.remove();
-		AzutoruMethods.revertBlocks(affectedBlocks);
+		WorldUtil.revertBlocks(affectedBlocks);
 		affectedBlocks.clear();
 		bPlayer.addCooldown(this);
 	}

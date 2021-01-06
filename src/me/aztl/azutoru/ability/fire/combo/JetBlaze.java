@@ -1,6 +1,7 @@
 package me.aztl.azutoru.ability.fire.combo;
 
 import java.util.ArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.bukkit.Location;
 import org.bukkit.Sound;
@@ -29,7 +30,6 @@ public class JetBlaze extends FireAbility implements AddonAbility, ComboAbility 
 	private double particleSpread;
 	
 	private boolean madeNewJet;
-	private int counter;
 	
 	public JetBlaze(Player player) {
 		super(player);
@@ -98,10 +98,8 @@ public class JetBlaze extends FireAbility implements AddonAbility, ComboAbility 
 			return;
 		}
 		
-		if (counter % 4 == 0) {
+		if (ThreadLocalRandom.current().nextInt(4) == 0)
 			player.getWorld().playSound(player.getLocation(), Sound.ENTITY_CREEPER_PRIMED, 1, 0);
-		}
-		counter++;
 		
 		ParticleEffect.SMOKE_LARGE.display(player.getLocation(), particleAmount, particleSpread, particleSpread, particleSpread);
 	}

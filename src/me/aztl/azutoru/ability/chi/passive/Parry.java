@@ -8,7 +8,7 @@ import com.projectkorra.projectkorra.ability.ChiAbility;
 import com.projectkorra.projectkorra.attribute.Attribute;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
+import me.aztl.azutoru.util.PlayerUtil;
 
 public class Parry extends ChiAbility implements AddonAbility {
 
@@ -28,7 +28,7 @@ public class Parry extends ChiAbility implements AddonAbility {
 			return;
 		}
 		
-		if (!AzutoruMethods.isOnGround(player)) {
+		if (!PlayerUtil.isOnGround(player)) {
 			return;
 		}
 		

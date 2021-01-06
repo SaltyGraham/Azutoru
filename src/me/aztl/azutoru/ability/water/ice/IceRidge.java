@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
@@ -25,7 +25,13 @@ import com.projectkorra.projectkorra.util.DamageHandler;
 import com.projectkorra.projectkorra.util.TempBlock;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
+import me.aztl.azutoru.policy.DifferentWorldPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.ProtectedRegionPolicy;
+import me.aztl.azutoru.policy.RangePolicy;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.util.MathUtil;
+import me.aztl.azutoru.util.WorldUtil;
 
 public class IceRidge extends IceAbility implements AddonAbility {
 
@@ -48,16 +54,15 @@ public class IceRidge extends IceAbility implements AddonAbility {
 	private double hitRadius;
 	private int minHeight;
 	private int maxHeight;
-	
-	private boolean progressing;
-	private int counter = 0;
-	private BlockFace face;
-	private Block sourceBlock;
-	private World world;
-	private Location location, origin;
-	private Vector direction;
+
 	private List<Location> locations;
 	private Set<LivingEntity> affectedEntities;
+	private Location location, origin;
+	private Vector direction;
+	private Block sourceBlock;
+	private RemovalPolicy policy;
+	private BlockFace face;
+	private boolean progressing;
 	
 	public IceRidge(Player player) {
 		super(player);
@@ -96,12 +101,16 @@ public class IceRidge extends IceAbility implements AddonAbility {
 		List<Block> targets = player.getLastTwoTargetBlocks(null, (int) sourceRange);
 		face = targets.get(1).getFace(targets.get(0));
 		
-		origin = sourceBlock.getLocation().add(AzutoruMethods.getFaceDirection(face));
+		origin = sourceBlock.getLocation().add(MathUtil.getFaceDirection(face));
 		location = origin.clone();
 		direction = GeneralMethods.getDirection(origin, GeneralMethods.getTargetedLocation(player, range)).normalize();
 		locations = new ArrayList<>();
 		affectedEntities = new HashSet<>();
-		world = player.getWorld();
+		
+		policy = Policies.builder()
+					.add(new DifferentWorldPolicy(() -> player.getWorld()))
+					.add(new ProtectedRegionPolicy(this, () -> location))
+					.add(new RangePolicy(range, origin, () -> location)).build();
 		
 		start();
 	}
@@ -130,7 +139,7 @@ public class IceRidge extends IceAbility implements AddonAbility {
 
 	@Override
 	public void progress() {
-		if (!bPlayer.canBend(this)) {
+		if (!bPlayer.canBend(this) || policy.test(player)) {
 			removeWithCooldown();
 			return;
 		}
@@ -140,16 +149,6 @@ public class IceRidge extends IceAbility implements AddonAbility {
 			if (progressing) {
 				bPlayer.addCooldown(this);
 			}
-			return;
-		}
-		
-		if (!player.getWorld().equals(world)) {
-			removeWithCooldown();
-			return;
-		}
-		
-		if (location.distanceSquared(origin) > range * range) {
-			removeWithCooldown();
 			return;
 		}
 		
@@ -179,24 +178,22 @@ public class IceRidge extends IceAbility implements AddonAbility {
 		location.add(direction);
 		
 		if (!isTransparent(location.getBlock())) {
-			location.add(AzutoruMethods.getFaceDirection(face));
+			location.add(MathUtil.getFaceDirection(face));
 		}
 		
-		Block topBlock = AzutoruMethods.getTopBlock(location, face.getOppositeFace(), 3);
+		Block topBlock = WorldUtil.getTopBlock(location, face.getOppositeFace(), 3);
 		if (!isIce(topBlock) && !isWater(topBlock) && !isSnow(topBlock)) {
 			removeWithCooldown();
 			return;
 		}
 		
-		int currentHeight = AzutoruMethods.getRandomNumberInRange(minHeight, maxHeight);
+		int currentHeight = ThreadLocalRandom.current().nextInt(minHeight, maxHeight);
 		addBlocks(topBlock, face, currentHeight);
 		
 		updateLocations(currentHeight);
 		
-		if (counter % 6 == 0) {
+		if (ThreadLocalRandom.current().nextInt(6) == 0)
 			playIcebendingSound(location);
-		}
-		counter++;
 		
 		for (Location loc : locations) {
 			for (Entity e : GeneralMethods.getEntitiesAroundPoint(loc, hitRadius)) {
@@ -227,7 +224,7 @@ public class IceRidge extends IceAbility implements AddonAbility {
 	private void updateLocations(int currentHeight) {
 		locations.clear();
 		for (int i = 1; i <= currentHeight; i++) {
-			Location loc = location.clone().add(AzutoruMethods.getFaceDirection(face).multiply(i));
+			Location loc = location.clone().add(MathUtil.getFaceDirection(face).multiply(i));
 			locations.add(loc);
 		}
 	}

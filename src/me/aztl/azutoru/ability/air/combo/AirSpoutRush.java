@@ -2,7 +2,7 @@ package me.aztl.azutoru.ability.air.combo;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.bukkit.Location;
 import org.bukkit.block.Block;
@@ -22,7 +22,7 @@ import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.ClickType;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
+import me.aztl.azutoru.util.PlayerUtil;
 
 public class AirSpoutRush extends AirAbility implements AddonAbility, ComboAbility {
 
@@ -42,6 +42,7 @@ public class AirSpoutRush extends AirAbility implements AddonAbility, ComboAbili
 	private float speedModifier;
 	
 	private List<Location> locations;
+	private boolean canFly;
 	
 	public AirSpoutRush(Player player) {
 		super(player);
@@ -67,6 +68,7 @@ public class AirSpoutRush extends AirAbility implements AddonAbility, ComboAbili
 		speedModifier = 2;
 		
 		locations = new ArrayList<>();
+		canFly = player.getAllowFlight();
 		
 		double heightRemoveThreshold = 2;
 		if (!isWithinMaxSpoutHeight(heightRemoveThreshold)) {
@@ -113,17 +115,16 @@ public class AirSpoutRush extends AirAbility implements AddonAbility, ComboAbili
 		player.getVelocity().setY(0.001);
 		player.setSprinting(false);
 		player.removePotionEffect(PotionEffectType.SPEED);
-		if ((new Random()).nextInt(4) == 0) {
+		if (ThreadLocalRandom.current().nextInt(4) == 0)
 			playAirbendingSound(player.getLocation());
-		}
 		
 		Block block = getGround();
 		if (block != null) {
 			double dy = player.getLocation().getY() - block.getY();
 			if (dy > height) {
-				AzutoruMethods.removeFlight(player);
+				PlayerUtil.removeFlight(player, canFly, false);
 			} else {
-				AzutoruMethods.allowFlight(player);
+				PlayerUtil.allowFlight(player);
 			}
 			rotateAirColumn(block);
 		} else {
@@ -160,7 +161,7 @@ public class AirSpoutRush extends AirAbility implements AddonAbility, ComboAbili
 		super.remove();
 		flightHandler.removeInstance(player, getName());
 		player.setFlySpeed(initFlySpeed);
-		AzutoruMethods.removeFlight(player);
+		PlayerUtil.removeFlight(player, canFly, false);
 		new AirSpout(player);
 	}
 

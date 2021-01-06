@@ -597,6 +597,32 @@ public class AzutoruConfig {
 		c.addDefault("Abilities.Earth.LavaWalk.Range", 10);
 		
 		// MetalCables
+		// General
+		c.addDefault("Abilities.Earth.MetalCables.Enabled", true);
+		c.addDefault("Abilities.Earth.MetalCables.SwingSpeed", 2);
+		c.addDefault("Abilities.Earth.MetalCables.LaunchSpeed", 4);
+		c.addDefault("Abilities.Earth.MetalCables.WhipSpeed", 4);
+		c.addDefault("Abilities.Earth.MetalCables.WhipDuration", 2000);
+		c.addDefault("Abilities.Earth.MetalCables.MaxRange", 80);
+		c.addDefault("Abilities.Earth.MetalCables.MaxUses", 50);
+		c.addDefault("Abilities.Earth.MetalCables.Cooldown", 20000);
+		c.addDefault("Abilities.Earth.MetalCables.Duration", 0);
+		// Slam
+		c.addDefault("Abilities.Earth.MetalCables.Slam.Range", 20);
+		c.addDefault("Abilities.Earth.MetalCables.Slam.Damage", 2);
+		c.addDefault("Abilities.Earth.MetalCables.Slam.HitRadius", 1.5);
+		c.addDefault("Abilities.Earth.MetalCables.Knockback", 1.5);
+		c.addDefault("Abilities.Earth.MetalCables.Knockup", 1);
+		// Grapple
+		c.addDefault("Abilities.Earth.MetalCables.Grapple.PullSpeed", 2);
+		// Grab
+		c.addDefault("Abilities.Earth.MetalCables.Grab.PullSpeed", 2);
+		c.addDefault("Abilities.Earth.MetalCables.Grab.GrabRadius", 2);
+		c.addDefault("Abilities.Earth.MetalCables.Grab.EntityThrowSpeed", 2);
+		// Leap
+		c.addDefault("Abilities.Earth.MetalCables.Leap.Push", 3);
+		// Retract
+		c.addDefault("Abilities.Earth.MetalCables.Retract.Speed", 2);
 		
 		// RaiseEarth
 		c.addDefault("Abilities.Earth.RaiseEarth.Enabled", true);

@@ -21,7 +21,7 @@ import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.TempBlock;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
+import me.aztl.azutoru.util.MathUtil;
 
 public class EarthTent extends EarthAbility implements AddonAbility, ComboAbility {
 	
@@ -64,7 +64,7 @@ public class EarthTent extends EarthAbility implements AddonAbility, ComboAbilit
 	}
 	
 	private void setupBlocks() {
-		BlockFace face = AzutoruMethods.getCardinalDirection(location.getYaw());
+		BlockFace face = MathUtil.getCardinalDirection(location.getYaw());
 		BlockFace[] faces = { face, face.getOppositeFace() };
 		
 		Block left = location.getBlock().getRelative(getLeft(face), width);

@@ -15,7 +15,7 @@ import com.projectkorra.projectkorra.util.ParticleEffect;
 import com.projectkorra.projectkorra.util.TimeUtil;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
+import me.aztl.azutoru.util.PlayerUtil;
 
 public class Dodge extends ChiAbility implements AddonAbility {
 
@@ -74,14 +74,14 @@ public class Dodge extends ChiAbility implements AddonAbility {
 			return;
 		}
 		player.setFallDistance(0);
-		if (AzutoruMethods.isOnGround(player) || player.getLocation().getBlock().isLiquid()) {
+		if (PlayerUtil.isOnGround(player) || player.getLocation().getBlock().isLiquid()) {
 			remove();
 			return;
 		}
 	}
 	
 	public boolean canDodge() {
-		if (AzutoruMethods.isOnGround(player) || player.getLocation().getBlock().isLiquid()) {
+		if (PlayerUtil.isOnGround(player) || player.getLocation().getBlock().isLiquid()) {
 			return false;
 		}
 		

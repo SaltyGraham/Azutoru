@@ -2,6 +2,7 @@ package me.aztl.azutoru.ability.air.combo;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
@@ -15,28 +16,49 @@ import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.AirAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
+import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.DamageHandler;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
+import me.aztl.azutoru.policy.DifferentWorldPolicy;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.ProtectedRegionPolicy;
+import me.aztl.azutoru.policy.RangePolicy;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.policy.SolidLiquidPolicy;
+import me.aztl.azutoru.util.MathUtil;
 
 public class AirWake extends AirAbility implements AddonAbility, ComboAbility {
 
-	private long cooldown, duration;
-	private double range, speed, knockback, knockup, damage, hitRadius;
-	private int particleAmount, particleSpread;
+	@Attribute(Attribute.COOLDOWN)
+	private long cooldown;
+	@Attribute(Attribute.DURATION)
+	private long duration;
+	@Attribute(Attribute.RANGE)
+	private double range;
+	@Attribute(Attribute.SPEED)
+	private double speed;
+	@Attribute(Attribute.KNOCKBACK)
+	private double knockback;
+	@Attribute(Attribute.KNOCKUP)
+	private double knockup;
+	@Attribute(Attribute.DAMAGE)
+	private double damage;
+	@Attribute(Attribute.RADIUS)
+	private double hitRadius;
+	private int particleAmount;
+	private int particleSpread;
 	
 	private Location location, origin;
 	private Vector direction;
-	private double counter = 0;
+	private RemovalPolicy policy;
 	
 	public AirWake(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			return;
-		}
+		if (!bPlayer.canBendIgnoreBinds(this)) return;
 		
 		cooldown = Azutoru.az.getConfig().getLong("Abilities.Air.AirWake.Cooldown");
 		duration = Azutoru.az.getConfig().getLong("Abilities.Air.AirWake.Duration");
@@ -52,6 +74,12 @@ public class AirWake extends AirAbility implements AddonAbility, ComboAbility {
 		location = player.getEyeLocation();
 		origin = location.clone();
 		direction = location.getDirection().multiply(speed);
+		policy = Policies.builder()
+					.add(new DifferentWorldPolicy(() -> this.player.getWorld()))
+					.add(new ExpirationPolicy(duration))
+					.add(new ProtectedRegionPolicy(this, () -> location))
+					.add(new RangePolicy(range, origin, () -> location))
+					.add(new SolidLiquidPolicy(() -> location, () -> direction)).build();
 		
 		start();
 		bPlayer.addCooldown(this);
@@ -59,20 +87,13 @@ public class AirWake extends AirAbility implements AddonAbility, ComboAbility {
 	
 	@Override
 	public void progress() {
-		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
+		if (!bPlayer.canBendIgnoreBindsCooldowns(this) || policy.test(player)) {
 			remove();
 			return;
 		}
 		
-		if (location.distanceSquared(origin) > range * range) {
-			remove();
-			return;
-		}
-		
-		if (counter % 6 == 0) {
+		if (ThreadLocalRandom.current().nextInt(6) == 0)
 			playAirbendingSound(location);
-		}
-		counter++;
 		
 		for (int i = 0; i < 2; i++) {
 			if (!isTransparent(location.getBlock().getRelative(BlockFace.DOWN, i))) {
@@ -116,16 +137,16 @@ public class AirWake extends AirAbility implements AddonAbility, ComboAbility {
 		Location bottomLeft = vertices.get(2);
 		Location topLeft = vertices.get(3);
 		
-		for (Location loc : AzutoruMethods.getLinePoints(player, bottomRight, topRight, particleSpread)) {
+		for (Location loc : MathUtil.getLinePoints(player, bottomRight, topRight, particleSpread)) {
 			getAirbendingParticles().display(loc, particleAmount);
 		}
-		for (Location loc : AzutoruMethods.getLinePoints(player, topRight, topLeft, particleSpread)) {
+		for (Location loc : MathUtil.getLinePoints(player, topRight, topLeft, particleSpread)) {
 			getAirbendingParticles().display(loc, particleAmount);
 		}
-		for (Location loc : AzutoruMethods.getLinePoints(player, topLeft, bottomLeft, particleSpread)) {
+		for (Location loc : MathUtil.getLinePoints(player, topLeft, bottomLeft, particleSpread)) {
 			getAirbendingParticles().display(loc, particleAmount);
 		}
-		for (Location loc : AzutoruMethods.getLinePoints(player, bottomLeft, bottomRight, particleSpread)) {
+		for (Location loc : MathUtil.getLinePoints(player, bottomLeft, bottomRight, particleSpread)) {
 			getAirbendingParticles().display(loc, particleAmount);
 		}
 	}

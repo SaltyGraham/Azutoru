@@ -17,8 +17,13 @@ import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.ParticleEffect;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
 import me.aztl.azutoru.ability.earth.sand.DustDevil;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.policy.TopBlockPolicy;
+import me.aztl.azutoru.policy.UsedAmmoPolicy;
+import me.aztl.azutoru.util.MathUtil;
 
 public class DustStepping extends SandAbility implements AddonAbility, ComboAbility {
 
@@ -35,6 +40,7 @@ public class DustStepping extends SandAbility implements AddonAbility, ComboAbil
 	private int maxDistance;
 	
 	private Block topBlock;
+	private RemovalPolicy policy;
 	
 	public DustStepping(Player player) {
 		super(player);
@@ -57,6 +63,12 @@ public class DustStepping extends SandAbility implements AddonAbility, ComboAbil
 		applyModifiers();
 		
 		topBlock = GeneralMethods.getTopBlock(player.getLocation(), maxDistance);
+		
+		policy = Policies.builder()
+				.add(new ExpirationPolicy(duration))
+				.add(new TopBlockPolicy(() -> topBlock, b -> !isEarth(b)))
+				.add(new UsedAmmoPolicy(() -> maxSteps)).build();
+		
 		if (isEarth(topBlock)) {
 			start();
 			step();
@@ -76,32 +88,18 @@ public class DustStepping extends SandAbility implements AddonAbility, ComboAbil
 	
 	@Override
 	public void progress() {
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			remove();
-			return;
-		}
-		
-		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
-			remove();
-			return;
-		}
-		
-		if (maxSteps == 0) {
+		if (!bPlayer.canBendIgnoreBinds(this) || policy.test(player)) {
 			remove();
 			return;
 		}
 		
 		topBlock = GeneralMethods.getTopBlock(player.getLocation(), maxDistance);
-		if (!isEarth(topBlock)) {
-			remove();
-			return;
-		}
 	}
 	
 	private void playStepAnimation() {
 		Location ground = topBlock.getLocation();
 		Location playerLoc = player.getLocation();
-		for (Location loc : AzutoruMethods.getLinePoints(player, ground, playerLoc, (int) ground.distance(playerLoc) * 2)) {
+		for (Location loc : MathUtil.getLinePoints(player, ground, playerLoc, (int) ground.distance(playerLoc) * 2)) {
 			ParticleEffect.BLOCK_DUST.display(loc, 1, 0.2, 0.2, 0.2, 1, topBlock.getType().createBlockData());
 		}
 	}

@@ -24,8 +24,8 @@ import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.DamageHandler;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
 import me.aztl.azutoru.ability.fire.FireDaggers;
+import me.aztl.azutoru.util.MathUtil;
 
 public class FireBlade extends FireAbility implements AddonAbility, ComboAbility {
 
@@ -148,7 +148,7 @@ public class FireBlade extends FireAbility implements AddonAbility, ComboAbility
 		
 		if (!progressing) {
 			List<Location> linePoints = new ArrayList<Location>();
-			linePoints = AzutoruMethods.getLinePoints(player, startLoc, endLoc, arcSteps);
+			linePoints = MathUtil.getLinePoints(player, startLoc, endLoc, arcSteps);
 			for (Location loc : linePoints) {
 				locations.put(id, loc);
 				directions.put(id, loc.getDirection());

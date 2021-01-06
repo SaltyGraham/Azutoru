@@ -25,6 +25,13 @@ import com.projectkorra.projectkorra.util.DamageHandler;
 import com.projectkorra.projectkorra.waterbending.plant.PlantRegrowth;
 
 import me.aztl.azutoru.Azutoru;
+import me.aztl.azutoru.policy.DamagePolicy;
+import me.aztl.azutoru.policy.DifferentWorldPolicy;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.ProtectedRegionPolicy;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.policy.SwappedSlotsPolicy;
 
 public class FireAugmentation extends FireAbility implements AddonAbility, ComboAbility {
 
@@ -40,13 +47,13 @@ public class FireAugmentation extends FireAbility implements AddonAbility, Combo
 	private double damage;
 	@Attribute(Attribute.SELECT_RANGE)
 	private double sourceRange;
-	private boolean allowSlotChange;
-	
-	private Block sourceBlock;
+
+	private ArrayList<BukkitRunnable> tasks;
 	private Location location, destination;
 	private Vector direction;
+	private Block sourceBlock;
+	private RemovalPolicy policy;
 	private boolean launching, pulling;
-	private ArrayList<BukkitRunnable> tasks;
 	
 	public FireAugmentation(Player player) {
 		super(player);
@@ -63,9 +70,16 @@ public class FireAugmentation extends FireAbility implements AddonAbility, Combo
 		speed = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireAugmentation.Speed");
 		damage = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireAugmentation.Damage");
 		sourceRange = Azutoru.az.getConfig().getLong("Abilities.Fire.FireAugmentation.SourceRange");
-		allowSlotChange = Azutoru.az.getConfig().getBoolean("Abilities.Fire.FireAugmentation.AllowSlotChange");
+		// TODO: Add damage threshold
 		
 		applyModifiers();
+		
+		policy = Policies.builder()
+				.add(new DamagePolicy(4, () -> this.player.getHealth()))
+				.add(new DifferentWorldPolicy(() -> this.player.getWorld()))
+				.add(new ExpirationPolicy(duration))
+				.add(new ProtectedRegionPolicy(this, () -> location))
+				.add(new SwappedSlotsPolicy("HeatControl")).build();
 		
 		launching = true;
 		pulling = false;
@@ -96,33 +110,13 @@ public class FireAugmentation extends FireAbility implements AddonAbility, Combo
 	
 	@Override
 	public void progress() {
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			remove();
-			return;
-		}
-		
-		if (!bPlayer.getBoundAbilityName().equalsIgnoreCase("heatcontrol") && !allowSlotChange) {
-			remove();
-			return;
-		}
-		
-		if (System.currentTimeMillis() > getStartTime() + duration) {
+		if (!bPlayer.canBendIgnoreBinds(this) || policy.test(player)) {
 			remove();
 			return;
 		}
 		
 		if (location.distanceSquared(player.getLocation()) > range * range) {
 			location.subtract(direction.clone().multiply(speed));
-			return;
-		}
-		
-		if (player.getWorld() != location.getWorld()) {
-			remove();
-			return;
-		}
-		
-		if (GeneralMethods.isRegionProtectedFromBuild(this, location)) {
-			remove();
 			return;
 		}
 		

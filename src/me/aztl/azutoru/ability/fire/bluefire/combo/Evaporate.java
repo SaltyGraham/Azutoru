@@ -21,6 +21,11 @@ import com.projectkorra.projectkorra.firebending.util.FireDamageTimer;
 import com.projectkorra.projectkorra.util.ClickType;
 
 import me.aztl.azutoru.Azutoru;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.ProtectedRegionPolicy;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.policy.SolidLiquidPolicy;
 
 public class Evaporate extends BlueFireAbility implements AddonAbility, ComboAbility {
 
@@ -40,6 +45,7 @@ public class Evaporate extends BlueFireAbility implements AddonAbility, ComboAbi
 	
 	private Location location;
 	private List<Location> locations = new ArrayList<>();
+	private RemovalPolicy policy;
 	
 	public Evaporate(Player player) {
 		super(player);
@@ -64,6 +70,10 @@ public class Evaporate extends BlueFireAbility implements AddonAbility, ComboAbi
 		applyModifiers();
 		
 		location = GeneralMethods.getTargetedLocation(player, 2);
+		policy = Policies.builder()
+					.add(new ExpirationPolicy(duration))
+					.add(new ProtectedRegionPolicy(this, () -> location))
+					.add(new SolidLiquidPolicy(() -> location, () -> location.getDirection())).build();
 		
 		start();
 	}
@@ -82,17 +92,7 @@ public class Evaporate extends BlueFireAbility implements AddonAbility, ComboAbi
 
 	@Override
 	public void progress() {
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			remove();
-			return;
-		}
-		
-		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
-			remove();
-			return;
-		}
-		
-		if (GeneralMethods.isSolid(location.getBlock()) || location.getBlock().isLiquid()) {
+		if (!bPlayer.canBendIgnoreBinds(this) || policy.test(player)) {
 			remove();
 			return;
 		}

@@ -17,6 +17,10 @@ import com.projectkorra.projectkorra.util.ClickType;
 
 import me.aztl.azutoru.Azutoru;
 import me.aztl.azutoru.ability.fire.FireJet;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.policy.UsedAmmoPolicy;
 
 public class JetStepping extends FireAbility implements AddonAbility, ComboAbility {
 
@@ -28,7 +32,9 @@ public class JetStepping extends FireAbility implements AddonAbility, ComboAbili
 	private double horizontal;
 	@Attribute("VerticalPush")
 	private double vertical;
-	private int maxSteps;
+	
+	private RemovalPolicy policy;
+	private int maxSteps;	
 	
 	public JetStepping(Player player) {
 		super(player);
@@ -48,6 +54,11 @@ public class JetStepping extends FireAbility implements AddonAbility, ComboAbili
 		maxSteps = Azutoru.az.getConfig().getInt("Abilities.Fire.JetStepping.MaxSteps");
 		
 		applyModifiers();
+		
+		policy = Policies.builder()
+					.add(Policies.IN_LIQUID)
+					.add(new ExpirationPolicy(duration))
+					.add(new UsedAmmoPolicy(() -> maxSteps)).build();
 		
 		start();
 	}
@@ -78,22 +89,7 @@ public class JetStepping extends FireAbility implements AddonAbility, ComboAbili
 
 	@Override
 	public void progress() {
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			remove();
-			return;
-		}
-		
-		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
-			remove();
-			return;
-		}
-		
-		if (maxSteps == 0) {
-			remove();
-			return;
-		}
-		
-		if (player.getLocation().getBlock().isLiquid()) {
+		if (!bPlayer.canBendIgnoreBinds(this) || policy.test(player)) {
 			remove();
 			return;
 		}

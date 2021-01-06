@@ -19,7 +19,12 @@ import com.projectkorra.projectkorra.util.TempBlock;
 import com.projectkorra.projectkorra.waterbending.WaterSpout;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
+import me.aztl.azutoru.policy.DamagePolicy;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.util.MathUtil;
+import me.aztl.azutoru.util.WorldUtil;
 
 public class WaterRun extends WaterAbility implements AddonAbility, ComboAbility {
 
@@ -32,8 +37,8 @@ public class WaterRun extends WaterAbility implements AddonAbility, ComboAbility
 	@Attribute(Attribute.DURATION)
 	private long duration;
 	
-	private double health;
 	private Block topBlock, headBlock;
+	private RemovalPolicy policy;
 	private boolean surfaced;
 	
 	public WaterRun(Player player) {
@@ -54,9 +59,12 @@ public class WaterRun extends WaterAbility implements AddonAbility, ComboAbility
 		
 		applyModifiers();
 		
-		health = player.getHealth();
 		topBlock = GeneralMethods.getTopBlock(player.getLocation(), 3);
 		headBlock = player.getLocation().add(0, 1.5, 0).getBlock();
+		
+		policy = Policies.builder()
+					.add(new DamagePolicy(damageThreshold, () -> player.getHealth()))
+					.add(new ExpirationPolicy(duration)).build();
 		
 		Block topBlock = GeneralMethods.getTopBlock(player.getLocation(), 3);
 		if (!isWater(topBlock) && !isIce(topBlock) && !isSnow(topBlock)) {
@@ -84,23 +92,13 @@ public class WaterRun extends WaterAbility implements AddonAbility, ComboAbility
 	
 	@Override
 	public void progress() {
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			remove();
-			return;
-		}
-		
-		if (player.getHealth() + damageThreshold <= health) {
-			remove();
-			return;
-		}
-		
-		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
+		if (!bPlayer.canBendIgnoreBinds(this) || policy.test(player)) {
 			remove();
 			return;
 		}
 		
 		topBlock = GeneralMethods.getTopBlock(player.getLocation(), 3);
-		if (!isWater(topBlock) && !isIce(topBlock) && !isSnow(topBlock) && !AzutoruMethods.isIgnoredPlant(topBlock)) {
+		if (!isWater(topBlock) && !isIce(topBlock) && !isSnow(topBlock) && !WorldUtil.isIgnoredPlant(topBlock)) {
 			remove();
 			return;
 		}
@@ -137,8 +135,8 @@ public class WaterRun extends WaterAbility implements AddonAbility, ComboAbility
 	}
 	
 	private void playWakeAnimation() {
-		Location leftWake = AzutoruMethods.getModifiedLocation(player.getLocation().clone(), -150, -5);
-		Location rightWake = AzutoruMethods.getModifiedLocation(player.getLocation().clone(), 150, -5);
+		Location leftWake = MathUtil.getModifiedLocation(player.getLocation().clone(), -150, -5);
+		Location rightWake = MathUtil.getModifiedLocation(player.getLocation().clone(), 150, -5);
 		
 		displayWake(leftWake, leftWake.getDirection());
 		displayWake(rightWake, rightWake.getDirection());

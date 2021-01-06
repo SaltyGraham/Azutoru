@@ -26,9 +26,9 @@ import com.projectkorra.projectkorra.util.TempBlock;
 import com.projectkorra.projectkorra.waterbending.multiabilities.WaterArms;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
 import me.aztl.azutoru.ability.water.combo.WaterSlash;
 import me.aztl.azutoru.ability.water.multiability.Transform;
+import me.aztl.azutoru.util.WorldUtil;
 
 public class Hexapod extends WaterAbility implements AddonAbility, MultiAbility, ComboAbility {
 	
@@ -353,7 +353,7 @@ public class Hexapod extends WaterAbility implements AddonAbility, MultiAbility,
 	}
 	
 	private void displayArm(HexapodArm arm) {
-		AzutoruMethods.revertBlocks(affectedBlocks);
+		WorldUtil.revertBlocks(affectedBlocks);
 		arm.getBlocks().clear();
 		
 		Location eye = player.getEyeLocation().clone();
@@ -421,7 +421,7 @@ public class Hexapod extends WaterAbility implements AddonAbility, MultiAbility,
 	}
 	
 	private void displayWing(HexapodWing wing) {
-		AzutoruMethods.revertBlocks(affectedBlocks);
+		WorldUtil.revertBlocks(affectedBlocks);
 		wing.getBlocks().clear();
 		
 		Location headLoc = player.getEyeLocation().clone();

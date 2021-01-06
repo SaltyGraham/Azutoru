@@ -25,7 +25,7 @@ import com.projectkorra.projectkorra.util.TempBlock;
 import com.projectkorra.projectkorra.waterbending.WaterSpout;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
+import me.aztl.azutoru.util.PlayerUtil;
 
 public class WaterSpoutRush extends WaterAbility implements AddonAbility, ComboAbility {
 
@@ -33,16 +33,16 @@ public class WaterSpoutRush extends WaterAbility implements AddonAbility, ComboA
 	private long cooldown;
 	@Attribute(Attribute.DURATION)
 	private long duration;
-	
-	private boolean canBendOnPackedIce, useParticles, useBlockSpiral;
+
+	private static Map<Block, Block> AFFECTED_BLOCKS = new ConcurrentHashMap<Block, Block>();
+	private List<TempBlock> blocks = new ArrayList<TempBlock>();
+	private TempBlock baseBlock;
+	private Block base;
+	private boolean canBendOnPackedIce, useParticles, useBlockSpiral, canFly;
 	private int angle;
 	private long time, interval;
 	private double rotation, height, maxHeight;
-	private Block base;
-	private TempBlock baseBlock;
 	private float initFlySpeed, speedModifier;
-	private static Map<Block, Block> AFFECTED_BLOCKS = new ConcurrentHashMap<Block, Block>();
-	private List<TempBlock> blocks = new ArrayList<TempBlock>();
 	
 	public WaterSpoutRush(Player player) {
 		super(player);
@@ -62,6 +62,7 @@ public class WaterSpoutRush extends WaterAbility implements AddonAbility, ComboA
 		interval = ProjectKorra.plugin.getConfig().getLong("Abilities.Water.WaterSpout.Interval") / 8;
 		duration = Azutoru.az.getConfig().getLong("Abilities.Water.WaterSpoutRush.Duration");
 		maxHeight = getNightFactor(height);
+		canFly = player.getAllowFlight();
 		initFlySpeed = player.getFlySpeed();
 		speedModifier = 2;
 		
@@ -84,7 +85,7 @@ public class WaterSpoutRush extends WaterAbility implements AddonAbility, ComboA
 		}
 		
 		flightHandler.createInstance(player, getName());
-		AzutoruMethods.allowFlight(player);
+		PlayerUtil.allowFlight(player);
 		spoutableWaterHeight(player.getLocation());
 		start();
 	}
@@ -149,9 +150,9 @@ public class WaterSpoutRush extends WaterAbility implements AddonAbility, ComboA
 				
 				displayWaterSpiral(location.clone().add(0.5, 0, 0.5));
 				if (player.getLocation().getBlockY() > block.getY()) {
-					AzutoruMethods.removeFlight(player);
+					PlayerUtil.removeFlight(player, canFly, false);
 				} else {
-					AzutoruMethods.allowFlight(player);
+					PlayerUtil.allowFlight(player);
 				}
 			} else {
 				bPlayer.addCooldown(this);
@@ -199,7 +200,7 @@ public class WaterSpoutRush extends WaterAbility implements AddonAbility, ComboA
 		}
 		flightHandler.removeInstance(player, getName());
 		player.setFlySpeed(initFlySpeed);
-		AzutoruMethods.removeFlight(player);
+		PlayerUtil.removeFlight(player, canFly, false);
 		new WaterSpout(player);
 	}
 	

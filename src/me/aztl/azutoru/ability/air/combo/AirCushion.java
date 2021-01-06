@@ -1,6 +1,7 @@
 package me.aztl.azutoru.ability.air.combo;
 
 import java.util.ArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.bukkit.Location;
 import org.bukkit.block.Block;
@@ -19,6 +20,10 @@ import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.ClickType;
 
 import me.aztl.azutoru.Azutoru;
+import me.aztl.azutoru.policy.DifferentWorldPolicy;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.RemovalPolicy;
 
 public class AirCushion extends AirAbility implements AddonAbility, ComboAbility {
 
@@ -36,14 +41,12 @@ public class AirCushion extends AirAbility implements AddonAbility, ComboAbility
 	private Location location, origin, center;
 	private Vector direction;
 	private Block topBlock;
-	private double counter = 0;
+	private RemovalPolicy policy;
 	
 	public AirCushion(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			return;
-		}
+		if (!bPlayer.canBendIgnoreBinds(this)) return;
 		
 		cooldown = Azutoru.az.getConfig().getLong("Abilities.Air.AirCushion.Cooldown");
 		duration = Azutoru.az.getConfig().getLong("Abilities.Air.AirCushion.Duration");
@@ -54,6 +57,9 @@ public class AirCushion extends AirAbility implements AddonAbility, ComboAbility
 		origin = player.getEyeLocation();
 		location = origin.clone();
 		direction = location.getDirection().multiply(speed);
+		policy = Policies.builder()
+					.add(new DifferentWorldPolicy(() -> this.player.getWorld()))
+					.add(new ExpirationPolicy(duration)).build();
 		
 		start();
 		bPlayer.addCooldown(this);
@@ -61,6 +67,11 @@ public class AirCushion extends AirAbility implements AddonAbility, ComboAbility
 	
 	@Override
 	public void progress() {
+		if (!bPlayer.canBendIgnoreBindsCooldowns(this) || policy.test(player)) {
+			remove();
+			return;
+		}
+		
 		if (location.distanceSquared(origin) > range * range) {
 			if (topBlock == null) {
 				topBlock = GeneralMethods.getTopBlock(location, 15);
@@ -71,15 +82,8 @@ public class AirCushion extends AirAbility implements AddonAbility, ComboAbility
 			}
 		}
 		
-		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
-			remove();
-			return;
-		}
-		
-		if (counter % 6 == 0) {
+		if (ThreadLocalRandom.current().nextInt(6) == 0)
 			playAirbendingSound(location);
-		}
-		counter++;
 		
 		for (int i = 0; i < 5; i++) {
 			if (GeneralMethods.isSolid(location.getBlock())) {

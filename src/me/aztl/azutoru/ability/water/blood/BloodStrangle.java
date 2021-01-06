@@ -24,6 +24,12 @@ import com.projectkorra.projectkorra.command.Commands;
 import com.projectkorra.projectkorra.util.DamageHandler;
 
 import me.aztl.azutoru.Azutoru;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.ProtectedRegionPolicy;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.policy.SneakingPolicy;
+import me.aztl.azutoru.policy.SneakingPolicy.ProhibitedState;
 
 public class BloodStrangle extends BloodAbility implements AddonAbility {
 
@@ -38,9 +44,10 @@ public class BloodStrangle extends BloodAbility implements AddonAbility {
 	private long cooldown;
 	@Attribute(Attribute.DURATION)
 	private long duration;
-	
-	private Location location;
+
 	private Map<Entity, Vector> grabbedEntities;
+	private Location location;
+	private RemovalPolicy policy;
 	private long time, init;
 	
 	public BloodStrangle(Player player) {
@@ -58,6 +65,10 @@ public class BloodStrangle extends BloodAbility implements AddonAbility {
 		duration = Azutoru.az.getConfig().getLong("Abilities.Water.BloodStrangle.Duration");
 		
 		init = System.currentTimeMillis();
+		policy = Policies.builder()
+					.add(new SneakingPolicy(ProhibitedState.NOT_SNEAKING))
+					.add(new ExpirationPolicy(duration))
+					.add(new ProtectedRegionPolicy(this, () -> location)).build();
 		
 		if (grabEntities()) {
 			start();
@@ -113,22 +124,7 @@ public class BloodStrangle extends BloodAbility implements AddonAbility {
 	
 	@Override
 	public void progress() {
-		if (!bPlayer.canBend(this)) {
-			remove();
-			return;
-		}
-		
-		if (!player.isSneaking()) {
-			remove();
-			return;
-		}
-		
-		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
-			remove();
-			return;
-		}
-		
-		if (GeneralMethods.isRegionProtectedFromBuild(this, location)) {
+		if (!bPlayer.canBend(this) || policy.test(player)) {
 			remove();
 			return;
 		}

@@ -16,6 +16,12 @@ import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.earthbending.EarthSmash;
 
 import me.aztl.azutoru.Azutoru;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.policy.SneakingPolicy;
+import me.aztl.azutoru.policy.SneakingPolicy.ProhibitedState;
+import me.aztl.azutoru.policy.SwappedSlotsPolicy;
 
 public class EarthShield extends EarthAbility implements AddonAbility {
 
@@ -27,6 +33,7 @@ public class EarthShield extends EarthAbility implements AddonAbility {
 	private double blockRadius;
 	
 	private Set<FallingBlock> affectedBlocks;
+	private RemovalPolicy policy;
 	
 	public EarthShield(Player player) {
 		super(player);
@@ -44,28 +51,17 @@ public class EarthShield extends EarthAbility implements AddonAbility {
 		blockRadius = Azutoru.az.getConfig().getDouble("Abilities.Earth.Crumble.Shield.BlockRadius");
 		
 		affectedBlocks = new HashSet<>();
+		policy = Policies.builder()
+					.add(new ExpirationPolicy(duration))
+					.add(new SneakingPolicy(ProhibitedState.NOT_SNEAKING))
+					.add(new SwappedSlotsPolicy("EarthSmash")).build();
 		
 		start();
 	}
 
 	@Override
 	public void progress() {
-		if (!bPlayer.canBendIgnoreBindsCooldowns(this)) {
-			remove();
-			return;
-		}
-		
-		if (!bPlayer.canBendIgnoreCooldowns(getAbility(EarthSmash.class))) {
-			remove();
-			return;
-		}
-		
-		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
-			remove();
-			return;
-		}
-		
-		if (!player.isSneaking()) {
+		if (!bPlayer.canBendIgnoreBindsCooldowns(this) || policy.test(player)) {
 			remove();
 			return;
 		}
@@ -76,8 +72,12 @@ public class EarthShield extends EarthAbility implements AddonAbility {
 				if (isEarth(fb.getBlockData().getMaterial())
 						&& !affectedBlocks.contains(fb)) {
 					Vector ortho = GeneralMethods.getOrthogonalVector(fb.getVelocity(), 90, 0.5);
-					fb.setVelocity(ortho);
-					affectedBlocks.add(fb);
+					try {
+						fb.setVelocity(ortho);
+						affectedBlocks.add(fb);
+					} catch (IllegalArgumentException exception) {
+						// Don't affect falling blocks if ortho is not finite
+					}
 				}
 			}
 		}

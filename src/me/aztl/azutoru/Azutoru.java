@@ -12,12 +12,12 @@ import com.projectkorra.projectkorra.ability.CoreAbility;
 
 import me.aztl.azutoru.ability.earth.RaiseEarth;
 import me.aztl.azutoru.config.AzutoruConfig;
+import me.aztl.azutoru.listener.AzutoruListener;
 import me.aztl.azutoru.manager.AzutoruManager;
 
 public class Azutoru extends JavaPlugin {
 	
 	public static Azutoru az;
-	private AzutoruMethods methods;
 	private Element glassElement;
 	private static Logger log;
 	
@@ -30,7 +30,6 @@ public class Azutoru extends JavaPlugin {
 		CoreAbility.registerPluginAbilities(this, "me.aztl.azutoru.ability");
 		getServer().getPluginManager().registerEvents(new AzutoruListener(this), this);
 		getServer().getScheduler().scheduleSyncRepeatingTask(this, new AzutoruManager(this), 0, 1);
-		methods = new AzutoruMethods(this);
 		
 		glassElement = new SubElement("Glass", Element.EARTH, ElementType.BENDING, this) {
 			@Override
@@ -43,10 +42,6 @@ public class Azutoru extends JavaPlugin {
 	@Override
 	public void onDisable() {
 		RaiseEarth.removeAllCleanup();
-	}
-	
-	public AzutoruMethods getMethods() {
-		return methods;
 	}
 	
 	public Logger getLog() {

@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import org.bukkit.Location;
-import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -18,9 +17,15 @@ import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.DamageHandler;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
-import me.aztl.azutoru.AzutoruMethods.Hand;
-import me.aztl.azutoru.util.Rope;
+import me.aztl.azutoru.policy.DifferentWorldPolicy;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.ProtectedRegionPolicy;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.policy.SolidLiquidPolicy;
+import me.aztl.azutoru.util.PlayerUtil;
+import me.aztl.azutoru.util.PlayerUtil.Hand;
+import me.aztl.azutoru.util.rope.Rope;
 
 public class FireWhips extends FireAbility implements AddonAbility {
 
@@ -47,8 +52,8 @@ public class FireWhips extends FireAbility implements AddonAbility {
 	private long time;
 	private Location rightLoc, leftLoc, target;
 	private Rope right, left;
-	private Predicate<Location> removalPolicy;
-	private World world;
+	private Predicate<Location> cutPolicy;
+	private RemovalPolicy policy;
 	
 	public FireWhips(Player player) {
 		super(player);
@@ -67,57 +72,39 @@ public class FireWhips extends FireAbility implements AddonAbility {
 		speed = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireWhips.Speed");
 		attackSpeed = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireWhips.AttackSpeed");
 		requireConstantMotion = Azutoru.az.getConfig().getBoolean("Abilities.Fire.FireWhips.RequireConstantMotion");
-		
-		removalPolicy = loc -> loc != null && (GeneralMethods.isSolid(loc.getBlock()) || loc.getBlock().isLiquid());
-		world = player.getWorld();
-		
-		rightLoc = AzutoruMethods.getHandPos(player, Hand.RIGHT).setDirection(player.getEyeLocation().getDirection());
-		right = new Rope(rightLoc, player.getEyeLocation().getDirection(), 5, 60, 0.5, 1, removalPolicy);
+
+		cutPolicy = Rope.STANDARD_CUT_POLICY;
+		rightLoc = PlayerUtil.getHandPos(player, Hand.RIGHT).setDirection(player.getEyeLocation().getDirection());
+		right = new Rope(rightLoc, player.getEyeLocation().getDirection(), 5, 60, 0.5, 1);
+		right.setCutPolicy(cutPolicy);
 		time = System.currentTimeMillis();
 		target = GeneralMethods.getTargetedLocation(player, 5);
+		
+		policy = Policies.builder()
+					.add(new DifferentWorldPolicy(() -> this.player.getWorld()))
+					.add(new ExpirationPolicy(duration))
+					.add(new ProtectedRegionPolicy(this, () -> right.getEndLocation()))
+					.add(new SolidLiquidPolicy(() -> rightLoc, () -> rightLoc.getDirection())).build();
 		
 		start();
 	}
 
 	@Override
 	public void progress() {
-		if (!bPlayer.canBend(this)) {
+		if (!bPlayer.canBend(this) || policy.test(player)) {
 			remove();
 			return;
 		}
 		
-		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
-			remove();
-			return;
-		}
-		
-		if (!player.getWorld().equals(world)) {
-			remove();
-			return;
-		}
-		
-		rightLoc = AzutoruMethods.getHandPos(player, Hand.RIGHT).setDirection(player.getEyeLocation().getDirection());
-		leftLoc = AzutoruMethods.getHandPos(player, Hand.LEFT).setDirection(player.getEyeLocation().getDirection());
-		
-		if (GeneralMethods.isSolid(rightLoc.getBlock()) || rightLoc.getBlock().isLiquid()) {
-			remove();
-			return;
-		}
+		rightLoc = PlayerUtil.getHandPos(player, Hand.RIGHT).setDirection(player.getEyeLocation().getDirection());
+		leftLoc = PlayerUtil.getHandPos(player, Hand.LEFT).setDirection(player.getEyeLocation().getDirection());
 		
 		if (Math.abs(right.getSpeed() - 3) <= 0.1 && System.currentTimeMillis() - time >= 2000) {
 			right.setSpeed(1);
 		}
 		
-		if (requireConstantMotion && GeneralMethods.getTargetedLocation(player, 5).distance(target) <= 0.05) {
-			if (right != null && right.getLength() > 5) {
-				right.setLength(right.getLength() - 1);
-			}
-			if (left != null && left.getLength() > 5) {
-				left.setLength(left.getLength() - 1);
-			}
-		}
-		
 		right.recalculate(rightLoc);
+		
 		for (Location loc : right.getLocations()) {
 			display(loc);
 		}
@@ -126,15 +113,37 @@ public class FireWhips extends FireAbility implements AddonAbility {
 			if (Math.abs(left.getSpeed() - 3) <= 0.1 && System.currentTimeMillis() - time >= 2000) {
 				left.setSpeed(1);
 			}
+			
 			left.recalculate(leftLoc);
+			
 			for (Location loc : left.getLocations()) {
 				display(loc);
 			}
 		} else if (player.isSneaking()) {
-			left = new Rope(leftLoc, player.getEyeLocation().getDirection(), 5, 60, 0.5, 1, removalPolicy);
+			left = new Rope(leftLoc, player.getEyeLocation().getDirection(), 5, 60, 0.5, 1);
+			left.setCutPolicy(cutPolicy);
 		}
 		
-		if (requireConstantMotion) target = GeneralMethods.getTargetedLocation(player, 5);
+		if (GeneralMethods.getDirection(GeneralMethods.getTargetedLocation(player, 5), target).length() >= 2) {
+			if (right != null && right.getLength() <= right.getMaxLength()) {
+				right.setLength(right.getLength() + 1);
+			}
+			if (left != null && left.getLength() <= left.getMaxLength()) {
+				left.setLength(left.getLength() + 1);
+			}
+		}
+		
+		if (requireConstantMotion) {
+			if (GeneralMethods.getTargetedLocation(player, 5).distance(target) <= 0.05) {
+				if (right != null && right.getLength() > 5) {
+					right.setLength(right.getLength() - 1);
+				}
+				if (left != null && left.getLength() > 5) {
+					left.setLength(left.getLength() - 1);
+				}
+			}
+			target = GeneralMethods.getTargetedLocation(player, 5);
+		}
 	}
 	
 	private void display(Location loc) {

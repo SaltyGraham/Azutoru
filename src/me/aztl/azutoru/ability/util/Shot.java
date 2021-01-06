@@ -2,6 +2,7 @@ package me.aztl.azutoru.ability.util;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -21,15 +22,19 @@ import com.projectkorra.projectkorra.util.TempBlock;
 import com.projectkorra.projectkorra.util.TempPotionEffect;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
 import me.aztl.azutoru.ability.earth.glass.GlassShards;
+import me.aztl.azutoru.policy.DifferentWorldPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.ProtectedRegionPolicy;
+import me.aztl.azutoru.policy.RangePolicy;
+import me.aztl.azutoru.policy.RemovalPolicy;
 import me.aztl.azutoru.util.GlassAbility;
 
-/*
- * This class is used for multi-shot abilities.
- * It uses Player, Location, Vector, Ability, and a few other parameters.
+/**
+ * A Shot is a singular shot that other abilities can fire.
+ * It is used for multi-shot abilities such as IceShots
+ * and needs several parameters to function.
  */
-
 public class Shot extends ElementalAbility implements AddonAbility {
 
 	private double damage, range, hitRadius, speed;
@@ -37,6 +42,7 @@ public class Shot extends ElementalAbility implements AddonAbility {
 	private Location location, origin;
 	private Vector direction;
 	private Ability ability;
+	private RemovalPolicy policy;
 	private boolean controllable;
 	private double counter;
 	
@@ -55,23 +61,18 @@ public class Shot extends ElementalAbility implements AddonAbility {
 		this.controllable = controllable;
 		
 		location = origin.clone();
+		policy = Policies.builder()
+					.add(new DifferentWorldPolicy(() -> this.player.getWorld()))
+					.add(new ProtectedRegionPolicy(this, () -> location))
+					.add(new RangePolicy(this.range, this.origin, () -> location))
+					.build();
 		
 		start();
 	}
 
 	@Override
 	public void progress() {
-		if (player.isDead() || !player.isOnline()) {
-			remove();
-			return;
-		}
-		
-		if (location.distanceSquared(origin) > range * range) {
-			remove();
-			return;
-		}
-		
-		if (GeneralMethods.isRegionProtectedFromBuild(ability, location)) {
+		if (bPlayer.canBendIgnoreCooldowns(this) || policy.test(player)) {
 			remove();
 			return;
 		}
@@ -113,7 +114,7 @@ public class Shot extends ElementalAbility implements AddonAbility {
 			}
 		}
 		
-		if (!AzutoruMethods.canPlaceWaterBlock(location.getBlock())) {
+		if (!canPlaceWaterBlock(location.getBlock())) {
 			remove();
 			return;
 		}
@@ -137,6 +138,10 @@ public class Shot extends ElementalAbility implements AddonAbility {
 		if (counter % 6 == 0) {
 			GlassAbility.playGlassbendingSound(location);
 		}
+	}
+	
+	private boolean canPlaceWaterBlock(Block b) {
+		return isWater(b) || isIce(b) || isAir(b.getType());
 	}
 
 	@Override

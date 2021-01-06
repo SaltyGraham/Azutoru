@@ -1,6 +1,7 @@
 package me.aztl.azutoru.ability.fire.combo;
 
 import java.util.ArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.bukkit.Location;
 import org.bukkit.Sound;
@@ -24,6 +25,13 @@ import com.projectkorra.projectkorra.util.DamageHandler;
 import com.projectkorra.projectkorra.util.ParticleEffect;
 
 import me.aztl.azutoru.Azutoru;
+import me.aztl.azutoru.policy.DifferentWorldPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.ProtectedRegionPolicy;
+import me.aztl.azutoru.policy.RangePolicy;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.policy.SolidLiquidPolicy;
+import me.aztl.azutoru.policy.SwappedSlotsPolicy;
 
 public class FireStreams extends FireAbility implements AddonAbility, ComboAbility {
 
@@ -48,8 +56,8 @@ public class FireStreams extends FireAbility implements AddonAbility, ComboAbili
 	
 	private Location location, origin;
 	private Vector direction;
+	private RemovalPolicy policy;
 	private double rotation;
-	private int counter;
 	
 	public FireStreams(Player player) {
 		super(player);
@@ -80,7 +88,12 @@ public class FireStreams extends FireAbility implements AddonAbility, ComboAbili
 		origin = location.clone();
 		direction = location.getDirection();
 		rotation = 0;
-		counter = 0;
+		policy = Policies.builder()
+					.add(new DifferentWorldPolicy(() -> this.player.getWorld()))
+					.add(new RangePolicy(range, origin, () -> location))
+					.add(new ProtectedRegionPolicy(this, () -> location))
+					.add(new SolidLiquidPolicy(() -> location, () -> direction))
+					.add(new SwappedSlotsPolicy("FireShield")).build();
 		
 		start();
 	}
@@ -106,33 +119,7 @@ public class FireStreams extends FireAbility implements AddonAbility, ComboAbili
 
 	@Override
 	public void progress() {
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			remove();
-			return;
-		}
-		
-		if (!bPlayer.getBoundAbilityName().equalsIgnoreCase("fireshield")) {
-			remove();
-			return;
-		}
-		
-		if (location.distanceSquared(origin) > range * range) {
-			remove();
-			return;
-		}
-		
-		if (GeneralMethods.isRegionProtectedFromBuild(this, location)) {
-			remove();
-			return;
-		}
-		
-		if (GeneralMethods.isSolid(location.getBlock()) || location.getBlock().isLiquid()) {
-			explode();
-			remove();
-			return;
-		}
-		
-		if (GeneralMethods.checkDiagonalWall(location, direction)) {
+		if (!bPlayer.canBendIgnoreBinds(this) || policy.test(player)) {
 			explode();
 			remove();
 			return;
@@ -154,10 +141,8 @@ public class FireStreams extends FireAbility implements AddonAbility, ComboAbili
 			}
 			rotation += 10;
 			
-			if (counter % 6 == 0) {
+			if (ThreadLocalRandom.current().nextInt(6) == 0)
 				playFirebendingSound(location);
-			}
-			counter++;
 			
 			for (Entity e : GeneralMethods.getEntitiesAroundPoint(location, hitRadius)) {
 				if (e instanceof LivingEntity && e.getUniqueId() != player.getUniqueId()) {

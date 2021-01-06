@@ -21,6 +21,12 @@ import com.projectkorra.projectkorra.util.TempBlock;
 import com.projectkorra.projectkorra.waterbending.plant.PlantRegrowth;
 
 import me.aztl.azutoru.Azutoru;
+import me.aztl.azutoru.policy.DifferentWorldPolicy;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.ProtectedRegionPolicy;
+import me.aztl.azutoru.policy.RangePolicy;
+import me.aztl.azutoru.policy.RemovalPolicy;
 
 public class PlantWhip extends PlantAbility implements AddonAbility {
 
@@ -42,16 +48,19 @@ public class PlantWhip extends PlantAbility implements AddonAbility {
 	private long cooldown;
 	@Attribute(Attribute.DURATION)
 	private long duration;
-	
-	private Location origin, location;
-	private Block sourceBlock;
-	private Material material;
-	private Vector direction;
-	private boolean launching;
+
 	private static Set<TempBlock> affectedBlocks = new HashSet<>();
+	private Location origin, location;
+	private Vector direction;
+	private Block sourceBlock;
+	private RemovalPolicy policy;
+	private Material material;
+	private boolean launching;
 
 	public PlantWhip(Player player) {
 		super(player);
+		
+		if (!bPlayer.canBend(this)) return;
 		
 		final PlantWhip oldWhip = getAbility(player, PlantWhip.class);
 		if (oldWhip != null) {
@@ -60,20 +69,20 @@ public class PlantWhip extends PlantAbility implements AddonAbility {
 			}
 		}
 		
-		if (!bPlayer.canBend(this)) {
-			return;
-		}
-		
 		setFields();
+		
+		if (!setOrigin()) return;
 		
 		launching = false;
 		
-		if (!setOrigin()) {
-			return;
-		}
+		policy = Policies.builder()
+				.add(new DifferentWorldPolicy(() -> this.player.getWorld()))
+				.add(new ExpirationPolicy(duration))
+				.add(new ProtectedRegionPolicy(this, () -> location))
+				.add(new RangePolicy(sourceRange, origin, () -> this.player.getLocation(), p -> !launching))
+				.add(new RangePolicy(range, origin, () -> location)).build();
 		
 		start();
-		
 	}
 
 	public void setFields() {
@@ -104,10 +113,8 @@ public class PlantWhip extends PlantAbility implements AddonAbility {
 		Block source = WaterAbility.getPlantSourceBlock(player, sourceRange, false, true);
 		
 		if (source != null) {
-			if (GeneralMethods.isRegionProtectedFromBuild(this, source.getLocation())) {
-				remove();
-				return false;
-			}
+			if (GeneralMethods.isRegionProtectedFromBuild(this, source.getLocation())) return false;
+			
 			origin = source.getLocation();
 			sourceBlock = origin.getBlock();
 			location = origin.clone();
@@ -137,45 +144,21 @@ public class PlantWhip extends PlantAbility implements AddonAbility {
 					break;
 				}
 			}
-			
 			return true;
 		}
-		
 		return false;
 	}
 	
 	@Override
 	public void progress() {
-		if (player.isDead() || !player.isOnline()) {
+		if (!bPlayer.canBend(this) || policy.test(player)) {
 			remove();
 			return;
 		}
 		
-		if (GeneralMethods.isRegionProtectedFromBuild(this, origin) || GeneralMethods.isRegionProtectedFromBuild(this, location)) {
-			remove();
-			return;
-		}
-		
-		if (player.getLocation().distanceSquared(location) > range * range) {
-			remove();
-			return;
-		}
-		
-		if (System.currentTimeMillis() > getStartTime() + duration) {
-			remove();
-			return;
-		}
-		
-		if (player.getLocation().distanceSquared(origin) > sourceRange * sourceRange && !launching) {
-			remove();
-			return;
-		}
-		
-		if (!launching) {
+		if (!launching)
 			WaterAbility.playFocusWaterEffect(origin.getBlock());
-		}
-		
-		if (launching) {
+		else {
 			if (isDecayablePlant(sourceBlock)) {
 				new PlantRegrowth(player, sourceBlock, 3);
 			} else if (isPlant(sourceBlock)) {

@@ -1,6 +1,7 @@
 package me.aztl.azutoru.ability.air.combo;
 
 import java.util.ArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -16,6 +17,11 @@ import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.ClickType;
 
 import me.aztl.azutoru.Azutoru;
+import me.aztl.azutoru.policy.DifferentWorldPolicy;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.policy.SwappedSlotsPolicy;
 
 public class AirCocoon extends AirAbility implements AddonAbility, ComboAbility {
 
@@ -24,7 +30,7 @@ public class AirCocoon extends AirAbility implements AddonAbility, ComboAbility 
 	@Attribute(Attribute.DURATION)
 	private long duration;
 	
-	private double counter = 0;
+	private RemovalPolicy policy;
 	
 	public AirCocoon(Player player) {
 		super(player);
@@ -36,32 +42,25 @@ public class AirCocoon extends AirAbility implements AddonAbility, ComboAbility 
 		cooldown = Azutoru.az.getConfig().getLong("Abilities.Air.AirCocoon.Cooldown");
 		duration = Azutoru.az.getConfig().getLong("Abilities.Air.AirCocoon.Duration");
 		
+		policy = Policies.builder()
+					.add(new DifferentWorldPolicy(() -> this.player.getWorld()))
+					.add(new ExpirationPolicy(duration))
+					.add(new SwappedSlotsPolicy("AirShield")).build();
+		
 		start();
 	}
 	
 	@Override
 	public void progress() {
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			remove();
-			return;
-		}
-		
-		if (System.currentTimeMillis() > getStartTime() + duration) {
-			remove();
-			return;
-		}
-		
-		if (!bPlayer.getBoundAbilityName().equalsIgnoreCase("airshield")) {
+		if (!bPlayer.canBendIgnoreBinds(this) || policy.test(player)) {
 			remove();
 			return;
 		}
 		
 		displayCocoon();
 		
-		if (counter % 6 == 0) {
+		if (ThreadLocalRandom.current().nextInt(6) == 0)
 			playAirbendingSound(player.getLocation());
-		}
-		counter++;
 		
 		Vector velocity = player.getVelocity().multiply(0);
 		player.setVelocity(velocity);

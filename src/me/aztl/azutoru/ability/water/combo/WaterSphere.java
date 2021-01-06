@@ -5,7 +5,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -26,7 +25,14 @@ import com.projectkorra.projectkorra.waterbending.SurgeWall;
 import com.projectkorra.projectkorra.waterbending.SurgeWave;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
+import me.aztl.azutoru.policy.DamagePolicy;
+import me.aztl.azutoru.policy.DifferentWorldPolicy;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.ProtectedRegionPolicy;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.policy.SwappedSlotsPolicy;
+import me.aztl.azutoru.util.WorldUtil;
 
 public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbility {
 
@@ -45,13 +51,13 @@ public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbil
 	private long cooldown;
 	@Attribute(Attribute.DURATION)
 	private long duration;
-	
+
+	private ConcurrentHashMap<Block, TempBlock> affectedBlocks;
+	private ArrayList<Entity> damagedEntities;
 	private Location location;
 	private Vector direction;
+	private RemovalPolicy policy;
 	private boolean clicked;
-	private ConcurrentHashMap<Block, TempBlock> affectedBlocks;
-	private World world;
-	private ArrayList<Entity> damagedEntities;
 	
 	public WaterSphere(Player player) {
 		super(player);
@@ -75,13 +81,20 @@ public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbil
 		cooldown = Azutoru.az.getConfig().getLong("Abilities.Water.WaterSphere.Cooldown");
 		duration = Azutoru.az.getConfig().getLong("Abilities.Water.WaterSphere.Duration");
 		damage = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterSphere.Damage");
+		// TODO: Add damage threshold
 		
 		applyModifiers();
 		
 		clicked = false;
 		affectedBlocks = new ConcurrentHashMap<>();
-		world = player.getWorld();
 		damagedEntities = new ArrayList<>();
+		
+		policy = Policies.builder()
+					.add(new DamagePolicy(3 /* future damage threshold variable */, () -> player.getHealth()))
+					.add(new DifferentWorldPolicy(() -> player.getWorld()))
+					.add(new ExpirationPolicy(duration))
+					.add(new ProtectedRegionPolicy(this, () -> location))
+					.add(new SwappedSlotsPolicy("Surge")).build();
 		
 		Block sourceBlock = BlockSource.getWaterSourceBlock(player, sourceRange, ClickType.SHIFT_DOWN, true, iceSource, plantSource, snowSource, bottleSource);
 		if (sourceBlock != null) {
@@ -110,22 +123,7 @@ public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbil
 	
 	@Override
 	public void progress() {
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			remove();
-			return;
-		}
-		
-		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
-			remove();
-			return;
-		}
-		
-		if (!bPlayer.getBoundAbilityName().equalsIgnoreCase("surge")) {
-			remove();
-			return;
-		}
-		
-		if (!player.getWorld().equals(world)) {
+		if (!bPlayer.canBendIgnoreBinds(this) || policy.test(player)) {
 			remove();
 			return;
 		}
@@ -164,7 +162,7 @@ public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbil
 				}
 			}
 		} else {
-			AzutoruMethods.revertBlocks(affectedBlocks);
+			WorldUtil.revertBlocks(affectedBlocks);
 			
 			if (player.isSneaking()) {
 				direction = GeneralMethods.getDirection(location, GeneralMethods.getTargetedLocation(player, radius + 2));
@@ -183,7 +181,7 @@ public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbil
 					return;
 				}
 				if (isWater(b) && !TempBlock.isTempBlock(b)) {
-					AzutoruMethods.displayWaterBubble(b.getLocation());
+					WorldUtil.displayWaterBubble(b.getLocation());
 				}
 				if (isLava(b)) {
 					b.setType(Material.OBSIDIAN);
@@ -227,7 +225,7 @@ public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbil
 	public void remove() {
 		super.remove();
 		bPlayer.addCooldown(this);
-		AzutoruMethods.revertBlocks(affectedBlocks);
+		WorldUtil.revertBlocks(affectedBlocks);
 		affectedBlocks.clear();
 		damagedEntities.clear();
 	}

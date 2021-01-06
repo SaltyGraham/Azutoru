@@ -20,7 +20,11 @@ import com.projectkorra.projectkorra.waterbending.WaterSpout;
 import com.projectkorra.projectkorra.waterbending.util.WaterReturn;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.policy.UsedAmmoPolicy;
+import me.aztl.azutoru.util.MathUtil;
 
 public class MistStepping extends IceAbility implements AddonAbility, ComboAbility {
 
@@ -37,6 +41,7 @@ public class MistStepping extends IceAbility implements AddonAbility, ComboAbili
 	private int maxDistance;
 	
 	private Block topBlock;
+	private RemovalPolicy policy;
 	
 	public MistStepping(Player player) {
 		super(player);
@@ -57,6 +62,10 @@ public class MistStepping extends IceAbility implements AddonAbility, ComboAbili
 		maxDistance = Azutoru.az.getConfig().getInt("Abilities.Water.MistStepping.MaxDistanceFromGround");
 		
 		applyModifiers();
+		
+		policy = Policies.builder()
+					.add(new ExpirationPolicy(duration))
+					.add(new UsedAmmoPolicy(() -> maxSteps)).build();
 		
 		topBlock = GeneralMethods.getTopBlock(player.getLocation(), maxDistance);
 		if (isWater(topBlock) || isIce(topBlock) || isSnow(topBlock) || WaterReturn.hasWaterBottle(player)) {
@@ -85,17 +94,7 @@ public class MistStepping extends IceAbility implements AddonAbility, ComboAbili
 
 	@Override
 	public void progress() {
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			remove();
-			return;
-		}
-		
-		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
-			remove();
-			return;
-		}
-		
-		if (maxSteps == 0) {
+		if (!bPlayer.canBendIgnoreBinds(this) || policy.test(player)) {
 			remove();
 			return;
 		}
@@ -111,7 +110,7 @@ public class MistStepping extends IceAbility implements AddonAbility, ComboAbili
 		Location playerLoc = player.getLocation();
 		if (isWater(topBlock) || isIce(topBlock) || isSnow(topBlock)) {
 			Location ground = topBlock.getLocation();
-			for (Location loc : AzutoruMethods.getLinePoints(player, ground, playerLoc, (int) ground.distance(playerLoc) * 2)) {
+			for (Location loc : MathUtil.getLinePoints(player, ground, playerLoc, (int) ground.distance(playerLoc) * 2)) {
 				displayParticles(loc);
 			}
 		} else {

@@ -32,9 +32,10 @@ import com.projectkorra.projectkorra.util.DamageHandler;
 import com.projectkorra.projectkorra.util.ParticleEffect;
 
 import me.aztl.azutoru.Azutoru;
-import me.aztl.azutoru.AzutoruMethods;
 import me.aztl.azutoru.ability.earth.combo.Crumble;
 import me.aztl.azutoru.ability.fire.combo.FireStreams;
+import me.aztl.azutoru.util.MathUtil;
+import me.aztl.azutoru.util.WorldUtil;
 
 public class RaiseEarth extends EarthAbility implements AddonAbility {
 
@@ -71,20 +72,20 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 	private boolean throwEnabled;
 	private static double collisionRadius = Azutoru.az.getConfig().getDouble("Abilities.Earth.RaiseEarth.CollisionRadius");
 
-	private int counter;
-	private BlockFace face;
-	private RaiseEarthState state;
-	private RaiseEarthShape shape;
+	private static Map<Block, RaiseEarth> affectedBlocks = new ConcurrentHashMap<>();
+	private static Map<RaiseEarth, List<Column>> columnsByInstance = new ConcurrentHashMap<>();
 	private RaiseEarth instance;
 	private Location origin, location;
 	private Vector direction;
 	private Column column;
-	private Block source;
-	private static Map<Block, RaiseEarth> affectedBlocks = new ConcurrentHashMap<>();
-	private static Map<RaiseEarth, List<Column>> columnsByInstance = new ConcurrentHashMap<>();
 	private List<Column> columns = new ArrayList<>();
 	private List<Block> blocks = new ArrayList<>();
 	private Set<Entity> affectedEntities = new HashSet<>();
+	private Block source;
+	private BlockFace face;
+	private RaiseEarthState state;
+	private RaiseEarthShape shape;
+	private int counter = 0;
 	
 	public RaiseEarth(Player player, ClickType type) {
 		super(player);
@@ -131,7 +132,7 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 				if (targetBlocks.size() > 1) {
 					source = targetBlocks.get(1);
 					face = source.getFace(targetBlocks.get(0));
-					height = getEarthbendableBlocksLength(source, AzutoruMethods.getFaceDirection(face).clone().multiply(-1), height);
+					height = getEarthbendableBlocksLength(source, MathUtil.getFaceDirection(face).clone().multiply(-1), height);
 					if (height < 1) {
 						return;
 					}
@@ -241,7 +242,7 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 			o = Orientation.HORIZONTAL;
 		}
 		this.column = new Column(o);
-		this.height = getEarthbendableBlocksLength(source, AzutoruMethods.getFaceDirection(face).clone().multiply(-1), height);
+		this.height = getEarthbendableBlocksLength(source, MathUtil.getFaceDirection(face).clone().multiply(-1), height);
 		if (this.height < 1) {
 			return;
 		}
@@ -306,7 +307,7 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 	}
 	
 	private void raiseColumn() {
-		moveEarth(source, AzutoruMethods.getFaceDirection(face), height);
+		moveEarth(source, MathUtil.getFaceDirection(face), height);
 		source = source.getRelative(face);
 		affectedBlocks.put(source, instance);
 		column.getBlocks().add(source);
@@ -421,7 +422,7 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 	}
 	
 	private boolean isViableTarget(Block b) {
-		return isAir(b.getType()) || AzutoruMethods.isIgnoredPlant(b) || isWater(b) || isTransparent(b);
+		return isAir(b.getType()) || WorldUtil.isIgnoredPlant(b) || isWater(b) || isTransparent(b);
 	}
 	
 	public static boolean isDiagonal(Vector direction) {
@@ -469,15 +470,13 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 		Set<RaiseEarth> removal = new HashSet<>();
 		Vector direction = new Vector(0, 0, 0);
 		for (RaiseEarth re : columnsByInstance.keySet()) {
-			if (re.getState() != RaiseEarthState.RAISE) {
-				continue;
-			}
 			Location reLoc = re.getColumns().get(0).getBlocks().get(0).getLocation();
 			boolean crumbled = false;
 			
 			columns:
 			for (Column c : re.getColumns()) {
 				for (Block b : c.getBlocks()) {
+					if (!isEarth(b)) continue;
 					Location loc = b.getLocation().add(0.5, 0.5, 0.5);
 					
 					for (EarthSmash es : getAbilities(EarthSmash.class)) {
