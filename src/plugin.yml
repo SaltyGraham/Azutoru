@@ -4,6 +4,7 @@ api-version: 1.16
 version: 1.0.0
 main: me.aztl.azutoru.Azutoru
 depend: [ProjectKorra]
+softdepend: [JedCore]
 permissions:
   azutoru.player:
     default: true
@@ -30,6 +31,7 @@ permissions:
       bending.ability.glassshards: true
       bending.ability.earthridge: true
       bending.ability.raiseearth: true
+      bending.ability.shockwave: true
       bending.ability.electrify: true
       bending.ability.evaporate: true
       bending.ability.fireaugmentation: true

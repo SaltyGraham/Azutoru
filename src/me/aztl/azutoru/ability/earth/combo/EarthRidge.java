@@ -1,4 +1,4 @@
-package me.aztl.azutoru.ability.water.ice;
+package me.aztl.azutoru.ability.earth.combo;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -10,6 +10,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -17,29 +18,34 @@ import org.bukkit.util.Vector;
 
 import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
-import com.projectkorra.projectkorra.ability.IceAbility;
+import com.projectkorra.projectkorra.ability.ComboAbility;
+import com.projectkorra.projectkorra.ability.EarthAbility;
+import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
 import com.projectkorra.projectkorra.attribute.Attribute;
+import com.projectkorra.projectkorra.earthbending.EarthBlast;
+import com.projectkorra.projectkorra.object.HorizontalVelocityTracker;
 import com.projectkorra.projectkorra.util.BlockSource;
 import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.DamageHandler;
 import com.projectkorra.projectkorra.util.TempBlock;
 
 import me.aztl.azutoru.Azutoru;
+import me.aztl.azutoru.ability.earth.RaiseEarth;
 import me.aztl.azutoru.policy.DifferentWorldPolicy;
 import me.aztl.azutoru.policy.Policies;
 import me.aztl.azutoru.policy.ProtectedRegionPolicy;
 import me.aztl.azutoru.policy.RangePolicy;
 import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.policy.SwappedSlotsPolicy;
 import me.aztl.azutoru.util.MathUtil;
 import me.aztl.azutoru.util.WorldUtil;
 
-public class IceRidge extends IceAbility implements AddonAbility {
+public class EarthRidge extends EarthAbility implements AddonAbility, ComboAbility {
 
 	@Attribute(Attribute.COOLDOWN)
 	private long cooldown;
 	@Attribute(Attribute.DURATION)
 	private long duration;
-	private long revertTime;
 	@Attribute(Attribute.SELECT_RANGE)
 	private double sourceRange;
 	@Attribute(Attribute.RANGE)
@@ -55,51 +61,54 @@ public class IceRidge extends IceAbility implements AddonAbility {
 	private int minHeight;
 	private int maxHeight;
 
-	private List<Location> locations;
-	private Set<LivingEntity> affectedEntities;
+	private TempBlock sourceTempBlock;
 	private Location location, origin;
 	private Vector direction;
+	private List<Location> locations;
+	private Set<LivingEntity> affectedEntities;
 	private Block sourceBlock;
 	private RemovalPolicy policy;
 	private BlockFace face;
 	private boolean progressing;
 	
-	public IceRidge(Player player) {
+	public EarthRidge(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBend(this)) {
-			return;
+		if (!bPlayer.canBendIgnoreBinds(this)) return;
+		
+		EarthRidge er = getAbility(player, EarthRidge.class);
+		if (er != null) {
+			if (er.progressing) return;
+			er.remove();
 		}
 		
-		if (hasAbility(player, IceRidge.class)) {
-			IceRidge ir = getAbility(player, IceRidge.class);
-			if (ir.progressing) {
-				return;
-			}
-			ir.remove();
-		}
+		if (hasAbility(player, EarthBlast.class))
+			getAbility(player, EarthBlast.class).remove();
 		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Water.IceRidge.Cooldown");
-		duration = Azutoru.az.getConfig().getLong("Abilities.Water.IceRidge.Duration");
-		sourceRange = Azutoru.az.getConfig().getDouble("Abilities.Water.IceRidge.SourceRange");
-		range = Azutoru.az.getConfig().getDouble("Abilities.Water.IceRidge.Range");
-		damage = Azutoru.az.getConfig().getDouble("Abilities.Water.IceRidge.Damage");
-		knockback = Azutoru.az.getConfig().getDouble("Abilities.Water.IceRidge.Knockback");
-		knockup = Azutoru.az.getConfig().getDouble("Abilities.Water.IceRidge.Knockup");
-		minHeight = Azutoru.az.getConfig().getInt("Abilities.Water.IceRidge.MinHeight");
-		maxHeight = Azutoru.az.getConfig().getInt("Abilities.Water.IceRidge.MaxHeight");
-		hitRadius = Azutoru.az.getConfig().getDouble("Abilities.Water.IceRidge.HitRadius");
-		revertTime = Azutoru.az.getConfig().getLong("Abilities.Water.IceRidge.RevertTime");
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Earth.EarthRidge.Cooldown");
+		duration = c.getLong("Abilities.Earth.EarthRidge.Duration");
+		sourceRange = c.getDouble("Abilities.Earth.EarthRidge.SourceRange");
+		range = c.getDouble("Abilities.Earth.EarthRidge.Range");
+		damage = c.getDouble("Abilities.Earth.EarthRidge.Damage");
+		knockback = c.getDouble("Abilities.Earth.EarthRidge.Knockback");
+		knockup = c.getDouble("Abilities.Earth.EarthRidge.Knockup");
+		minHeight = c.getInt("Abilities.Earth.EarthRidge.MinHeight");
+		maxHeight = c.getInt("Abilities.Earth.EarthRidge.MaxHeight");
+		hitRadius = c.getDouble("Abilities.Earth.EarthRidge.HitRadius");
 		
 		applyModifiers();
 		
-		sourceBlock = BlockSource.getWaterSourceBlock(player, sourceRange, ClickType.SHIFT_DOWN, true, true, false, true, false);
-		if (sourceBlock == null) {
-			return;
-		}
+		sourceBlock = BlockSource.getEarthSourceBlock(player, sourceRange, ClickType.SHIFT_DOWN, true);
+		if (sourceBlock == null) return;
 		
 		List<Block> targets = player.getLastTwoTargetBlocks(null, (int) sourceRange);
 		face = targets.get(1).getFace(targets.get(0));
+		
+		Material tempMaterial = Material.STONE;
+		if (sourceBlock.getType() == Material.STONE)
+			tempMaterial = Material.COBBLESTONE;
+		sourceTempBlock = new TempBlock(sourceBlock, tempMaterial);
 		
 		origin = sourceBlock.getLocation().add(MathUtil.getFaceDirection(face));
 		location = origin.clone();
@@ -108,24 +117,15 @@ public class IceRidge extends IceAbility implements AddonAbility {
 		affectedEntities = new HashSet<>();
 		
 		policy = Policies.builder()
-					.add(new DifferentWorldPolicy(() -> player.getWorld()))
+					.add(new DifferentWorldPolicy(() -> this.player.getWorld()))
 					.add(new ProtectedRegionPolicy(this, () -> location))
-					.add(new RangePolicy(range, origin, () -> location)).build();
+					.add(new RangePolicy(range, () -> location))
+					.add(new SwappedSlotsPolicy("EarthBlast")).build();
 		
 		start();
 	}
 	
 	private void applyModifiers() {
-		if (isNight(player.getWorld())) {
-			cooldown -= ((long) getNightFactor(cooldown) - cooldown);
-			duration = (long) getNightFactor(duration);
-			sourceRange = getNightFactor(sourceRange);
-			range = getNightFactor(range);
-			damage = getNightFactor(damage);
-			knockback = getNightFactor(knockback);
-			knockup = getNightFactor(knockup);
-		}
-		
 		if (bPlayer.isAvatarState()) {
 			cooldown /= 2;
 			duration *= 2;
@@ -139,16 +139,15 @@ public class IceRidge extends IceAbility implements AddonAbility {
 
 	@Override
 	public void progress() {
-		if (!bPlayer.canBend(this) || policy.test(player)) {
+		if (!bPlayer.canBendIgnoreBinds(this) || policy.test(player)) {
 			removeWithCooldown();
 			return;
 		}
 		
 		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
 			remove();
-			if (progressing) {
+			if (progressing)
 				bPlayer.addCooldown(this);
-			}
 			return;
 		}
 		
@@ -157,51 +156,49 @@ public class IceRidge extends IceAbility implements AddonAbility {
 				remove();
 				return;
 			}
-			
-			playFocusWaterEffect(sourceBlock);
 			direction = player.getEyeLocation().getDirection();
 			return;
 		}
 		
-		if (player.isSneaking()) {
-			direction.add(player.getEyeLocation().getDirection().multiply(0.5));
+		if (sourceTempBlock != null) {
+			sourceTempBlock.revertBlock();
+			sourceTempBlock = null;
 		}
 		
-		if (face == BlockFace.UP || face == BlockFace.DOWN) {
+		if (player.isSneaking())
+			direction.add(player.getEyeLocation().getDirection().multiply(0.5));
+		
+		if (face == BlockFace.UP || face == BlockFace.DOWN)
 			direction.setY(0).normalize();
-		} else if (face == BlockFace.NORTH || face == BlockFace.SOUTH) {
+		else if (face == BlockFace.NORTH || face == BlockFace.SOUTH)
 			direction.setZ(0).normalize();
-		} else if (face == BlockFace.EAST || face == BlockFace.WEST) {
+		else if (face == BlockFace.EAST || face == BlockFace.WEST)
 			direction.setX(0).normalize();
-		}
 		
 		location.add(direction);
 		
-		if (!isTransparent(location.getBlock())) {
+		if (!isTransparent(location.getBlock()))
 			location.add(MathUtil.getFaceDirection(face));
-		}
 		
 		Block topBlock = WorldUtil.getTopBlock(location, face.getOppositeFace(), 3);
-		if (!isIce(topBlock) && !isWater(topBlock) && !isSnow(topBlock)) {
+		if (!isEarthbendable(topBlock)) {
 			removeWithCooldown();
 			return;
 		}
 		
 		int currentHeight = ThreadLocalRandom.current().nextInt(minHeight, maxHeight);
-		addBlocks(topBlock, face, currentHeight);
+		new RaiseEarth(player, topBlock, face, currentHeight, null);
 		
 		updateLocations(currentHeight);
 		
-		if (ThreadLocalRandom.current().nextInt(6) == 0)
-			playIcebendingSound(location);
-		
 		for (Location loc : locations) {
 			for (Entity e : GeneralMethods.getEntitiesAroundPoint(loc, hitRadius)) {
-				if (e.getUniqueId() != player.getUniqueId()) {
+				if (e != player) {
 					Vector travelVec = direction.clone().multiply(knockback).setY(direction.getY() * knockup);
 					e.setVelocity(travelVec);
 					if (e instanceof LivingEntity && !affectedEntities.contains((LivingEntity) e)) {
 						DamageHandler.damageEntity(e, damage, this);
+						new HorizontalVelocityTracker(e, player, 200, this);
 						affectedEntities.add((LivingEntity) e);
 					}
 				}
@@ -209,16 +206,8 @@ public class IceRidge extends IceAbility implements AddonAbility {
 		}
 	}
 	
-	private void addBlocks(Block topBlock, BlockFace face, int height) {
-		for (int i = 1; i <= height; i++) {
-			Block b = topBlock.getRelative(face, i);
-			if (isAir(b.getType())) {
-				TempBlock tb = new TempBlock(b, Material.ICE);
-				tb.setRevertTime(revertTime);
-				addWaterbendableTempBlock(tb);
-				tb.setRevertTask(() -> removeWaterbendableTempBlock(tb));
-			}
-		}
+	public void onClick() {
+		progressing = true;
 	}
 	
 	private void updateLocations(int currentHeight) {
@@ -229,14 +218,11 @@ public class IceRidge extends IceAbility implements AddonAbility {
 		}
 	}
 	
-	public void onClick() {
-		progressing = true;
-	}
-	
 	@Override
 	public void remove() {
 		super.remove();
-		affectedEntities.clear();
+		if (sourceTempBlock != null)
+			sourceTempBlock.revertBlock();
 	}
 	
 	public void removeWithCooldown() {
@@ -261,17 +247,19 @@ public class IceRidge extends IceAbility implements AddonAbility {
 
 	@Override
 	public String getName() {
-		return "IceRidge";
+		return "EarthRidge";
 	}
 	
 	@Override
 	public String getDescription() {
-		return "This ability allows an icebender to create a moving wall of ice that can deal damage and knockback.";
+		return "This ability allows an earthbender to create a moving wall of earth that can deal damage and knockback.";
 	}
 	
 	@Override
 	public String getInstructions() {
-		return "Tap sneak on an ice, water, or snow block to select a source, then left-click to create an extending wall of ice. Hold sneak to change the direction of the wall.";
+		return "RaiseEarth (Right-click block) > RaiseEarth (Right-click block) > EarthBlast (Tap sneak) to select a source."
+				+ "\nLeft-click to launch the EarthRidge in the direction you're facing."
+				+ "\nHold sneak to curve the EarthRidge into the direction you're facing.";
 	}
 
 	@Override
@@ -282,6 +270,20 @@ public class IceRidge extends IceAbility implements AddonAbility {
 	@Override
 	public List<Location> getLocations() {
 		return locations;
+	}
+
+	@Override
+	public Object createNewComboInstance(Player player) {
+		return new EarthRidge(player);
+	}
+
+	@Override
+	public ArrayList<AbilityInformation> getCombination() {
+		ArrayList<AbilityInformation> combo = new ArrayList<>();
+		combo.add(new AbilityInformation("RaiseEarth", ClickType.RIGHT_CLICK_BLOCK));
+		combo.add(new AbilityInformation("RaiseEarth", ClickType.RIGHT_CLICK_BLOCK));
+		combo.add(new AbilityInformation("EarthBlast", ClickType.SHIFT_DOWN));
+		return combo;
 	}
 
 	@Override
@@ -304,7 +306,7 @@ public class IceRidge extends IceAbility implements AddonAbility {
 	
 	@Override
 	public boolean isEnabled() {
-		return Azutoru.az.getConfig().getBoolean("Abilities.Water.IceRidge.Enabled");
+		return Azutoru.az.getConfig().getBoolean("Abilities.Earth.EarthRidge.Enabled");
 	}
 
 }

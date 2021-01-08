@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.Location;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -50,22 +51,20 @@ public class Evaporate extends BlueFireAbility implements AddonAbility, ComboAbi
 	public Evaporate(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			return;
-		}
+		if (!bPlayer.canBendIgnoreBinds(this)) return;
 		
-		if (hasAbility(player, FireShield.class)) {
+		if (hasAbility(player, FireShield.class))
 			getAbility(player, FireShield.class).remove();
-		}
 		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Fire.Evaporate.Cooldown");
-		shieldRadius = Azutoru.az.getConfig().getDouble("Abilities.Fire.Evaporate.InitialShieldRadius");
-		radiusIncreaseRate = Azutoru.az.getConfig().getDouble("Abilities.Fire.Evaporate.RadiusIncreaseRate");
-		particleAmount = Azutoru.az.getConfig().getInt("Abilities.Fire.Evaporate.ParticleAmount");
-		particleSpread = Azutoru.az.getConfig().getDouble("Abilities.Fire.Evaporate.ParticleSpread");
-		duration = Azutoru.az.getConfig().getLong("Abilities.Fire.Evaporate.Duration");
-		speed = Azutoru.az.getConfig().getDouble("Abilities.Fire.Evaporate.Speed");
-		collisionRadius = Azutoru.az.getConfig().getDouble("Abilities.Fire.Evaporate.CollisionRadius");
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Fire.Evaporate.Cooldown");
+		shieldRadius = c.getDouble("Abilities.Fire.Evaporate.InitialShieldRadius");
+		radiusIncreaseRate = c.getDouble("Abilities.Fire.Evaporate.RadiusIncreaseRate");
+		particleAmount = c.getInt("Abilities.Fire.Evaporate.ParticleAmount");
+		particleSpread = c.getDouble("Abilities.Fire.Evaporate.ParticleSpread");
+		duration = c.getLong("Abilities.Fire.Evaporate.Duration");
+		speed = c.getDouble("Abilities.Fire.Evaporate.Speed");
+		collisionRadius = c.getDouble("Abilities.Fire.Evaporate.CollisionRadius");
 		
 		applyModifiers();
 		

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
@@ -45,20 +46,18 @@ public class DustStepping extends SandAbility implements AddonAbility, ComboAbil
 	public DustStepping(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			return;
-		}
+		if (!bPlayer.canBendIgnoreBinds(this)) return;
 		
-		if (hasAbility(player, DustDevil.class)) {
+		if (hasAbility(player, DustDevil.class))
 			getAbility(player, DustDevil.class).remove();
-		}
 		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Earth.DustStepping.Cooldown");
-		duration = Azutoru.az.getConfig().getLong("Abilities.Earth.DustStepping.Duration");
-		horizontal = Azutoru.az.getConfig().getDouble("Abilities.Earth.DustStepping.HorizontalPush");
-		vertical = Azutoru.az.getConfig().getDouble("Abilities.Earth.DustStepping.VerticalPush");
-		maxSteps = Azutoru.az.getConfig().getInt("Abilities.Earth.DustStepping.MaxSteps");
-		maxDistance = Azutoru.az.getConfig().getInt("Abilities.Earth.DustStepping.MaxDistanceFromGround");
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Earth.DustStepping.Cooldown");
+		duration = c.getLong("Abilities.Earth.DustStepping.Duration");
+		horizontal = c.getDouble("Abilities.Earth.DustStepping.HorizontalPush");
+		vertical = c.getDouble("Abilities.Earth.DustStepping.VerticalPush");
+		maxSteps = c.getInt("Abilities.Earth.DustStepping.MaxSteps");
+		maxDistance = c.getInt("Abilities.Earth.DustStepping.MaxDistanceFromGround");
 		
 		applyModifiers();
 		
@@ -97,8 +96,10 @@ public class DustStepping extends SandAbility implements AddonAbility, ComboAbil
 	}
 	
 	private void playStepAnimation() {
-		Location ground = topBlock.getLocation();
 		Location playerLoc = player.getLocation();
+		Location ground = topBlock.getLocation();
+		ground.setX(playerLoc.getX());
+		ground.setZ(playerLoc.getZ());
 		for (Location loc : MathUtil.getLinePoints(player, ground, playerLoc, (int) ground.distance(playerLoc) * 2)) {
 			ParticleEffect.BLOCK_DUST.display(loc, 1, 0.2, 0.2, 0.2, 1, topBlock.getType().createBlockData());
 		}

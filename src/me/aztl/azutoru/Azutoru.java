@@ -28,8 +28,8 @@ public class Azutoru extends JavaPlugin {
 		
 		new AzutoruConfig();
 		CoreAbility.registerPluginAbilities(this, "me.aztl.azutoru.ability");
-		getServer().getPluginManager().registerEvents(new AzutoruListener(this), this);
-		getServer().getScheduler().scheduleSyncRepeatingTask(this, new AzutoruManager(this), 0, 1);
+		getServer().getPluginManager().registerEvents(new AzutoruListener(), this);
+		getServer().getScheduler().scheduleSyncRepeatingTask(this, new AzutoruManager(), 0, 1);
 		
 		glassElement = new SubElement("Glass", Element.EARTH, ElementType.BENDING, this) {
 			@Override

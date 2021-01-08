@@ -9,6 +9,11 @@
   
   <repositories>
     <repository>
+      <id>project.local</id>
+      <name>project</name>
+      <url>file://${project.basedir}/localrepo/</url>
+    </repository>
+    <repository>
       <id>spigot-repo</id>
       <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
     </repository>
@@ -29,6 +34,19 @@
       <version>1.9.0</version>
       <scope>provided</scope>
     </dependency>
+    <!-- JedCore -->
+    <dependency>
+      <groupId>com.jedk1</groupId>
+      <artifactId>jedcore</artifactId>
+      <version>2.9.5-Spigot1.16-PK1.9.0</version>
+      <scope>provided</scope>
+    </dependency>
+    <!-- math3 -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-math3</artifactId>
+      <version>3.6.1</version>
+    </dependency>
   </dependencies>
   
   <build>
@@ -46,24 +64,51 @@
       </resource>
     </resources>
     <plugins>
+      <!-- Maven Compiler -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.0</version>
+        <version>3.8.1</version>
         <configuration>
           <source>1.8</source>
           <target>1.8</target>
         </configuration>
       </plugin>
+      <!-- Maven Jar -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
-        <version>3.1.1</version>
+        <version>3.2.0</version>
         <configuration>
           <outputDirectory>${dir}</outputDirectory>
         </configuration>
       </plugin>
+      <!-- Maven Shade -->
+      <plugin>
+    	<groupId>org.apache.maven.plugins</groupId>
+    	<artifactId>maven-shade-plugin</artifactId>
+    	<version>3.2.4</version>
+    	<executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+                <goal>shade</goal>
+            </goals>
+            <configuration>
+              <minimizeJar>true</minimizeJar>
+            </configuration>
+          </execution>
+        </executions>
+        <configuration>
+          <dependencyReducedPomLocation>${project.build.directory}/dependency-reduced-pom.xml</dependencyReducedPomLocation>
+          <relocations>
+            <relocation>
+              <pattern>org.apache.commons</pattern>
+              <shadedPattern>math3.azutoru</shadedPattern>
+            </relocation>
+          </relocations>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
-  
 </project>

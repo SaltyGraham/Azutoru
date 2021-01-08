@@ -6,9 +6,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.math3.util.FastMath;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -70,26 +72,23 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 	public WaterSlash(Player player, boolean sourced) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreBinds(this) || hasAbility(player, WaterSlash.class)) {
-			return;
-		}
+		if (!bPlayer.canBendIgnoreBinds(this) || hasAbility(player, WaterSlash.class)) return;
 		
-		if (hasAbility(player, Torrent.class)) {
+		if (hasAbility(player, Torrent.class))
 			getAbility(player, Torrent.class).remove();
-		}
 		
-		if (hasAbility(player, WaterManipulation.class)) {
+		if (hasAbility(player, WaterManipulation.class))
 			getAbility(player, WaterManipulation.class).remove();
-		}
 		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Water.WaterSlash.Cooldown");
-		sourceRange = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterSlash.SourceRange");
-		speed = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterSlash.Speed");
-		hitRadius = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterSlash.HitRadius");
-		damage = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterSlash.Damage");
-		range = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterSlash.Range");
-		duration = Azutoru.az.getConfig().getLong("Abilities.Water.WaterSlash.Duration");
-		maxAngle = Azutoru.az.getConfig().getInt("Abilities.Water.WaterSlash.MaxAngle");
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Water.WaterSlash.Cooldown");
+		sourceRange = c.getDouble("Abilities.Water.WaterSlash.SourceRange");
+		speed = c.getDouble("Abilities.Water.WaterSlash.Speed");
+		hitRadius = c.getDouble("Abilities.Water.WaterSlash.HitRadius");
+		damage = c.getDouble("Abilities.Water.WaterSlash.Damage");
+		range = c.getDouble("Abilities.Water.WaterSlash.Range");
+		duration = c.getLong("Abilities.Water.WaterSlash.Duration");
+		maxAngle = c.getInt("Abilities.Water.WaterSlash.MaxAngle");
 		
 		applyModifiers();
 		
@@ -99,15 +98,14 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 		locList = new ArrayList<>();
 		
 		policy = Policies.builder()
-					.add(new DifferentWorldPolicy(() -> player.getWorld()))
+					.add(new DifferentWorldPolicy(() -> this.player.getWorld()))
 					.add(new ExpirationPolicy(duration))
 					.add(new SwappedSlotsPolicy("Torrent", p -> !clicked)).build();
 		
 		if (sourced) {
 			Block sourceBlock = BlockSource.getWaterSourceBlock(player, sourceRange, ClickType.SHIFT_UP, true, true, true, true, true);
-			if (sourceBlock != null) {
+			if (sourceBlock != null)
 				start();
-			}
 		} else {
 			clicked = true;
 			start();
@@ -140,24 +138,16 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 		
 		if (!setup) {
 			if (System.currentTimeMillis() < time + 200) {
-				
 				endLoc = GeneralMethods.getTargetedLocation(player, 3);
-
-				if (Math.abs(endLoc.getYaw() - startLoc.getYaw()) >= maxAngle) {
+				if (FastMath.abs(endLoc.getYaw() - startLoc.getYaw()) >= maxAngle
+						|| FastMath.abs(endLoc.getPitch() - startLoc.getPitch()) >= maxAngle)
 					setup = true;
-				}
-				if (Math.abs(endLoc.getPitch() - startLoc.getPitch()) >= maxAngle) {
-					setup = true;
-				}
-				
 				return;
 			} else setup = true;
 		}
 		
 		if (!progressing) {
-			List<Location> linePoints = new ArrayList<Location>();
-			linePoints = MathUtil.getLinePoints(player, startLoc, endLoc, (int) range * 3);
-			for (Location loc : linePoints) {
+			for (Location loc : MathUtil.getLinePoints(player, startLoc, endLoc, (int) range * 3)) {
 				locations.put(id, loc);
 				directions.put(id, loc.getDirection());
 				id++;
@@ -174,15 +164,14 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 			
 			for (Integer i : locations.keySet()) {
 				Block b = locations.get(i).getBlock();
-				if (GeneralMethods.isSolid(b) || b.isLiquid()
+				if (GeneralMethods.isSolid(b) || isLava(b)
 						|| GeneralMethods.checkDiagonalWall(locations.get(i), directions.get(i))
 						|| GeneralMethods.isRegionProtectedFromBuild(this, locations.get(i))) {
 					continue;
 				}
 				
-				if (isWater(b) && !TempBlock.isTempBlock(b)) {
+				if (isWater(b) && !TempBlock.isTempBlock(b))
 					WorldUtil.displayWaterBubble(locations.get(i));
-				}
 				
 				if (locations.get(i).distanceSquared(startLoc) > range * range) {
 					remove();
@@ -196,7 +185,7 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 				locList.add(locations.get(i));
 				
 				for (Entity e : GeneralMethods.getEntitiesAroundPoint(locations.get(i), hitRadius)) {
-					if (e instanceof LivingEntity && e.getUniqueId() != player.getUniqueId()) {
+					if (e instanceof LivingEntity && e != player) {
 						DamageHandler.damageEntity(e, damage, this);
 						remove();
 						return;

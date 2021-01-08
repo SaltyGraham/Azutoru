@@ -4,9 +4,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.commons.math3.util.FastMath;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -114,16 +116,16 @@ public class RazorRings extends WaterAbility implements AddonAbility, ComboAbili
 	}
 
 	private void setFields() {
-
-		damage = Azutoru.az.getConfig().getDouble("Abilities.Water.RazorRings.Damage");
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Water.RazorRings.Cooldown");
-		range = Azutoru.az.getConfig().getDouble("Abilities.Water.RazorRings.Range");
-		sourceRange = Azutoru.az.getConfig().getDouble("Abilities.Water.RazorRings.SourceRange");
-		speed = Azutoru.az.getConfig().getDouble("Abilities.Water.RazorRings.Speed");
-		remainingRings = Azutoru.az.getConfig().getInt("Abilities.Water.RazorRings.RingsCount");
-		duration = Azutoru.az.getConfig().getLong("Abilities.Water.RazorRings.Duration");
-		timeBetweenShots = Azutoru.az.getConfig().getLong("Abilities.Water.RazorRings.ShotCooldown");
-		radiusIncreaseRate = Azutoru.az.getConfig().getDouble("Abilities.Water.RazorRings.RadiusIncreaseRate");
+		FileConfiguration c = Azutoru.az.getConfig();
+		damage = c.getDouble("Abilities.Water.RazorRings.Damage");
+		cooldown = c.getLong("Abilities.Water.RazorRings.Cooldown");
+		range = c.getDouble("Abilities.Water.RazorRings.Range");
+		sourceRange = c.getDouble("Abilities.Water.RazorRings.SourceRange");
+		speed = c.getDouble("Abilities.Water.RazorRings.Speed");
+		remainingRings = c.getInt("Abilities.Water.RazorRings.RingsCount");
+		duration = c.getLong("Abilities.Water.RazorRings.Duration");
+		timeBetweenShots = c.getLong("Abilities.Water.RazorRings.ShotCooldown");
+		radiusIncreaseRate = c.getDouble("Abilities.Water.RazorRings.RadiusIncreaseRate");
 		
 		applyModifiers();
 		
@@ -176,7 +178,7 @@ public class RazorRings extends WaterAbility implements AddonAbility, ComboAbili
 			origin = topBlock.getLocation().add(0.5, 1, 0.5);
 		}
 		
-		ParticleEffect.WATER_SPLASH.display(origin, 5, 1+ Math.random(), Math.random(), 1+ Math.random(), 10);
+		ParticleEffect.WATER_SPLASH.display(origin, 5, 1+ FastMath.random(), FastMath.random(), 1+ FastMath.random(), 10);
 		
 		playWaterbendingSound(origin);
 		
@@ -260,17 +262,17 @@ public class RazorRings extends WaterAbility implements AddonAbility, ComboAbili
 		
 		for (int i = 0; i <= 180; i += 1) {
 			sign = 1;
-			angle = Math.toRadians(i);
-			value = radius * Math.cos(angle) * (1 - Math.cos(angle));
+			angle = FastMath.toRadians(i);
+			value = radius * FastMath.cos(angle) * (1 - FastMath.cos(angle));
 			a = loc.getYaw() - 90;
 			if (a < 0) {
 				a = -a;
 				sign = -1;
 			}
-			a = Math.toRadians(a);
-			x = Math.cos(a) * value * -1;
-			y = radius * Math.sin(angle) * (1 - Math.cos(angle));
-			z = Math.sin(a) * value * -1;
+			a = FastMath.toRadians(a);
+			x = FastMath.cos(a) * value * -1;
+			y = radius * FastMath.sin(angle) * (1 - FastMath.cos(angle));
+			z = FastMath.sin(a) * value * -1;
 			loc.add(x, y, sign * z);
 			
 			TempBlock tb = new TempBlock(loc.getBlock(), Material.WATER);

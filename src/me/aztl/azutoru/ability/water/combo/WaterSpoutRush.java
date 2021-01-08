@@ -3,8 +3,8 @@ package me.aztl.azutoru.ability.water.combo;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -48,11 +48,8 @@ public class WaterSpoutRush extends WaterAbility implements AddonAbility, ComboA
 		super(player);
 		
 		WaterSpout spout = getAbility(player, WaterSpout.class);
-		if (spout == null) {
-			return;
-		} else {
-			spout.remove();
-		}
+		if (spout == null) return;
+		spout.remove();
 		
 		canBendOnPackedIce = ProjectKorra.plugin.getConfig().getStringList("Properties.Water.IceBlocks").contains(Material.PACKED_ICE.toString());
 		useParticles = ProjectKorra.plugin.getConfig().getBoolean("Abilities.Water.WaterSpout.Particles");
@@ -68,19 +65,15 @@ public class WaterSpoutRush extends WaterAbility implements AddonAbility, ComboA
 		
 		applyModifiers();
 		
-		Block topBlock = GeneralMethods.getTopBlock(player.getLocation(), (int) -this.getNightFactor(this.height), (int) -this.getNightFactor(this.height));
-		if (topBlock == null) {
-			topBlock = player.getLocation().getBlock();
-		}
+		base = GeneralMethods.getTopBlock(player.getLocation(), (int) -this.getNightFactor(this.height), (int) -this.getNightFactor(this.height));
+		if (base == null)
+			base = player.getLocation().getBlock();
 		
-		if (!isWater(topBlock) && !isIcebendable(topBlock) && !isSnow(topBlock)) {
+		if ((!isWater(base) && !isIcebendable(base) && !isSnow(base))
+				|| (base.getType() == Material.PACKED_ICE && !canBendOnPackedIce))
 			return;
-		} else if (topBlock.getType() != Material.PACKED_ICE && !canBendOnPackedIce) {
-			return;
-		}
 		
-		double heightRemoveThreshold = 2;
-		if (!isWithinMaxSpoutHeight(topBlock.getLocation(), heightRemoveThreshold)) {
+		if (!isWithinMaxSpoutHeight()) {
 			return;
 		}
 		
@@ -122,9 +115,8 @@ public class WaterSpoutRush extends WaterAbility implements AddonAbility, ComboA
 			player.setFallDistance(0);
 			player.setFlySpeed(initFlySpeed * speedModifier);
 			player.getVelocity().setY(0.001);
-			if ((new Random()).nextInt(10) == 0) {
+			if (ThreadLocalRandom.current().nextInt(10) == 0)
 				playWaterbendingSound(player.getLocation());
-			}
 			
 			Location location = player.getLocation().clone().add(0, 0.2, 0);
 			Block block = location.clone().getBlock();
@@ -132,8 +124,7 @@ public class WaterSpoutRush extends WaterAbility implements AddonAbility, ComboA
 			
 			if (height != -1) {
 				location = base.getLocation();
-				double heightRemoveThreshold = 2;
-				if (!isWithinMaxSpoutHeight(location, heightRemoveThreshold)) {
+				if (!isWithinMaxSpoutHeight()) {
 					bPlayer.addCooldown(this);
 					remove();
 					return;
@@ -211,15 +202,8 @@ public class WaterSpoutRush extends WaterAbility implements AddonAbility, ComboA
 		}
 	}
 	
-	private boolean isWithinMaxSpoutHeight(Location baseBlockLocation, double threshold) {
-		if (baseBlockLocation == null) {
-			return false;
-		}
-		double playerHeight = player.getLocation().getY();
-		if (playerHeight > baseBlockLocation.getY() + maxHeight + threshold) {
-			return false;
-		}
-		return true;
+	private boolean isWithinMaxSpoutHeight() {
+		return player.getLocation().getY() <= base.getLocation().getY() + maxHeight + 2;
 	}
 	
 	public void rotateParticles(Block block) {

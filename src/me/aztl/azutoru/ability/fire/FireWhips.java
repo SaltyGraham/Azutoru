@@ -2,9 +2,12 @@ package me.aztl.azutoru.ability.fire;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 
+import org.apache.commons.math3.util.FastMath;
 import org.bukkit.Location;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -14,6 +17,7 @@ import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.FireAbility;
 import com.projectkorra.projectkorra.attribute.Attribute;
+import com.projectkorra.projectkorra.object.HorizontalVelocityTracker;
 import com.projectkorra.projectkorra.util.DamageHandler;
 
 import me.aztl.azutoru.Azutoru;
@@ -58,20 +62,24 @@ public class FireWhips extends FireAbility implements AddonAbility {
 	public FireWhips(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBend(this)) {
+		if (hasAbility(player, FireWhips.class)) {
+			getAbility(player, FireWhips.class).onClick();
 			return;
 		}
 		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Fire.FireWhips.Cooldown");
-		duration = Azutoru.az.getConfig().getLong("Abilities.Fire.FireWhips.Duration");
-		hitRadius = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireWhips.HitRadius");
-		knockback = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireWhips.Knockback");
-		knockup = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireWhips.Knockup");
-		damage = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireWhips.Damage");
-		maxLength = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireWhips.MaxLength") * 2;
-		speed = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireWhips.Speed");
-		attackSpeed = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireWhips.AttackSpeed");
-		requireConstantMotion = Azutoru.az.getConfig().getBoolean("Abilities.Fire.FireWhips.RequireConstantMotion");
+		if (!bPlayer.canBend(this)) return;
+		
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Fire.FireWhips.Cooldown");
+		duration = c.getLong("Abilities.Fire.FireWhips.Duration");
+		hitRadius = c.getDouble("Abilities.Fire.FireWhips.HitRadius");
+		knockback = c.getDouble("Abilities.Fire.FireWhips.Knockback");
+		knockup = c.getDouble("Abilities.Fire.FireWhips.Knockup");
+		damage = c.getDouble("Abilities.Fire.FireWhips.Damage");
+		maxLength = c.getDouble("Abilities.Fire.FireWhips.MaxLength") * 2;
+		speed = c.getDouble("Abilities.Fire.FireWhips.Speed");
+		attackSpeed = c.getDouble("Abilities.Fire.FireWhips.AttackSpeed");
+		requireConstantMotion = c.getBoolean("Abilities.Fire.FireWhips.RequireConstantMotion");
 
 		cutPolicy = Rope.STANDARD_CUT_POLICY;
 		rightLoc = PlayerUtil.getHandPos(player, Hand.RIGHT).setDirection(player.getEyeLocation().getDirection());
@@ -96,70 +104,74 @@ public class FireWhips extends FireAbility implements AddonAbility {
 			return;
 		}
 		
-		rightLoc = PlayerUtil.getHandPos(player, Hand.RIGHT).setDirection(player.getEyeLocation().getDirection());
-		leftLoc = PlayerUtil.getHandPos(player, Hand.LEFT).setDirection(player.getEyeLocation().getDirection());
-		
-		if (Math.abs(right.getSpeed() - 3) <= 0.1 && System.currentTimeMillis() - time >= 2000) {
-			right.setSpeed(1);
-		}
-		
-		right.recalculate(rightLoc);
-		
-		for (Location loc : right.getLocations()) {
-			display(loc);
+		if (right != null) {
+			rightLoc = PlayerUtil.getHandPos(player, Hand.RIGHT).setDirection(player.getEyeLocation().getDirection());
+			revertSpeed(right);
+			right.recalculate(rightLoc);
+			right.getLocations().forEach(l -> display(l));
 		}
 		
 		if (left != null) {
-			if (Math.abs(left.getSpeed() - 3) <= 0.1 && System.currentTimeMillis() - time >= 2000) {
-				left.setSpeed(1);
-			}
-			
+			leftLoc = PlayerUtil.getHandPos(player, Hand.LEFT).setDirection(player.getEyeLocation().getDirection());
+			revertSpeed(left);
 			left.recalculate(leftLoc);
-			
-			for (Location loc : left.getLocations()) {
-				display(loc);
-			}
+			left.getLocations().forEach(l -> display(l));
 		} else if (player.isSneaking()) {
+			leftLoc = PlayerUtil.getHandPos(player, Hand.LEFT).setDirection(player.getEyeLocation().getDirection());
 			left = new Rope(leftLoc, player.getEyeLocation().getDirection(), 5, 60, 0.5, 1);
 			left.setCutPolicy(cutPolicy);
 		}
 		
-		if (GeneralMethods.getDirection(GeneralMethods.getTargetedLocation(player, 5), target).length() >= 2) {
-			if (right != null && right.getLength() <= right.getMaxLength()) {
-				right.setLength(right.getLength() + 1);
-			}
-			if (left != null && left.getLength() <= left.getMaxLength()) {
-				left.setLength(left.getLength() + 1);
-			}
+		double cursorMovement = GeneralMethods.getDirection(GeneralMethods.getTargetedLocation(player, 5), target).length();
+		if (cursorMovement >= 2) {
+			if (right != null)
+				extend(right);
+			if (left != null)
+				extend(left);
 		}
 		
 		if (requireConstantMotion) {
-			if (GeneralMethods.getTargetedLocation(player, 5).distance(target) <= 0.05) {
-				if (right != null && right.getLength() > 5) {
-					right.setLength(right.getLength() - 1);
-				}
-				if (left != null && left.getLength() > 5) {
-					left.setLength(left.getLength() - 1);
-				}
+			if (cursorMovement <= 0.05) {
+				player.sendMessage("shorten whip");
+				if (right != null)
+					shorten(right);
+				if (left != null)
+					shorten(left);
 			}
-			target = GeneralMethods.getTargetedLocation(player, 5);
 		}
+		target = GeneralMethods.getTargetedLocation(player, 5);
 	}
 	
 	private void display(Location loc) {
 		if (isAir(loc.getBlock().getType())) {
 			playFirebendingParticles(loc, 1, 0, 0, 0);
 			for (Entity e : GeneralMethods.getEntitiesAroundPoint(loc, hitRadius)) {
-				if (e.getUniqueId() != player.getUniqueId()) {
+				if (e != player) {
 					Vector velocity = GeneralMethods.getDirection(loc, e.getLocation());
 					velocity.multiply(knockback).setY(velocity.getY() * knockup);
 					e.setVelocity(velocity);
 					if (e instanceof LivingEntity) {
 						DamageHandler.damageEntity(e, damage, this);
+						new HorizontalVelocityTracker(e, player, 200, this);
 					}
 				}
 			}
 		}
+	}
+	
+	private void revertSpeed(Rope rope) {
+		if (FastMath.abs(rope.getSpeed() - 3) <= 0.1 && System.currentTimeMillis() - time >= 2000)
+			rope.setSpeed(1);
+	}
+	
+	private void extend(Rope rope) {
+		if (rope.getLength() <= rope.getMaxLength())
+			rope.setLength(rope.getLength() + 1);
+	}
+	
+	private void shorten(Rope rope) {
+		if (rope.getLength() > 5 && ThreadLocalRandom.current().nextBoolean())
+			rope.setLength(rope.getLength() - 1);
 	}
 	
 	public void onClick() {
@@ -187,9 +199,9 @@ public class FireWhips extends FireAbility implements AddonAbility {
 	
 	@Override
 	public List<Location> getLocations() {
-		List<Location> total = new ArrayList<>();
-		total.addAll(right.getLocations());
-		total.addAll(left.getLocations());
+		List<Location> total = new ArrayList<>(right.getLocations());
+		if (left != null)
+			total.addAll(left.getLocations());
 		return total;
 	}
 

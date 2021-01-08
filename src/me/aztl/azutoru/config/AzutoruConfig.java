@@ -32,9 +32,9 @@ import me.aztl.azutoru.Azutoru;
 import me.aztl.azutoru.ability.air.combo.AirCocoon;
 import me.aztl.azutoru.ability.air.combo.AirSpoutRush;
 import me.aztl.azutoru.ability.air.combo.AirWake;
-import me.aztl.azutoru.ability.earth.EarthRidge;
 import me.aztl.azutoru.ability.earth.RaiseEarth;
 import me.aztl.azutoru.ability.earth.combo.Crumble;
+import me.aztl.azutoru.ability.earth.combo.EarthRidge;
 import me.aztl.azutoru.ability.earth.sand.DustDevil;
 import me.aztl.azutoru.ability.fire.FireDaggers;
 import me.aztl.azutoru.ability.fire.bluefire.combo.Evaporate;
@@ -641,6 +641,19 @@ public class AzutoruConfig {
 		
 		// Sandstorm
 		
+		// Shockwave
+		c.addDefault("Abilities.Earth.Shockwave.Enabled", true);
+		c.addDefault("Abilities.Earth.Shockwave.Damage", 3);
+		c.addDefault("Abilities.Earth.Shockwave.HitRadius", 1.5);
+		c.addDefault("Abilities.Earth.Shockwave.Knockback", 1);
+		c.addDefault("Abilities.Earth.Shockwave.Knockup", 1);
+		c.addDefault("Abilities.Earth.Shockwave.ChargeTime", 2000);
+		c.addDefault("Abilities.Earth.Shockwave.FallThreshold", 14);
+		c.addDefault("Abilities.Earth.Shockwave.Cooldown", 3000);
+		c.addDefault("Abilities.Earth.Shockwave.Arc.Range", 18);
+		c.addDefault("Abilities.Earth.Shockwave.Arc.Speed", 1);
+		c.addDefault("Abilities.Earth.Shockwave.Ring.Range", 12);
+		c.addDefault("Abilities.Earth.Shockwave.Ring.Speed", 1);
 		
 		// FIRE
 		

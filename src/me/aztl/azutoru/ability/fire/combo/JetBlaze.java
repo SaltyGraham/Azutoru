@@ -34,15 +34,9 @@ public class JetBlaze extends FireAbility implements AddonAbility, ComboAbility 
 	public JetBlaze(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			return;
-		}
-		
-		if (!bPlayer.canBend(getAbility(player, FireJet.class))) {
-			return;
-		}
-		
-		if (hasAbility(player, JetBlast.class)) {
+		if (!bPlayer.canBendIgnoreBinds(this)
+				|| !bPlayer.canBend(getAbility(player, FireJet.class))
+				|| hasAbility(player, JetBlast.class)) {
 			return;
 		}
 		
@@ -80,20 +74,15 @@ public class JetBlaze extends FireAbility implements AddonAbility, ComboAbility 
 
 	@Override
 	public void progress() {
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			remove();
-			return;
-		}
-		
-		if (!hasAbility(player, FireJet.class)) {
+		if (!bPlayer.canBendIgnoreBinds(this)
+				|| !hasAbility(player, FireJet.class)) {
 			remove();
 			return;
 		}
 		
 		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
-			if (madeNewJet) {
+			if (madeNewJet)
 				getAbility(player, FireJet.class).removeWithCooldown();
-			}
 			remove();
 			return;
 		}

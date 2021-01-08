@@ -6,6 +6,7 @@ import java.util.HashSet;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -48,7 +49,6 @@ public class FireAugmentation extends FireAbility implements AddonAbility, Combo
 	@Attribute(Attribute.SELECT_RANGE)
 	private double sourceRange;
 
-	private ArrayList<BukkitRunnable> tasks;
 	private Location location, destination;
 	private Vector direction;
 	private Block sourceBlock;
@@ -58,18 +58,15 @@ public class FireAugmentation extends FireAbility implements AddonAbility, Combo
 	public FireAugmentation(Player player) {
 		super(player);
 		
-		tasks = new ArrayList<>();
+		if (!bPlayer.canBendIgnoreBinds(this)) return;
 		
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			return;
-		}
-		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Fire.FireAugmentation.Cooldown");
-		duration = Azutoru.az.getConfig().getLong("Abilities.Fire.FireAugmentation.Duration");
-		range = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireAugmentation.Range");
-		speed = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireAugmentation.Speed");
-		damage = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireAugmentation.Damage");
-		sourceRange = Azutoru.az.getConfig().getLong("Abilities.Fire.FireAugmentation.SourceRange");
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Fire.FireAugmentation.Cooldown");
+		duration = c.getLong("Abilities.Fire.FireAugmentation.Duration");
+		range = c.getDouble("Abilities.Fire.FireAugmentation.Range");
+		speed = c.getDouble("Abilities.Fire.FireAugmentation.Speed");
+		damage = c.getDouble("Abilities.Fire.FireAugmentation.Damage");
+		sourceRange = c.getLong("Abilities.Fire.FireAugmentation.SourceRange");
 		// TODO: Add damage threshold
 		
 		applyModifiers();
@@ -168,23 +165,19 @@ public class FireAugmentation extends FireAbility implements AddonAbility, Combo
 				
 			};
 			br.runTaskLater(Azutoru.az, i * 2);
-			tasks.add(br);
 		}
 		
-		for (Block block : GeneralMethods.getBlocksAroundPoint(location, 2)) {
-			if (isIgnitable(block) && !GeneralMethods.isRegionProtectedFromBuild(this, block.getLocation())) {
-				if (canFireGrief()) {
-					if (isPlant(block) || isSnow(block)) {
-						new PlantRegrowth(player, block);
-					}
-				}
-				createTempFire(block.getLocation());
+		for (Block b : GeneralMethods.getBlocksAroundPoint(location, 2)) {
+			if (isIgnitable(b) && !GeneralMethods.isRegionProtectedFromBuild(this, b.getLocation())) {
+				if (canFireGrief() && (isPlant(b) || isSnow(b)))
+					new PlantRegrowth(player, b);
+				createTempFire(b.getLocation());
 			}
 		}
 		
-		for (Entity entity : GeneralMethods.getEntitiesAroundPoint(location, 2)) {
-			if (entity instanceof LivingEntity && entity.getUniqueId() != player.getUniqueId()) {
-				DamageHandler.damageEntity(entity, damage, this);
+		for (Entity e : GeneralMethods.getEntitiesAroundPoint(location, 2)) {
+			if (e instanceof LivingEntity && e != player) {
+				DamageHandler.damageEntity(e, damage, this);
 			}
 		}
 	}

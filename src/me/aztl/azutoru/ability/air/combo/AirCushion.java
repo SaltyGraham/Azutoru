@@ -6,7 +6,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.entity.Entity;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
@@ -48,11 +48,14 @@ public class AirCushion extends AirAbility implements AddonAbility, ComboAbility
 		
 		if (!bPlayer.canBendIgnoreBinds(this)) return;
 		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Air.AirCushion.Cooldown");
-		duration = Azutoru.az.getConfig().getLong("Abilities.Air.AirCushion.Duration");
-		range = Azutoru.az.getConfig().getDouble("Abilities.Air.AirCushion.Range");
-		radius = Azutoru.az.getConfig().getDouble("Abilities.Air.AirCushion.Radius");
-		speed = Azutoru.az.getConfig().getDouble("Abilities.Air.AirCushion.Speed");
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Air.AirCushion.Cooldown");
+		duration = c.getLong("Abilities.Air.AirCushion.Duration");
+		range = c.getDouble("Abilities.Air.AirCushion.Range");
+		radius = c.getDouble("Abilities.Air.AirCushion.Radius");
+		speed = c.getDouble("Abilities.Air.AirCushion.Speed");
+		
+		applyModifiers();
 		
 		origin = player.getEyeLocation();
 		location = origin.clone();
@@ -63,6 +66,14 @@ public class AirCushion extends AirAbility implements AddonAbility, ComboAbility
 		
 		start();
 		bPlayer.addCooldown(this);
+	}
+	
+	private void applyModifiers() {
+		if (bPlayer.isAvatarState()) {
+			cooldown = 0;
+			range *= 2;
+			radius *= 1.5;
+		}
 	}
 	
 	@Override
@@ -112,11 +123,9 @@ public class AirCushion extends AirAbility implements AddonAbility, ComboAbility
 			if (GeneralMethods.isSolid(b.getRelative(BlockFace.DOWN))) {
 				getAirbendingParticles().display(b.getLocation(), 1, Math.random(), 0.2, Math.random());
 			}
-			for (Entity e : GeneralMethods.getEntitiesAroundPoint(b.getLocation(), 1)) {
-				if (e instanceof LivingEntity) {
-					e.setFallDistance(0);
-				}
-			}
+			
+			GeneralMethods.getEntitiesAroundPoint(b.getLocation(), 1).stream()
+				.filter(e -> e instanceof LivingEntity).forEach(e -> e.setFallDistance(0));
 		}
 	}
 	

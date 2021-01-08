@@ -6,6 +6,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -20,6 +21,7 @@ import com.projectkorra.projectkorra.ability.FireAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
 import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.firebending.FireShield;
+import com.projectkorra.projectkorra.object.HorizontalVelocityTracker;
 import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.DamageHandler;
 import com.projectkorra.projectkorra.util.ParticleEffect;
@@ -62,25 +64,23 @@ public class FireStreams extends FireAbility implements AddonAbility, ComboAbili
 	public FireStreams(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			return;
-		}
+		if (!bPlayer.canBendIgnoreBinds(this)) return;
 		
-		if (hasAbility(player, FireShield.class)) {
+		if (hasAbility(player, FireShield.class))
 			getAbility(player, FireShield.class).remove();
-		}
 		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Fire.FireStreams.Cooldown");
-		damage = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireStreams.Damage");
-		range = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireStreams.Range");
-		hitRadius = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireStreams.HitRadius");
-		speed = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireStreams.Speed");
-		explosionRadius = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireStreams.ExplosionRadius");
-		particleAmount = Azutoru.az.getConfig().getInt("Abilities.Fire.FireStreams.ParticleAmount");
-		particleSpread = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireStreams.ParticleSpread");
-		helixRadius = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireStreams.Helix.Radius");
-		helixParticleAmount = Azutoru.az.getConfig().getInt("Abilities.Fire.FireStreams.Helix.ParticleAmount");
-		helixParticleSpread = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireStreams.Helix.ParticleSpread");
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Fire.FireStreams.Cooldown");
+		damage = c.getDouble("Abilities.Fire.FireStreams.Damage");
+		range = c.getDouble("Abilities.Fire.FireStreams.Range");
+		hitRadius = c.getDouble("Abilities.Fire.FireStreams.HitRadius");
+		speed = c.getDouble("Abilities.Fire.FireStreams.Speed");
+		explosionRadius = c.getDouble("Abilities.Fire.FireStreams.ExplosionRadius");
+		particleAmount = c.getInt("Abilities.Fire.FireStreams.ParticleAmount");
+		particleSpread = c.getDouble("Abilities.Fire.FireStreams.ParticleSpread");
+		helixRadius = c.getDouble("Abilities.Fire.FireStreams.Helix.Radius");
+		helixParticleAmount = c.getInt("Abilities.Fire.FireStreams.Helix.ParticleAmount");
+		helixParticleSpread = c.getDouble("Abilities.Fire.FireStreams.Helix.ParticleSpread");
 		
 		applyModifiers();
 		
@@ -125,9 +125,8 @@ public class FireStreams extends FireAbility implements AddonAbility, ComboAbili
 			return;
 		}
 		
-		if (player.isSneaking()) {
+		if (player.isSneaking())
 			direction.add(player.getEyeLocation().getDirection().multiply(0.5)).normalize().multiply(speed);
-		}
 		
 		for (int i = 0; i < 3; i++) {
 			location.add(direction.clone().multiply(speed / 3));
@@ -135,8 +134,7 @@ public class FireStreams extends FireAbility implements AddonAbility, ComboAbili
 			playFirebendingParticles(location, particleAmount, particleSpread, particleSpread, particleSpread);
 			
 			for (int j = 0; j < 2; j++) {
-				Vector ortho = GeneralMethods.getOrthogonalVector(direction, rotation + 180 * j, helixRadius);
-				Location helixLoc = location.clone().add(ortho);
+				Location helixLoc = location.clone().add(GeneralMethods.getOrthogonalVector(direction, rotation + 180 * j, helixRadius));
 				playFirebendingParticles(helixLoc, helixParticleAmount, helixParticleSpread, helixParticleSpread, helixParticleSpread);
 			}
 			rotation += 10;
@@ -145,7 +143,7 @@ public class FireStreams extends FireAbility implements AddonAbility, ComboAbili
 				playFirebendingSound(location);
 			
 			for (Entity e : GeneralMethods.getEntitiesAroundPoint(location, hitRadius)) {
-				if (e instanceof LivingEntity && e.getUniqueId() != player.getUniqueId()) {
+				if (e != player) {
 					explode();
 					remove();
 					return;
@@ -159,18 +157,16 @@ public class FireStreams extends FireAbility implements AddonAbility, ComboAbili
 		location.getWorld().playSound(location, Sound.ENTITY_GENERIC_EXPLODE, 5, 1);
 		
 		for (Block b : GeneralMethods.getBlocksAroundPoint(location, explosionRadius)) {
-			if (GeneralMethods.isRegionProtectedFromBuild(this, b.getLocation())) {
-				continue;
-			}
-			
-			createTempFire(b.getLocation());
+			if (!GeneralMethods.isRegionProtectedFromBuild(this, b.getLocation()))
+				createTempFire(b.getLocation());
 		}
 		
 		for (Entity e : GeneralMethods.getEntitiesAroundPoint(location, explosionRadius)) {
+			double knockback = 1 / (0.1 + e.getLocation().distance(location));
+			e.setVelocity(GeneralMethods.getDirection(location, e.getLocation().add(0, 1, 0)).multiply(knockback));
 			if (e instanceof LivingEntity) {
 				DamageHandler.damageEntity(e, damage, this);
-				double knockback = 1 / (0.1 + e.getLocation().distance(location));
-				e.setVelocity(GeneralMethods.getDirection(location, e.getLocation().add(0, 1, 0)).multiply(knockback));
+				new HorizontalVelocityTracker(e, player, 200, this);
 			}
 		}
 	}

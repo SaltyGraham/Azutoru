@@ -2,6 +2,7 @@ package me.aztl.azutoru.ability.fire;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -10,6 +11,7 @@ import org.bukkit.block.Block;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -104,55 +106,63 @@ public class FireJet extends FireAbility implements AddonAbility {
 	private RemovalPolicy policy;
 	private JetState state;
 	private JetCombo combo;
-	private int counter = 0;
 	private long time;
 	private float yaw, pitch, initFlySpeed;
-	private double health;
 	private boolean avatarState, isOnSlot, recovery, canFly, isFlying;
 	
 	public FireJet(Player player, ClickType clickType) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreCooldowns(this) || hasAbility(player, JetStepping.class)) {
+		if (hasAbility(player, FireJet.class)
+				&& !hasAbility(player, JetBlast.class)
+				&& !hasAbility(player, JetBlaze.class)) {
+			FireJet fj = getAbility(player, FireJet.class);
+			if (clickType == ClickType.LEFT_CLICK)
+				fj.onLeftClick();
+			else if (clickType == ClickType.RIGHT_CLICK)
+				fj.onRightClick();
+			else
+				fj.onSneak();
 			return;
 		}
 		
-		if (hasAbility(player, AirSpout.class)) {
+		if (!bPlayer.canBendIgnoreCooldowns(this) || hasAbility(player, JetStepping.class)) return;
+		
+		if (hasAbility(player, AirSpout.class))
 			getAbility(player, AirSpout.class).remove();
-		}
 		
-		if (hasAbility(player, CloudSurf.class)) {
+		if (hasAbility(player, CloudSurf.class))
 			getAbility(player, CloudSurf.class).remove();
-		}
 		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Fire.FireJet.Cooldown");
-		duration = Azutoru.az.getConfig().getLong("Abilities.Fire.FireJet.Duration");
-		particleAmount = Azutoru.az.getConfig().getInt("Abilities.Fire.FireJet.ParticleAmount");
-		particleSpread = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireJet.ParticleSpread");
-		length = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireJet.ParticleLength");
-		onSlotModifier = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireJet.OnSlotModifier");
-		damageThreshold = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireJet.DamageThreshold");
-		propelSpeed = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireJet.Propel.Speed");
-		propelDuration = Azutoru.az.getConfig().getLong("Abilities.Fire.FireJet.Propel.Duration");
-		skiEnabled = Azutoru.az.getConfig().getBoolean("Abilities.Fire.FireJet.Ski.Enabled");
-		skiSpeed = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireJet.Ski.Speed");
-		skiDuration = Azutoru.az.getConfig().getLong("Abilities.Fire.FireJet.Ski.Duration");
-		skiTurningSpeed = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireJet.Ski.TurningSpeed");
-		hoverEnabled = Azutoru.az.getConfig().getBoolean("Abilities.Fire.FireJet.Hover.Enabled");
-		hoverSpeed = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireJet.Hover.Speed");
-		hoverDuration = Azutoru.az.getConfig().getLong("Abilities.Fire.FireJet.Hover.Duration");
-		recoveryEnabled = Azutoru.az.getConfig().getBoolean("Abilities.Fire.FireJet.Hover.Recovery.Enabled");
-		recoveryDuration = Azutoru.az.getConfig().getLong("Abilities.Fire.FireJet.Hover.Recovery.Duration");
-		recoveryCooldown = Azutoru.az.getConfig().getLong("Abilities.Fire.FireJet.Hover.Recovery.Cooldown");
-		driftEnabled = Azutoru.az.getConfig().getBoolean("Abilities.Fire.FireJet.Hover.Drift.Enabled");
-		driftSpeed = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireJet.Hover.Drift.Speed");
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Fire.FireJet.Cooldown");
+		duration = c.getLong("Abilities.Fire.FireJet.Duration");
+		particleAmount = c.getInt("Abilities.Fire.FireJet.ParticleAmount");
+		particleSpread = c.getDouble("Abilities.Fire.FireJet.ParticleSpread");
+		length = c.getDouble("Abilities.Fire.FireJet.ParticleLength");
+		onSlotModifier = c.getDouble("Abilities.Fire.FireJet.OnSlotModifier");
+		damageThreshold = c.getDouble("Abilities.Fire.FireJet.DamageThreshold");
+		propelSpeed = c.getDouble("Abilities.Fire.FireJet.Propel.Speed");
+		propelDuration = c.getLong("Abilities.Fire.FireJet.Propel.Duration");
+		skiEnabled = c.getBoolean("Abilities.Fire.FireJet.Ski.Enabled");
+		skiSpeed = c.getDouble("Abilities.Fire.FireJet.Ski.Speed");
+		skiDuration = c.getLong("Abilities.Fire.FireJet.Ski.Duration");
+		skiTurningSpeed = c.getDouble("Abilities.Fire.FireJet.Ski.TurningSpeed");
+		hoverEnabled = c.getBoolean("Abilities.Fire.FireJet.Hover.Enabled");
+		hoverSpeed = c.getDouble("Abilities.Fire.FireJet.Hover.Speed");
+		hoverDuration = c.getLong("Abilities.Fire.FireJet.Hover.Duration");
+		recoveryEnabled = c.getBoolean("Abilities.Fire.FireJet.Hover.Recovery.Enabled");
+		recoveryDuration = c.getLong("Abilities.Fire.FireJet.Hover.Recovery.Duration");
+		recoveryCooldown = c.getLong("Abilities.Fire.FireJet.Hover.Recovery.Cooldown");
+		driftEnabled = c.getBoolean("Abilities.Fire.FireJet.Hover.Drift.Enabled");
+		driftSpeed = c.getDouble("Abilities.Fire.FireJet.Hover.Drift.Speed");
 		
-		blastSpeedMod = Azutoru.az.getConfig().getDouble("Abilities.Fire.JetBlast.SpeedModifier");
+		blastSpeedMod = c.getDouble("Abilities.Fire.JetBlast.SpeedModifier");
 		
-		blazeSpeedMod = Azutoru.az.getConfig().getDouble("Abilities.Fire.JetBlaze.SpeedModifier");
-		blazeHitRadius = Azutoru.az.getConfig().getDouble("Abilities.Fire.JetBlaze.ParticleHitRadius");
-		blazeFireTicks = Azutoru.az.getConfig().getInt("Abilities.Fire.JetBlaze.FireTicks");
-		blazeDamage = Azutoru.az.getConfig().getDouble("Abilities.Fire.JetBlaze.Damage");
+		blazeSpeedMod = c.getDouble("Abilities.Fire.JetBlaze.SpeedModifier");
+		blazeHitRadius = c.getDouble("Abilities.Fire.JetBlaze.ParticleHitRadius");
+		blazeFireTicks = c.getInt("Abilities.Fire.JetBlaze.FireTicks");
+		blazeDamage = c.getDouble("Abilities.Fire.JetBlaze.Damage");
 		
 		applyModifiers();
 		
@@ -160,7 +170,6 @@ public class FireJet extends FireAbility implements AddonAbility {
 		location = origin.clone();
 		direction = player.getEyeLocation().getDirection().clone().normalize().multiply(propelSpeed);
 		time = System.currentTimeMillis();
-		health = player.getHealth();
 		affectedEntities = new ArrayList<>();
 		canFly = player.getAllowFlight();
 		isFlying = player.isFlying();
@@ -173,31 +182,21 @@ public class FireJet extends FireAbility implements AddonAbility {
 					.add(new ExpirationPolicy(duration)).build();
 		
 		Block b = origin.getBlock();
-		if (b.isLiquid()) {
-			return;
-		}
+		if (b.isLiquid()) return;
 		
 		switch (clickType) {
 		case LEFT_CLICK:
-			if (bPlayer.isOnCooldown(this)) {
-				return;
-			}
+			if (bPlayer.isOnCooldown(this)) return;
 			state = JetState.PROPELLING;
 			break;
 		case RIGHT_CLICK:
-			if (bPlayer.isOnCooldown(this)) {
-				return;
-			}
+			if (bPlayer.isOnCooldown(this)) return;
 			state = JetState.SKIING;
 			break;
 		case SHIFT_DOWN:
-			if (PlayerUtil.isOnGround(player)) {
-				return;
-			}
+			if (PlayerUtil.isOnGround(player)) return;
 			if (bPlayer.isOnCooldown(this)) {
-				if (!recoveryEnabled) {
-					return;
-				}
+				if (!recoveryEnabled) return;
 				if (bPlayer.isOnCooldown(getName() + "Recovery")) {
 					long recoveryCd = bPlayer.getCooldown(getName() + "Recovery") - System.currentTimeMillis();
 					ActionBar.sendActionBar(ChatColor.RED + "FireJet Recovery - " + TimeUtil.formatTime(recoveryCd), player);
@@ -206,12 +205,11 @@ public class FireJet extends FireAbility implements AddonAbility {
 				state = JetState.HOVERING;
 				duration = recoveryDuration;
 				recovery = true;
-			} else {
+			} else
 				state = JetState.HOVERING;
-			}
 			break;
 		default:
-			break;
+			return;
 		}
 		combo = JetCombo.NONE;
 		
@@ -224,10 +222,9 @@ public class FireJet extends FireAbility implements AddonAbility {
 		}
 		
 		if (state == JetState.PROPELLING) {
-			player.setVelocity(direction);
-			if (isAir(b.getType())) {
+			player.setVelocity(direction.clone().multiply(1.5));
+			if (isAir(b.getType()))
 				createTempFire(b.getLocation());
-			}
 		}
 		start();
 	}
@@ -276,9 +273,7 @@ public class FireJet extends FireAbility implements AddonAbility {
 			topBar.setProgress(1);
 		} else {
 			double progress = (double) getTimeLeft() / (double) duration;
-			if (progress < 0) {
-				progress = 0;
-			}
+			if (progress < 0) progress = 0;
 			topBar.setProgress(progress);
 		}
 		
@@ -286,9 +281,7 @@ public class FireJet extends FireAbility implements AddonAbility {
 			bottomBar.setProgress(1);
 		} else {
 			double progress = (double) getModeTimeLeft() / (double) getModeDuration();
-			if (progress < 0) {
-				progress = 0;
-			}
+			if (progress < 0) progress = 0;
 			bottomBar.setProgress(progress);
 		}
 		
@@ -315,21 +308,12 @@ public class FireJet extends FireAbility implements AddonAbility {
 			return;
 		}
 		
-		if (!bPlayer.isAvatarState() && damageThreshold > 0 && player.getHealth() <= health - damageThreshold) {
-			removeWithCooldown();
-			return;
-		}
-		
 		if (avatarState && !bPlayer.isAvatarState()) {
 			removeWithCooldown();
 			return;
 		}
 		
-		if (bPlayer.getBoundAbilityName().equals(getName())) {
-			isOnSlot = true;
-		} else {
-			isOnSlot = false;
-		}
+		isOnSlot = bPlayer.getBoundAbilityName().equals(getName());
 		
 		if (hasAbility(player, JetBlast.class)) {
 			combo = JetCombo.BLAST;
@@ -341,10 +325,8 @@ public class FireJet extends FireAbility implements AddonAbility {
 			combo = JetCombo.NONE;
 		}
 		
-		if (counter % 6 == 0) {
+		if (ThreadLocalRandom.current().nextInt(6) == 0)
 			playFirebendingSound(location);
-		}
-		counter++;
 		
 		updateBars();
 		
@@ -431,9 +413,8 @@ public class FireJet extends FireAbility implements AddonAbility {
 		Location loc = location.clone();
 		
 		Block topBlock = GeneralMethods.getTopBlock(location, 3);
-		if (topBlock == null) {
+		if (topBlock == null)
 			loc.setPitch(10);
-		}
 		
 		direction.add(loc.getDirection().clone().normalize().multiply(skiTurningSpeed)).normalize().multiply(speed * timeFactor);
 		
@@ -460,12 +441,8 @@ public class FireJet extends FireAbility implements AddonAbility {
 	}
 	
 	private void hover() {
-		if (hoverDuration > 0 && System.currentTimeMillis() > time + hoverDuration) {
-			removeWithCooldown();
-			return;
-		}
-		
-		if (PlayerUtil.isOnGround(player)) {
+		if ((hoverDuration > 0 && System.currentTimeMillis() > time + hoverDuration)
+				|| PlayerUtil.isOnGround(player)) {
 			removeWithCooldown();
 			return;
 		}
@@ -485,17 +462,13 @@ public class FireJet extends FireAbility implements AddonAbility {
 			displayJets(r, l, rv, lv, 1, 0.25);
 		}
 		
-		if (!player.isSneaking() || (player.isSneaking() && !bPlayer.getBoundAbilityName().equals(getName()))) {
+		if (!player.isSneaking() || (player.isSneaking() && !isOnSlot)) {
 			player.setVelocity(player.getVelocity().clone().multiply(hoverSpeed));
-			
-		} else if (driftEnabled && !recovery && bPlayer.getBoundAbilityName().equals(getName())) {
+		} else if (driftEnabled && !recovery && isOnSlot) {
 			double timeFactor = getTimeFactor(hoverDuration);
 			double speed = driftSpeed;
-			
-			if (isOnSlot) {
+			if (isOnSlot)
 				speed *= onSlotModifier;
-			}
-			
 			Location target = GeneralMethods.getTargetedLocation(player, 1);
 			direction = GeneralMethods.getDirection(target, player.getEyeLocation()).multiply(speed * timeFactor);
 			player.setVelocity(direction);
@@ -505,31 +478,19 @@ public class FireJet extends FireAbility implements AddonAbility {
 	private void displayJet(Location loc, Vector dir, double length, double stepSize) {
 		for (double d = 0; d <= length; d += stepSize) {
 			Block b = loc.getBlock();
-			if (GeneralMethods.isSolid(b) || b.isLiquid()) {
-				break;
-			}
-			
+			if (GeneralMethods.isSolid(b) || b.isLiquid()) break;
 			particle(loc);
-			
 			loc.add(dir);
-			
-			if (combo == JetCombo.BLAZE) {
+			if (combo == JetCombo.BLAZE)
 				damage(loc);
-			}
 		}
 	}
 	
 	private void displayJets(Location r, Location l, Vector rv, Vector lv, double length, double stepSize) {
 		for (double d = 0; d <= length; d += stepSize) {
-			Block br = r.getBlock();
-			if (GeneralMethods.isSolid(br) || br.isLiquid()) {
+			if (GeneralMethods.isSolid(r.getBlock()) || r.getBlock().isLiquid()
+					|| GeneralMethods.isSolid(l.getBlock()) || l.getBlock().isLiquid())
 				continue;
-			}
-			
-			Block bl = l.getBlock();
-			if (GeneralMethods.isSolid(bl) || bl.isLiquid()) {
-				continue;
-			}
 			
 			particle(r);
 			particle(l);
@@ -550,28 +511,18 @@ public class FireJet extends FireAbility implements AddonAbility {
 	
 	private void damage(Location loc) {
 		for (Entity e : GeneralMethods.getEntitiesAroundPoint(loc, blazeHitRadius)) {
-			if (e instanceof LivingEntity && e.getUniqueId() != player.getUniqueId()) {
-				if (!affectedEntities.contains(e)) {
-					DamageHandler.damageEntity(e, blazeDamage, getAbility(player, JetBlaze.class));
-					e.setFireTicks(blazeFireTicks);
-					new FireDamageTimer(e, player);
-					affectedEntities.add(e);
-				}
+			if (e instanceof LivingEntity && e != player && !affectedEntities.contains(e)) {
+				DamageHandler.damageEntity(e, blazeDamage, getAbility(player, JetBlaze.class));
+				e.setFireTicks(blazeFireTicks);
+				new FireDamageTimer(e, player);
+				affectedEntities.add(e);
 			}
 		}
 	}
 	
 	private double getTimeFactor(long currentDuration) {
-		if (currentDuration <= 0) {
-			return 1;
-		}
-		double timeFactor;
-		if (bPlayer.isAvatarState()) {
-			timeFactor = 1;
-		} else {
-			timeFactor = 1 - (System.currentTimeMillis() - time) / (1.5 * currentDuration);
-		}
-		return timeFactor;
+		if (currentDuration <= 0) return 1;
+		return bPlayer.isAvatarState() ? 1 : 1 - (System.currentTimeMillis() - time) / (1.5 * currentDuration);
 	}
 	
 	private long getTimeLeft() {
@@ -597,20 +548,17 @@ public class FireJet extends FireAbility implements AddonAbility {
 	@Override
 	public void remove() {
 		super.remove();
-		if (combo == JetCombo.BLAST) {
+		if (combo == JetCombo.BLAST)
 			getAbility(player, JetBlast.class).remove();
-		} else if (combo == JetCombo.BLAZE) {
+		else if (combo == JetCombo.BLAZE)
 			getAbility(player, JetBlaze.class).remove();
-		}
 		
 		affectedEntities.clear();
 		
-		if (topBar != null) {
+		if (topBar != null)
 			topBar.removeAll();
-		}
-		if (bottomBar != null) {
+		if (bottomBar != null)
 			bottomBar.removeAll();
-		}
 		
 		if (!recovery) {
 			flightHandler.removeInstance(player, getName());
@@ -621,11 +569,10 @@ public class FireJet extends FireAbility implements AddonAbility {
 	
 	public void removeWithCooldown() {
 		remove();
-		if (recovery) {
+		if (recovery)
 			bPlayer.addCooldown(getName() + "Recovery", recoveryCooldown);
-		} else {
+		else
 			bPlayer.addCooldown(this);
-		}
 	}
 	
 	public void onLeftClick() {
@@ -645,9 +592,7 @@ public class FireJet extends FireAbility implements AddonAbility {
 	}
 	
 	public void switchJetState(ClickType clickType) {
-		if (combo != JetCombo.NONE) {
-			return;
-		}
+		if (combo != JetCombo.NONE) return;
 		JetState previous = state;
 		
 		switch (state) {
@@ -682,9 +627,8 @@ public class FireJet extends FireAbility implements AddonAbility {
 			break;
 		}
 		
-		if (previous != state) {
+		if (previous != state)
 			time = System.currentTimeMillis();
-		}
 	}
 
 	@Override

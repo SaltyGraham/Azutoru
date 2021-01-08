@@ -3,16 +3,17 @@ package me.aztl.azutoru.ability.earth.lava.passive;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
 import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
-import com.projectkorra.projectkorra.ability.EarthAbility;
 import com.projectkorra.projectkorra.ability.LavaAbility;
 import com.projectkorra.projectkorra.ability.PassiveAbility;
 import com.projectkorra.projectkorra.attribute.Attribute;
@@ -30,32 +31,32 @@ public class LavaWalk extends LavaAbility implements AddonAbility, PassiveAbilit
 	
 	private World world;
 	private Set<TempBlock> affectedBlocks = new HashSet<>();
-	private static boolean isActive;
+	private boolean active;
 	
 	public LavaWalk(Player player) {
 		super(player);
 		
-		radius = Azutoru.az.getConfig().getInt("Abilities.Earth.LavaWalk.Radius");
-		canBendTempLava = Azutoru.az.getConfig().getBoolean("Abilities.Earth.LavaWalk.CanBendTempLava");
-		range = Azutoru.az.getConfig().getDouble("Abilities.Earth.LavaWalk.Range");
+		FileConfiguration c = Azutoru.az.getConfig();
+		radius = c.getInt("Abilities.Earth.LavaWalk.Radius");
+		canBendTempLava = c.getBoolean("Abilities.Earth.LavaWalk.CanBendTempLava");
+		range = c.getDouble("Abilities.Earth.LavaWalk.Range");
 		
 		world = player.getWorld();
-		isActive = true;
+		active = true;
 	}
 
 	@Override
 	public void progress() {
-		if (!isActive || !bPlayer.canUsePassive(this) || !bPlayer.canBendPassive(this)) {
-			if (!affectedBlocks.isEmpty()) {
+		if (!active || !bPlayer.canUsePassive(this) || !bPlayer.canBendPassive(this)) {
+			if (!affectedBlocks.isEmpty())
 				revertBlocks();
-			}
 			return;
 		}
 		
 		Block block = player.getLocation().getBlock().getRelative(BlockFace.DOWN);
 		for (Block affectedBlock : GeneralMethods.getBlocksAroundPoint(block.getLocation(), radius)) {
-			if ((EarthAbility.isLava(affectedBlock) && !TempBlock.isTempBlock(affectedBlock)) 
-					|| (EarthAbility.isLava(affectedBlock) && TempBlock.isTempBlock(affectedBlock) && canBendTempLava)) {
+			if ((isLava(affectedBlock) && !TempBlock.isTempBlock(affectedBlock)) 
+					|| (isLava(affectedBlock) && TempBlock.isTempBlock(affectedBlock) && canBendTempLava)) {
 				TempBlock tb = new TempBlock(affectedBlock, Material.STONE);
 				affectedBlocks.add(tb);
 			}
@@ -66,29 +67,35 @@ public class LavaWalk extends LavaAbility implements AddonAbility, PassiveAbilit
 			world = player.getWorld();
 		}
 		
-		for (TempBlock tb : affectedBlocks) {
-			if (tb.getBlock().getLocation().distanceSquared(player.getLocation()) > range * range) {
-				tb.revertBlock();
-			}
-		}
+		affectedBlocks.stream()
+			.filter(tb -> tb.getBlock().getLocation().distanceSquared(player.getLocation()) > range * range)
+			.forEach(tb -> tb.revertBlock());
 	}
 	
 	public void revertBlocks() {
-		for (TempBlock tb : affectedBlocks) {
-			tb.revertBlock();
-		}
+		affectedBlocks.forEach(tb -> tb.revertBlock());
 		affectedBlocks.clear();
 	}
 	
-	public static boolean isActive(Player player) {
-		return isActive;
+	public boolean isActive() {
+		return active;
 	}
 	
-	public static void setActive(Player player, boolean isActive) {
-		if (!isActive) {
-			getAbility(player, LavaWalk.class).revertBlocks();
+	public void setActive(boolean active) {
+		if (!active)
+			revertBlocks();
+		this.active = active;
+	}
+	
+	public static void toggle(Player player) {
+		LavaWalk lw = getAbility(player, LavaWalk.class);
+		if (lw.active) {
+			lw.setActive(false);
+			player.sendMessage(ChatColor.DARK_GREEN + "LavaWalk is now disabled.");
+		} else {
+			lw.setActive(true);
+			player.sendMessage(ChatColor.DARK_GREEN + "LavaWalk is now enabled.");
 		}
-		LavaWalk.isActive = isActive;
 	}
 	
 	@Override

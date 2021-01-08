@@ -3,10 +3,12 @@ package me.aztl.azutoru.ability.earth.sand;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.math3.util.FastMath;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -53,15 +55,21 @@ public class DustDevil extends SandAbility implements AddonAbility {
 	public DustDevil(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBend(this)) {
+		if (!bPlayer.canBend(this)) return;
+		
+		if (hasAbility(player, DustDevil.class)) {
+			if (hasAbility(player, DustDevilRush.class))
+				getAbility(player, DustDevilRush.class).remove();
+			getAbility(player, DustDevil.class).remove();
 			return;
 		}
 		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Earth.DustDevil.Cooldown");
-		height = Azutoru.az.getConfig().getDouble("Abilities.Earth.DustDevil.Height");
-		duration = Azutoru.az.getConfig().getLong("Abilities.Earth.DustDevil.Duration");
-		damage = Azutoru.az.getConfig().getDouble("Abilities.Earth.DustDevil.Damage");
-		blindnessTime = Azutoru.az.getConfig().getInt("Abilities.Earth.DustDevil.BlindnessTime");
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Earth.DustDevil.Cooldown");
+		height = c.getDouble("Abilities.Earth.DustDevil.Height");
+		duration = c.getLong("Abilities.Earth.DustDevil.Duration");
+		damage = c.getDouble("Abilities.Earth.DustDevil.Damage");
+		blindnessTime = c.getInt("Abilities.Earth.DustDevil.BlindnessTime");
 		
 		if (bPlayer.isAvatarState()) {
 			cooldown = 0;
@@ -79,16 +87,11 @@ public class DustDevil extends SandAbility implements AddonAbility {
 					.add(Policies.ON_GROUND)
 					.add(new DifferentWorldPolicy(() -> this.player.getWorld()))
 					.add(new ExpirationPolicy(duration))
-					.add(new TopBlockPolicy(() -> topBlock, b -> !WorldUtil.isDust(b))).build();
+					.add(new TopBlockPolicy(() -> topBlock, b -> !WorldUtil.isDust(b) && !WorldUtil.isIgnoredPlant(b))).build();
 		
-		if (!WorldUtil.isDust(topBlock)) {
-			return;
-		}
+		if (!WorldUtil.isDust(topBlock) && !WorldUtil.isIgnoredPlant(topBlock)) return;
 		
-		double heightRemoveThreshold = 2;
-		if (!isWithinMaxSpoutHeight(topBlock.getLocation(), heightRemoveThreshold)) {
-			return;
-		}
+		if (!isWithinMaxSpoutHeight()) return;
 		
 		flightHandler.createInstance(player, getName());
 		PlayerUtil.allowFlight(player);
@@ -104,17 +107,13 @@ public class DustDevil extends SandAbility implements AddonAbility {
 		
 		topBlock = GeneralMethods.getTopBlock(player.getLocation(), (int) height);
 		if (WorldUtil.isIgnoredPlant(topBlock)) {
-			if (WorldUtil.isIgnoredPlant(topBlock.getRelative(BlockFace.DOWN))) {
-				topBlockType = topBlock.getRelative(BlockFace.DOWN, 2).getType();
-			} else {
-				topBlockType = topBlock.getRelative(BlockFace.DOWN).getType();
-			}
+			int dy = WorldUtil.isIgnoredPlant(topBlock.getRelative(BlockFace.DOWN)) ? 2 : 1;
+			topBlockType = topBlock.getRelative(BlockFace.DOWN, dy).getType();
 		} else {
 			topBlockType = topBlock.getType();
 		}
 		
-		double heightRemoveThreshold = 2;
-		if (!isWithinMaxSpoutHeight(topBlock.getLocation(), heightRemoveThreshold)) {
+		if (!isWithinMaxSpoutHeight()) {
 			remove();
 			return;
 		}
@@ -138,20 +137,19 @@ public class DustDevil extends SandAbility implements AddonAbility {
 		for (double i = 0; i <= currentHeight; i += 0.5) {
 			Location loc = player.getLocation().subtract(0, i, 0);
 			double radius = 1;
-			for (double a = 0; a <= Math.PI * 2; a += Math.PI / 4) {
-				double x = Math.cos(a) * radius;
-				double z = Math.sin(a) * radius;
+			for (double a = 0; a <= FastMath.PI * 2; a += FastMath.PI / 4) {
+				double x = FastMath.cos(a) * radius;
+				double z = FastMath.sin(a) * radius;
 				loc.add(x, 0, z);
-				ParticleEffect.BLOCK_DUST.display(loc, 1, 0, Math.random(), 0, 1, topBlockType.createBlockData());
+				ParticleEffect.BLOCK_DUST.display(loc, 1, 0, FastMath.random(), 0, 1, topBlockType.createBlockData());
 				loc.subtract(x, 0, z);
 			}
 			
-			for (Entity entity : GeneralMethods.getEntitiesAroundPoint(loc, 1.5)) {
-				if (entity instanceof LivingEntity && entity.getUniqueId() != player.getUniqueId()) {
-					DamageHandler.damageEntity(entity, damage, this);
-					if (entity instanceof Player) {
-						Player target = (Player) entity;
-						target.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, blindnessTime, 1));
+			for (Entity e : GeneralMethods.getEntitiesAroundPoint(loc, 1.5)) {
+				if (e instanceof LivingEntity && e != player) {
+					DamageHandler.damageEntity(e, damage, this);
+					if (e instanceof Player) {
+						((Player) e).addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, blindnessTime, 1));
 					}
 				}
 			}
@@ -159,36 +157,25 @@ public class DustDevil extends SandAbility implements AddonAbility {
 	}
 	
 	private void updateLocations() {
-		locations.clear();
-		
-		List<Location> newLocations = new ArrayList<>();
-		newLocations = MathUtil.getLinePoints(player, player.getLocation(), topBlock.getLocation(), 
-				(int) (player.getLocation().getY() - topBlock.getLocation().getY()));
-		
-		locations.addAll(newLocations);
+		Location p = player.getLocation();
+		Location t = topBlock.getLocation();
+		t.setX(p.getX());
+		t.setY(p.getY());
+		locations = MathUtil.getLinePoints(p, t, p.getBlockY() - t.getBlockY());
 	}
 	
 	public void remove() {
 		super.remove();
-		if (hasAbility(player, DustDevilRush.class)) {
+		if (hasAbility(player, DustDevilRush.class))
 			getAbility(player, DustDevilRush.class).remove();
-		}
 		bPlayer.addCooldown(this);
 		flightHandler.removeInstance(player, getName());
 		PlayerUtil.removeFlight(player, canFly, isFlying);
 		return;
 	}
 	
-	private boolean isWithinMaxSpoutHeight(Location baseBlockLocation, double threshold) {
-		if (baseBlockLocation == null) {
-			return false;
-		}
-		
-		double playerHeight = player.getLocation().getY();
-		if (playerHeight > baseBlockLocation.getY() + height + threshold) {
-			return false;
-		}
-		return true;
+	private boolean isWithinMaxSpoutHeight() {
+		return player.getLocation().getY() <= topBlock.getLocation().getY() + height + 2;
 	}
 	
 	@Override

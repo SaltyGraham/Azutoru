@@ -1,8 +1,7 @@
 package me.aztl.azutoru.listener;
 
-import java.util.Set;
+import java.util.List;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -52,9 +51,10 @@ import me.aztl.azutoru.ability.air.combo.AirSpoutRush;
 import me.aztl.azutoru.ability.chi.passive.Dodge;
 import me.aztl.azutoru.ability.chi.passive.Duck;
 import me.aztl.azutoru.ability.chi.passive.Parry;
-import me.aztl.azutoru.ability.earth.EarthRidge;
 import me.aztl.azutoru.ability.earth.RaiseEarth;
 import me.aztl.azutoru.ability.earth.RaiseEarth.Orientation;
+import me.aztl.azutoru.ability.earth.Shockwave;
+import me.aztl.azutoru.ability.earth.combo.EarthRidge;
 import me.aztl.azutoru.ability.earth.glass.GlassShards;
 import me.aztl.azutoru.ability.earth.lava.passive.LavaWalk;
 import me.aztl.azutoru.ability.earth.metal.multiability.MetalCables;
@@ -65,8 +65,6 @@ import me.aztl.azutoru.ability.earth.sand.combo.DustStepping;
 import me.aztl.azutoru.ability.fire.FireDaggers;
 import me.aztl.azutoru.ability.fire.FireJet;
 import me.aztl.azutoru.ability.fire.FireWhips;
-import me.aztl.azutoru.ability.fire.combo.JetBlast;
-import me.aztl.azutoru.ability.fire.combo.JetBlaze;
 import me.aztl.azutoru.ability.fire.combo.JetStepping;
 import me.aztl.azutoru.ability.fire.lightning.Electrify;
 import me.aztl.azutoru.ability.water.WaterCanvas;
@@ -77,7 +75,7 @@ import me.aztl.azutoru.ability.water.combo.WaterRun;
 import me.aztl.azutoru.ability.water.combo.WaterSlash;
 import me.aztl.azutoru.ability.water.combo.WaterSphere;
 import me.aztl.azutoru.ability.water.combo.WaterSpoutRush;
-import me.aztl.azutoru.ability.water.ice.IceRidge;
+import me.aztl.azutoru.ability.water.ice.combo.IceRidge;
 import me.aztl.azutoru.ability.water.ice.combo.IceShots;
 import me.aztl.azutoru.ability.water.ice.combo.MistStepping;
 import me.aztl.azutoru.ability.water.multiability.Transform;
@@ -88,36 +86,23 @@ import me.aztl.azutoru.util.TorrentRedirection;
 import me.aztl.azutoru.util.WorldUtil;
 
 public class AzutoruListener implements Listener {
-
-	Azutoru plugin;
 	
-	public AzutoruListener(final Azutoru plugin) {
-		this.plugin = plugin;
-	}
-	
-	@EventHandler(priority = EventPriority.NORMAL)
-	public void onLeftClick(PlayerInteractEvent event) {
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
+	public void onClick(PlayerInteractEvent event) {
 		Player player = event.getPlayer();
 		BendingPlayer bPlayer = BendingPlayer.getBendingPlayer(player);
-		if (event.getHand() != EquipmentSlot.HAND) {
-			return;
-		}
-		if (event.getAction() != Action.LEFT_CLICK_BLOCK && event.getAction() != Action.LEFT_CLICK_AIR) {
-			return;
-		}
-		if (bPlayer == null) {
-			return;
-		}
-		if (Suffocate.isBreathbent(player)) {
-			event.setCancelled(true);
-			return;
-		} else if (Bloodbending.isBloodbent(player) || MovementHandler.isStopped(player)) {
-			event.setCancelled(true);
-			return;
-		} else if (bPlayer.isChiBlocked()) {
-			event.setCancelled(true);
-			return;
-		} else if (GeneralMethods.isInteractable(player.getTargetBlock((Set<Material>)null, 5))) {
+		
+		if (event.getHand() != EquipmentSlot.HAND
+				|| (event.getAction() != Action.LEFT_CLICK_AIR
+				&& event.getAction() != Action.LEFT_CLICK_BLOCK
+				&& event.getAction() != Action.RIGHT_CLICK_AIR
+				&& event.getAction() != Action.RIGHT_CLICK_BLOCK)
+				|| bPlayer == null
+				|| bPlayer.isChiBlocked()
+				|| player.getTargetBlock(null, 5).getType().isInteractable()
+				|| Suffocate.isBreathbent(player)
+				|| Bloodbending.isBloodbent(player)
+				|| MovementHandler.isStopped(player)) {
 			return;
 		}
 		
@@ -125,155 +110,134 @@ public class AzutoruListener implements Listener {
 		CoreAbility coreAbil = bPlayer.getBoundAbility();
 		Material item = player.getInventory().getItemInMainHand().getType();
 		
-		if (coreAbil == null) {
-			if (MultiAbilityManager.hasMultiAbilityBound(player)) {
+		if (event.getAction() == Action.LEFT_CLICK_AIR || event.getAction() == Action.LEFT_CLICK_BLOCK) {
+			if (coreAbil == null && MultiAbilityManager.hasMultiAbilityBound(player)) {
 				if (MultiAbilityManager.hasMultiAbilityBound(player, "MetalCables")) {
 					new MetalCables(player, ClickType.LEFT_CLICK);
 				}
-			} else return;
-		} else if (bPlayer.canBendIgnoreCooldowns(coreAbil)) {
-			if (coreAbil instanceof AirAbility && bPlayer.isElementToggled(Element.AIR) == true) {
-				if (GeneralMethods.isWeapon(item) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.AIR)) {
-					return;
-				}
-				
-				if (abil.equalsIgnoreCase("airspout") && CoreAbility.hasAbility(player, AirSpoutRush.class)) {
-					CoreAbility.getAbility(player, AirSpoutRush.class).remove();
-				} else if (abil.equalsIgnoreCase("cloudsurf")) {
-					if (CoreAbility.hasAbility(player, CloudSurf.class)) {
-						CoreAbility.getAbility(player, CloudSurf.class).remove();
-					} else {
+				// Additional multiabilities go here
+			} else if (bPlayer.canBendIgnoreCooldowns(coreAbil)) {
+				if (coreAbil instanceof AirAbility && bPlayer.isElementToggled(Element.AIR)) {
+					if (GeneralMethods.isWeapon(item) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.AIR)) return;
+					
+					if (abil.equalsIgnoreCase("AirSpout") && CoreAbility.hasAbility(player, AirSpoutRush.class)) {
+						CoreAbility.getAbility(player, AirSpoutRush.class).remove();
+					} else if (abil.equalsIgnoreCase("CloudSurf")) {
 						new CloudSurf(player);
 					}
 				}
-			}
-			
-			if (coreAbil instanceof WaterAbility && bPlayer.isElementToggled(Element.WATER) == true) {
-				if (GeneralMethods.isWeapon(item) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.WATER)) {
-					return;
-				}
 				
-				if (abil.equalsIgnoreCase("plantwhip") && CoreAbility.hasAbility(player, PlantWhip.class)) {
-					CoreAbility.getAbility(player, PlantWhip.class).onLaunch();
-				} else if (abil.equalsIgnoreCase("surge") && CoreAbility.hasAbility(player, RazorRings.class)) {
-					new RazorRings(player);
-				} else if (abil.equalsIgnoreCase("transform")) {
-					new Transform(player);
-				} else if (abil.equalsIgnoreCase("waterspout") && CoreAbility.hasAbility(player, WaterRun.class)) {
-					CoreAbility.getAbility(player, WaterRun.class).remove();
-				} else if (abil.equalsIgnoreCase("waterspout") && CoreAbility.hasAbility(player, WaterSpoutRush.class)) {
-					CoreAbility.getAbility(player, WaterSpoutRush.class).remove();
-				} else if (abil.equalsIgnoreCase("icespike") && CoreAbility.hasAbility(player, IceShots.class)) {
-					CoreAbility.getAbility(player, IceShots.class).onClick();
-				} else if (abil.equalsIgnoreCase("surge") && CoreAbility.hasAbility(player, WaterPinwheel.class)) {
-					CoreAbility.getAbility(player, WaterPinwheel.class).onClick();
-				} else if (abil.equalsIgnoreCase("surge") && CoreAbility.hasAbility(player, WaterSphere.class)) {
-					CoreAbility.getAbility(player, WaterSphere.class).onClick();
-				} else if (abil.equalsIgnoreCase("torrent") && CoreAbility.hasAbility(player, WaterSlash.class)) {
-					CoreAbility.getAbility(player, WaterSlash.class).onClick();
-				} else if (abil.equalsIgnoreCase("icespike") && CoreAbility.hasAbility(player, MistStepping.class)) {
-					CoreAbility.getAbility(player, MistStepping.class).step();
-				} else if (abil.equalsIgnoreCase("iceridge") && CoreAbility.hasAbility(player, IceRidge.class)) {
-					CoreAbility.getAbility(player, IceRidge.class).onClick();
-				}
-			}
-			
-			if (coreAbil instanceof EarthAbility && bPlayer.isElementToggled(Element.EARTH) == true) {
-				if (GeneralMethods.isWeapon(item) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.EARTH)) {
-					return;
-				}
-				
-				if (abil.equalsIgnoreCase("dustdevil")) {
-					if (CoreAbility.hasAbility(player, DustDevil.class)) {
-						if (CoreAbility.hasAbility(player, DustDevilRush.class)) {
-							CoreAbility.getAbility(player, DustDevilRush.class).remove();
-						} else {
-							CoreAbility.getAbility(player, DustDevil.class).remove();
-						}
-					} else {
+				if (coreAbil instanceof EarthAbility && bPlayer.isElementToggled(Element.EARTH)) {
+					if (GeneralMethods.isWeapon(item) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.EARTH)) return;
+					
+					if (abil.equalsIgnoreCase("DustDevil")) {
 						new DustDevil(player);
-					}
-				} else if (abil.equalsIgnoreCase("glassshards")) {
-					if (CoreAbility.hasAbility(player, GlassShards.class)) {
+					} else if (abil.equalsIgnoreCase("GlassShards") && CoreAbility.hasAbility(player, GlassShards.class)) {
 						CoreAbility.getAbility(player, GlassShards.class).onClick();
+					} else if (coreAbil.equals(CoreAbility.getAbility(RaiseEarth.class))) {
+						new RaiseEarth(player, ClickType.LEFT_CLICK);
+					} else if (abil.equalsIgnoreCase("EarthBlast") && CoreAbility.hasAbility(player, EarthRidge.class)) {
+						CoreAbility.getAbility(player, EarthRidge.class).onClick();
+					} else if (abil.equalsIgnoreCase("EarthBlast") && CoreAbility.hasAbility(player, DustStepping.class)) {
+						CoreAbility.getAbility(player, DustStepping.class).step();
+					} else if (coreAbil.equals(CoreAbility.getAbility(MetalCables.class))) {
+						new MetalCables(player, ClickType.LEFT_CLICK);
+					} else if (coreAbil.equals(CoreAbility.getAbility(Shockwave.class)) && CoreAbility.hasAbility(player, Shockwave.class)) {
+						CoreAbility.getAbility(player, Shockwave.class).onClick();
 					}
-				} else if (coreAbil.equals(CoreAbility.getAbility(RaiseEarth.class))) {
-					new RaiseEarth(player, ClickType.LEFT_CLICK);
-				} else if (abil.equalsIgnoreCase("earthridge") && CoreAbility.hasAbility(player, EarthRidge.class)) {
-					CoreAbility.getAbility(player, EarthRidge.class).onClick();
-				} else if (abil.equalsIgnoreCase("earthblast") && CoreAbility.hasAbility(player, DustStepping.class)) {
-					CoreAbility.getAbility(player, DustStepping.class).step();
-				} else if (coreAbil.equals(CoreAbility.getAbility(MetalCables.class))) {
-					new MetalCables(player, ClickType.LEFT_CLICK);
-				}
-			}
-			
-			if (coreAbil instanceof FireAbility && bPlayer.isElementToggled(Element.FIRE) == true) {
-				if (GeneralMethods.isWeapon(item) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.FIRE)) {
-					return;
 				}
 				
-				if (abil.equalsIgnoreCase("firedaggers")) {
-					if (!player.isSneaking()) {
-						if (CoreAbility.hasAbility(player, FireDaggers.class)) {
-							CoreAbility.getAbility(player, FireDaggers.class).onClick();
-						} else {
-							new FireDaggers(player);
-						}
-					} else if (CoreAbility.hasAbility(player, FireDaggers.class) && player.isSneaking()) {
-						CoreAbility.getAbility(player, FireDaggers.class).onJumpSneakClick();
-					}
-				} else if (abil.equalsIgnoreCase("electrify")) {
-					new Electrify(player);
-				} else if (coreAbil.equals(CoreAbility.getAbility(FireJet.class))) {
-					if (CoreAbility.hasAbility(player, FireJet.class)) {
-						CoreAbility.getAbility(player, FireJet.class).onLeftClick();
-					} else if (CoreAbility.hasAbility(player, JetBlast.class)
-							|| CoreAbility.hasAbility(player, JetBlaze.class)) {
-						return;
-					} else {
+				if (coreAbil instanceof FireAbility && bPlayer.isElementToggled(Element.FIRE)) {
+					if (GeneralMethods.isWeapon(item) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.FIRE)) return;
+					
+					if (abil.equalsIgnoreCase("FireDaggers")) {
+						new FireDaggers(player);
+					} else if (abil.equalsIgnoreCase("Electrify")) {
+						new Electrify(player);
+					} else if (coreAbil.equals(CoreAbility.getAbility(FireJet.class))) {
 						new FireJet(player, ClickType.LEFT_CLICK);
-					}
-				} else if (abil.equalsIgnoreCase("blaze") & CoreAbility.hasAbility(player, JetStepping.class)) {
-					CoreAbility.getAbility(player, JetStepping.class).step();
-				} else if (abil.equalsIgnoreCase("firewhips")) {
-					if (CoreAbility.hasAbility(player, FireWhips.class)) {
-						CoreAbility.getAbility(player, FireWhips.class).onClick();
-					} else {
+					} else if (abil.equalsIgnoreCase("Blaze") & CoreAbility.hasAbility(player, JetStepping.class)) {
+						CoreAbility.getAbility(player, JetStepping.class).step();
+					} else if (abil.equalsIgnoreCase("FireWhips")) {
 						new FireWhips(player);
+					}
+				}
+				
+				if (coreAbil instanceof WaterAbility && bPlayer.isElementToggled(Element.WATER)) {
+					if (GeneralMethods.isWeapon(item) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.WATER)) return;
+					
+					if (abil.equalsIgnoreCase("PlantWhip") && CoreAbility.hasAbility(player, PlantWhip.class)) {
+						CoreAbility.getAbility(player, PlantWhip.class).onClick();
+					} else if (abil.equalsIgnoreCase("Surge") && CoreAbility.hasAbility(player, RazorRings.class)) {
+						new RazorRings(player);
+					} else if (abil.equalsIgnoreCase("Transform")) {
+						new Transform(player);
+					} else if (abil.equalsIgnoreCase("WaterSpout") && CoreAbility.hasAbility(player, WaterRun.class)) {
+						CoreAbility.getAbility(player, WaterRun.class).remove();
+					} else if (abil.equalsIgnoreCase("WaterSpout") && CoreAbility.hasAbility(player, WaterSpoutRush.class)) {
+						CoreAbility.getAbility(player, WaterSpoutRush.class).remove();
+					} else if (abil.equalsIgnoreCase("IceSpike") && CoreAbility.hasAbility(player, IceShots.class)) {
+						CoreAbility.getAbility(player, IceShots.class).onClick();
+					} else if (abil.equalsIgnoreCase("Surge") && CoreAbility.hasAbility(player, WaterPinwheel.class)) {
+						CoreAbility.getAbility(player, WaterPinwheel.class).onClick();
+					} else if (abil.equalsIgnoreCase("Surge") && CoreAbility.hasAbility(player, WaterSphere.class)) {
+						CoreAbility.getAbility(player, WaterSphere.class).onClick();
+					} else if (abil.equalsIgnoreCase("Torrent") && CoreAbility.hasAbility(player, WaterSlash.class)) {
+						CoreAbility.getAbility(player, WaterSlash.class).onClick();
+					} else if (abil.equalsIgnoreCase("IceSpike") && CoreAbility.hasAbility(player, MistStepping.class)) {
+						CoreAbility.getAbility(player, MistStepping.class).step();
+					} else if (abil.equalsIgnoreCase("IceSpike") && CoreAbility.hasAbility(player, IceRidge.class)) {
+						CoreAbility.getAbility(player, IceRidge.class).onClick();
+					}
+				}
+			}
+		} else { // Right-click
+			if (coreAbil == null && !MultiAbilityManager.hasMultiAbilityBound(player)) return;
+			
+			if (bPlayer.isToggled() && !PlayerUtil.isOnGround(player) && player.isSneaking()) {
+				new Dodge(player);
+			}
+			
+			if (bPlayer.canBendIgnoreCooldowns(coreAbil)) {
+				if (coreAbil instanceof EarthAbility && bPlayer.isElementToggled(Element.EARTH)) {
+					if (GeneralMethods.isWeapon(item) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.EARTH)) return;
+					
+					if (abil.equalsIgnoreCase("GlassShards")) {
+						new GlassShards(player, true);
+					} else if (abil.equalsIgnoreCase("LavaFlow") && item == Material.AIR) {
+						LavaWalk.toggle(player);
+					} else if (coreAbil.equals(CoreAbility.getAbility(RaiseEarth.class))) {
+						new RaiseEarth(player, ClickType.RIGHT_CLICK);
+					}
+				}
+				
+				if (coreAbil instanceof FireAbility && bPlayer.isElementToggled(Element.FIRE)) {
+					if (GeneralMethods.isWeapon(player.getInventory().getItemInMainHand().getType()) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.FIRE)) return;
+					
+					if (coreAbil.equals(CoreAbility.getAbility(FireJet.class))) {
+						new FireJet(player, ClickType.RIGHT_CLICK);
 					}
 				}
 			}
 		}
 	}
 	
-	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
 	public void onSneak(PlayerToggleSneakEvent event) {
 		Player player = event.getPlayer();
 		BendingPlayer bPlayer = BendingPlayer.getBendingPlayer(player);
 		
-		if (event.isCancelled() || bPlayer == null) {
+		if (Suffocate.isBreathbent(player)
+				|| Bloodbending.isBloodbent(player)
+				|| MovementHandler.isStopped(player)
+				|| bPlayer.isChiBlocked())
 			return;
-		}
-
+		
+		CoreAbility coreAbil = bPlayer.getBoundAbility();
 		String abil = bPlayer.getBoundAbilityName();
-		if (Suffocate.isBreathbent(player)) {
-			if (!abil.equalsIgnoreCase("airswipe")
-					|| !abil.equalsIgnoreCase("fireblast")
-					|| !abil.equalsIgnoreCase("earthblast")
-					|| !abil.equalsIgnoreCase("watermanipulation")) {
-				if (!player.isSneaking()) {
-					event.setCancelled(true);
-				}
-			}
-		}
+		Material item = player.getInventory().getItemInMainHand().getType();
 		
-		if (Bloodbending.isBloodbent(player) || MovementHandler.isStopped(player)) {
-			event.setCancelled(true);
-			return;
-		}
-		
-		if (bPlayer.isElementToggled(Element.CHI) == true) {
+		if (bPlayer.isElementToggled(Element.CHI)) {
 			if (Azutoru.az.getConfig().getBoolean("Abilities.Chi.Parry.Enabled")) {
 				new Parry(player);
 			}
@@ -282,165 +246,73 @@ public class AzutoruListener implements Listener {
 			}
 		}
 		
-		CoreAbility coreAbil = bPlayer.getBoundAbility();
 		if (coreAbil == null) {
 			if (MultiAbilityManager.hasMultiAbilityBound(player)) {
 				if (MultiAbilityManager.hasMultiAbilityBound(player, "MetalCables")) {
 					new MetalCables(player, ClickType.SHIFT_DOWN);
 				}
+				// Additional multiabilities go here
 			} else return;
 		}
-		Material item = player.getInventory().getItemInMainHand().getType();
 		
-		if (bPlayer.isChiBlocked()) {
-			event.setCancelled(true);
-			return;
-		}
-		
-		// Start sneaking
-		if (!player.isSneaking() && bPlayer.canBendIgnoreCooldowns(coreAbil)) {
-			if (coreAbil instanceof WaterAbility && bPlayer.isElementToggled(Element.WATER) == true) {
-				if (GeneralMethods.isWeapon(item) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.WATER)) {
-					return;
+		if (bPlayer.canBendIgnoreCooldowns(coreAbil)) {
+			if (!player.isSneaking()) {
+				// Starting to sneak
+				if (coreAbil instanceof WaterAbility && bPlayer.isElementToggled(Element.WATER)) {
+					if (GeneralMethods.isWeapon(item) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.WATER)) return;
+					
+					if (abil.equalsIgnoreCase("PlantWhip")) {
+						new PlantWhip(player);
+					} else if (abil.equalsIgnoreCase("WaterCanvas")) {
+						new WaterCanvas(player);
+					} else if (abil.equalsIgnoreCase("BloodStrangle")) {
+						new BloodStrangle(player);
+					} else if (abil.equalsIgnoreCase("Torrent") && TorrentRedirection.canRedirect(player)) {
+						Torrent to = new Torrent(player, false);
+						to.setFormed(true);
+					}
 				}
 				
-				if (abil.equalsIgnoreCase("plantwhip")) {
-					new PlantWhip(player);
-				} else if (abil.equalsIgnoreCase("watercanvas")) {
-					new WaterCanvas(player);
-				} else if (abil.equalsIgnoreCase("bloodstrangle")) {
-					new BloodStrangle(player);
-				} else if (abil.equalsIgnoreCase("torrent") && TorrentRedirection.canRedirect(player)) {
-					Torrent to = new Torrent(player, false);
-					to.setFormed(true);
-				} else if (abil.equalsIgnoreCase("iceridge")) {
-					new IceRidge(player);
-				}
-			}
-			
-			if (coreAbil instanceof EarthAbility && bPlayer.isElementToggled(Element.EARTH) == true) {
-				if (GeneralMethods.isWeapon(item) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.EARTH)) {
-					return;
+				if (coreAbil instanceof EarthAbility && bPlayer.isElementToggled(Element.EARTH)) {
+					if (GeneralMethods.isWeapon(item) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.EARTH)) return;
+					
+					if (abil.equalsIgnoreCase("GlassShards")) {
+						new GlassShards(player, false);
+					} else if (coreAbil.equals(CoreAbility.getAbility(RaiseEarth.class))) {
+						new RaiseEarth(player, ClickType.SHIFT_DOWN);
+					} else if (abil.equalsIgnoreCase("EarthSmash")) {
+						new EarthShield(player);
+					} else if (coreAbil.equals(CoreAbility.getAbility(Shockwave.class))) {
+						new Shockwave(player, false);
+					}
 				}
 				
-				if (abil.equalsIgnoreCase("glassshards")) {
-					new GlassShards(player, false);
-				} else if (coreAbil.equals(CoreAbility.getAbility(RaiseEarth.class))) {
-					new RaiseEarth(player, ClickType.SHIFT_DOWN);
-				} else if (abil.equalsIgnoreCase("earthridge")) {
-					new EarthRidge(player);
-				} else if (abil.equalsIgnoreCase("earthsmash")) {
-					new EarthShield(player);
-				}
-			}
-			
-			if (coreAbil instanceof FireAbility && bPlayer.isElementToggled(Element.FIRE) == true) {
-				if (GeneralMethods.isWeapon(item) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.FIRE)) {
-					return;
-				}
-				
-				if (abil.equalsIgnoreCase("firedaggers") && CoreAbility.hasAbility(player, FireDaggers.class)) {
-					CoreAbility.getAbility(player, FireDaggers.class).onSneak();
-				} else if (coreAbil.equals(CoreAbility.getAbility(FireJet.class))) {
-					if (CoreAbility.hasAbility(player, FireJet.class)) {
-						CoreAbility.getAbility(player, FireJet.class).onSneak();
-					} else {
+				if (coreAbil instanceof FireAbility && bPlayer.isElementToggled(Element.FIRE)) {
+					if (GeneralMethods.isWeapon(item) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.FIRE)) return;
+					
+					if (abil.equalsIgnoreCase("FireDaggers") && CoreAbility.hasAbility(player, FireDaggers.class)) {
+						CoreAbility.getAbility(player, FireDaggers.class).onSneak();
+					} else if (coreAbil.equals(CoreAbility.getAbility(FireJet.class))) {
 						new FireJet(player, ClickType.SHIFT_DOWN);
 					}
 				}
-			}
-		}
-		// Releasing sneak
-		if (player.isSneaking() && bPlayer.canBendIgnoreBindsCooldowns(coreAbil)) {
-			if (coreAbil instanceof FireAbility && bPlayer.isElementToggled(Element.FIRE) == true) {
-				if (GeneralMethods.isWeapon(item) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.FIRE)) {
-					return;
-				}
-				if (abil.equalsIgnoreCase("firedaggers") && CoreAbility.hasAbility(player, FireDaggers.class)) {
-					CoreAbility.getAbility(player, FireDaggers.class).onJumpReleaseSneak();
-				}
-			}
-		}
-	}
-	
-	@EventHandler
-	public void onRightClick(PlayerInteractEvent event) {
-		Player player = event.getPlayer();
-		BendingPlayer bPlayer = BendingPlayer.getBendingPlayer(player);
-		if (event.getHand() != EquipmentSlot.HAND) {
-			return;
-		}
-		if (event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.RIGHT_CLICK_AIR) {
-			return;
-		}
-		if (bPlayer == null) {
-			return;
-		}
-		if (Suffocate.isBreathbent(player)) {
-			event.setCancelled(true);
-			return;
-		} else if (Bloodbending.isBloodbent(player) || MovementHandler.isStopped(player)) {
-			event.setCancelled(true);
-			return;
-		} else if (bPlayer.isChiBlocked()) {
-			event.setCancelled(true);
-			return;
-		} else if (GeneralMethods.isInteractable(player.getTargetBlock((Set<Material>)null, 5))) {
-			return;
-		}
-		
-		if (bPlayer.isToggled() && !PlayerUtil.isOnGround(player) && player.isSneaking()) {
-			new Dodge(player);
-		}
-		
-		String abil = bPlayer.getBoundAbilityName();
-		CoreAbility coreAbil = bPlayer.getBoundAbility();
-		Material item = player.getInventory().getItemInMainHand().getType();
-		
-		if (coreAbil == null && !MultiAbilityManager.hasMultiAbilityBound(player)) {
-			return;
-		} else if (bPlayer.canBendIgnoreCooldowns(coreAbil)) {
-			if (coreAbil instanceof EarthAbility && bPlayer.isElementToggled(Element.EARTH) == true) {
-				if (GeneralMethods.isWeapon(item) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.EARTH)) {
-					return;
-				}
-				
-				if (abil.equalsIgnoreCase("glassshards")) {
-					new GlassShards(player, true);
-				} else if (abil.equalsIgnoreCase("lavaflow") && player.getInventory().getItemInMainHand().getType() == Material.AIR) {
-					if (LavaWalk.isActive(player)) {
-						LavaWalk.setActive(player, false);
-						player.sendMessage(ChatColor.DARK_GREEN + "LavaWalk is now disabled.");
-					} else {
-						LavaWalk.setActive(player, true);
-						player.sendMessage(ChatColor.DARK_GREEN + "LavaWalk is now enabled.");
-					}
-				} else if (coreAbil.equals(CoreAbility.getAbility(RaiseEarth.class))) {
-					new RaiseEarth(player, ClickType.RIGHT_CLICK);
-				}
-			}
-			
-			if (coreAbil instanceof FireAbility && bPlayer.isElementToggled(Element.FIRE) == true) {
-				if (GeneralMethods.isWeapon(player.getInventory().getItemInMainHand().getType()) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.FIRE)) {
-					return;
-				}
-				
-				if (coreAbil.equals(CoreAbility.getAbility(FireJet.class))) {
-					if (CoreAbility.hasAbility(player, FireJet.class)) {
-						CoreAbility.getAbility(player, FireJet.class).onRightClick();
-					} else {
-						new FireJet(player, ClickType.RIGHT_CLICK);
+			} else {
+				// Releasing sneak
+				if (coreAbil instanceof FireAbility && bPlayer.isElementToggled(Element.FIRE)) {
+					if (GeneralMethods.isWeapon(item) && GeneralMethods.getElementsWithNoWeaponBending().contains(Element.FIRE)) return;
+					
+					if (abil.equalsIgnoreCase("FireDaggers") && CoreAbility.hasAbility(player, FireDaggers.class)) {
+						CoreAbility.getAbility(player, FireDaggers.class).onJumpReleaseSneak();
 					}
 				}
 			}
 		}
 	}
 	
-	@EventHandler
+	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
 	public void onAbilityStart(AbilityStartEvent event) {
 		if (event.getAbility() instanceof Collapse) {
-			Collapse collapse = (Collapse) event.getAbility();
-			Block block = collapse.getBlock();
+			Block block = ((Collapse) event.getAbility()).getBlock();
 			if (RaiseEarth.isRaiseEarthBlock(block)) {
 				RaiseEarth re = RaiseEarth.getAffectedBlocks().get(block);
 				if (re.getColumns().get(0).getOrientation() == Orientation.HORIZONTAL || MathUtil.getFaceDirection(re.getFace()).equals(new Vector(0, -1, 0))) {
@@ -454,15 +326,15 @@ public class AzutoruListener implements Listener {
 		}
 	}
 	
-	@EventHandler
+	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
 	public void onLeafDecay(LeavesDecayEvent event) {
-		Block block = event.getBlock();
-		if (TempBlock.isTempBlock(block) && PlantWhip.getAffectedBlocks().contains(TempBlock.get(block))) {
+		TempBlock tb = TempBlock.get(event.getBlock());
+		if (tb != null && PlantWhip.getAffectedBlocks().contains(tb)) {
 			event.setCancelled(true);
 		}
 	}
 	
-	@EventHandler
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onReload(BendingReloadEvent event) {
 		Azutoru.az.reloadConfig();
 		event.getSender().sendMessage(Azutoru.az.prefix() + " Config reloaded.");
@@ -472,104 +344,94 @@ public class AzutoruListener implements Listener {
 		new BukkitRunnable() {
 			@Override
 			public void run() {
-				CoreAbility.registerPluginAbilities(plugin, "me.aztl.azutoru.ability");
+				CoreAbility.registerPluginAbilities(Azutoru.az, "me.aztl.azutoru.ability");
 			}
 		}.runTaskLater(Azutoru.az, 1);
 	}
 	
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
 	public void onPlayerDamageByEntity(EntityDamageByEntityEvent event) {
 		if (event.getEntity() instanceof Player) {
 			Player player = (Player) event.getEntity();
 			if (CoreAbility.hasAbility(player, AirCocoon.class)) {
 				event.setCancelled(true);
+				return;
 			}
 			if (CoreAbility.hasAbility(player, Duck.class) && CoreAbility.getAbility(player, Duck.class).isDucking()) {
-				event.setCancelled(true);
 				CoreAbility.getAbility(player, Duck.class).removeWithCooldown();
+				event.setCancelled(true);
+				return;
 			}
 			if (CoreAbility.hasAbility(player, Parry.class)) {
 				Entity damager = event.getDamager();
-				if (WorldUtil.isNonParryableMob(damager) || damager instanceof Projectile) {
-					return;
-				}
+				if (WorldUtil.isNonParryableMob(damager) || damager instanceof Projectile) return;
 				
 				double distance = Azutoru.az.getConfig().getDouble("Abilities.Chi.Parry.MaxDistance");
-				if (damager.getLocation().distanceSquared(player.getLocation()) < distance) {
-					event.setCancelled(true);
+				if (damager.getLocation().distanceSquared(player.getLocation()) < distance * distance) {
 					CoreAbility.getAbility(player, Parry.class).removeWithCooldown();
-					player.setSneaking(false);
-				}
-			}
-		}
-	}
-	
-	@EventHandler
-	public void onPlayerDamage(EntityDamageEvent event) {
-		if (event.getEntity() instanceof Player && event.getCause().equals(DamageCause.SUFFOCATION)) {
-			Player player = (Player) event.getEntity();
-			Block damager = player.getEyeLocation().getBlock();
-			if (damager != null) {
-				if (Azutoru.az.getConfig().getBoolean("Properties.PreventSuffocation.AllBlocks") == true) {
 					event.setCancelled(true);
 					return;
 				}
-				if (Azutoru.az.getConfig().getBoolean("Properties.PreventSuffocation.AllIceBlocks") == true) {
-					if (ElementalAbility.isIce(damager.getType())) {
-						event.setCancelled(true);
-						return;
-					} else {
-						for (Block b : GeneralMethods.getBlocksAroundPoint(damager.getLocation(), 1)) {
-							if (ElementalAbility.isIce(b)) {
-								event.setCancelled(true);
-								return;
-							}
-						}
-					}
-				}
-				if (Azutoru.az.getConfig().getBoolean("Properties.PreventSuffocation.AllEarthBlocks") == true) {
-					if (ElementalAbility.isEarth(damager)) {
-						event.setCancelled(true);
-						return;
-					} else {
-						for (Block b : GeneralMethods.getBlocksAroundPoint(damager.getLocation(), 1)) {
-							if (ElementalAbility.isEarth(b)) {
-								event.setCancelled(true);
-								return;
-							}
-						}
-					}
-				}
-				if (Azutoru.az.getConfig().getBoolean("Properties.PreventSuffocation.BendingTempBlocks") == true) {
-					if (damager instanceof TempBlock) {
-						event.setCancelled(true);
-						return;
-					} else if (TempBlock.isTouchingTempBlock(damager)) {
-						event.setCancelled(true);
-						return;
-					} else if (EarthAbility.getMovedEarth().containsKey(damager)) {
-						event.setCancelled(true);
-						return;
-					} else {
-						for (Block b : GeneralMethods.getBlocksAroundPoint(damager.getLocation(), 1)) {
-							if (EarthAbility.getMovedEarth().containsKey(b)) {
-								event.setCancelled(true);
-								return;
-							}
-						}
-					}
-				}
 			}
 		}
 	}
 	
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+	public void onPlayerDamage(EntityDamageEvent event) {
+		if (!(event.getEntity() instanceof Player)) return;
+		if (event.getCause() == DamageCause.SUFFOCATION) {
+			Block damager = ((Player) event.getEntity()).getEyeLocation().getBlock();
+			if (damager == null) return;
+			
+			if (Azutoru.az.getConfig().getBoolean("Properties.PreventSuffocation.AllBlocks")) {
+				event.setCancelled(true);
+				return;
+			}
+			
+			List<Block> surrounding = GeneralMethods.getBlocksAroundPoint(damager.getLocation(), 1);
+			
+			if (Azutoru.az.getConfig().getBoolean("Properties.PreventSuffocation.AllIceBlocks")) {
+				if (ElementalAbility.isIce(damager.getType())
+						|| surrounding.stream().anyMatch(b -> ElementalAbility.isIce(b))) {
+					event.setCancelled(true);
+					return;
+				}
+			}
+			if (Azutoru.az.getConfig().getBoolean("Properties.PreventSuffocation.AllEarthBlocks")) {
+				if (ElementalAbility.isEarth(damager)
+						|| surrounding.stream().anyMatch(b -> ElementalAbility.isEarth(b))) {
+					event.setCancelled(true);
+					return;
+				}
+			}
+			if (Azutoru.az.getConfig().getBoolean("Properties.PreventSuffocation.BendingTempBlocks")) {
+				if (damager instanceof TempBlock
+						|| TempBlock.isTouchingTempBlock(damager)
+						|| EarthAbility.getMovedEarth().containsKey(damager)
+						|| surrounding.stream().anyMatch(b -> EarthAbility.getMovedEarth().containsKey(b))) {
+					event.setCancelled(true);
+					return;
+				}
+			}
+		} else if (event.getCause() == DamageCause.FALL && Azutoru.az.getConfig().getBoolean("Abilities.Earth.Shockwave.Enabled")) {
+			Player player = (Player) event.getEntity();
+			BendingPlayer bPlayer = BendingPlayer.getBendingPlayer(player);
+			CoreAbility coreAbil = bPlayer.getBoundAbility();
+			if (bPlayer == null || coreAbil == null) return;
+			
+			if (bPlayer.getBoundAbility().equals(CoreAbility.getAbility(Shockwave.class)) && bPlayer.isElementToggled(Element.EARTH)) {
+				new Shockwave(player, true);
+				event.setCancelled(true);
+			}
+		}
+	}
+	
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerMove(PlayerMoveEvent event) {
 		if (event.getTo().getX() == event.getFrom().getX()
 				&& event.getTo().getY() == event.getFrom().getY()
-				&& event.getTo().getZ() == event.getFrom().getZ()) {
+				&& event.getTo().getZ() == event.getFrom().getZ())
 			return;
-		}
 		
 		Player player = event.getPlayer();
 		
@@ -584,7 +446,7 @@ public class AzutoruListener implements Listener {
 		}
 	}
 	
-	@EventHandler
+	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
 	public void onEntityChangeBlock(EntityChangeBlockEvent event) {
 		if (event.getEntityType().equals(EntityType.FALLING_BLOCK) && event.getEntity().hasMetadata("Crumble")) {
 			event.setCancelled(true);

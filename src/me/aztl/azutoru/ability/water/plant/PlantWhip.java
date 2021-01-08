@@ -3,9 +3,11 @@ package me.aztl.azutoru.ability.water.plant;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.commons.math3.util.FastMath;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -62,18 +64,15 @@ public class PlantWhip extends PlantAbility implements AddonAbility {
 		
 		if (!bPlayer.canBend(this)) return;
 		
-		final PlantWhip oldWhip = getAbility(player, PlantWhip.class);
-		if (oldWhip != null) {
-			if (!oldWhip.launching) {
-				oldWhip.remove();
-			}
+		PlantWhip pw = getAbility(player, PlantWhip.class);
+		if (pw != null) {
+			if (pw.launching) return;
+			pw.remove();
 		}
 		
 		setFields();
 		
 		if (!setOrigin()) return;
-		
-		launching = false;
 		
 		policy = Policies.builder()
 				.add(new DifferentWorldPolicy(() -> this.player.getWorld()))
@@ -86,15 +85,16 @@ public class PlantWhip extends PlantAbility implements AddonAbility {
 	}
 
 	public void setFields() {
-		damage = Azutoru.az.getConfig().getDouble("Abilities.Water.PlantWhip.Damage");
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Water.PlantWhip.Cooldown");
-		range = Azutoru.az.getConfig().getDouble("Abilities.Water.PlantWhip.Range");
-		sourceRange = Azutoru.az.getConfig().getDouble("Abilities.Water.PlantWhip.SourceRange");
-		duration = Azutoru.az.getConfig().getLong("Abilities.Water.PlantWhip.Duration");
-		speed = Azutoru.az.getConfig().getDouble("Abilities.Water.PlantWhip.Speed");
-		hitRadius = Azutoru.az.getConfig().getDouble("Abilities.Water.PlantWhip.HitRadius");
-		knockback = Azutoru.az.getConfig().getDouble("Abilities.Water.PlantWhip.Knockback");
-		knockup = Azutoru.az.getConfig().getDouble("Abilities.Water.PlantWhip.Knockup");
+		FileConfiguration c = Azutoru.az.getConfig();
+		damage = c.getDouble("Abilities.Water.PlantWhip.Damage");
+		cooldown = c.getLong("Abilities.Water.PlantWhip.Cooldown");
+		range = c.getDouble("Abilities.Water.PlantWhip.Range");
+		sourceRange = c.getDouble("Abilities.Water.PlantWhip.SourceRange");
+		duration = c.getLong("Abilities.Water.PlantWhip.Duration");
+		speed = c.getDouble("Abilities.Water.PlantWhip.Speed");
+		hitRadius = c.getDouble("Abilities.Water.PlantWhip.HitRadius");
+		knockback = c.getDouble("Abilities.Water.PlantWhip.Knockback");
+		knockup = c.getDouble("Abilities.Water.PlantWhip.Knockup");
 		
 		applyModifiers();
 	}
@@ -173,14 +173,11 @@ public class PlantWhip extends PlantAbility implements AddonAbility {
 	
 	private void launch() {
 		location.add(direction.multiply(speed));
-
 		Block b = location.getBlock();
-		boolean isDecayed = TempBlock.isTempBlock(b) && PlantRegrowth.getDecayedBlocks().contains(TempBlock.get(b));
 		
-		if (isDecayed) {
-			location.add(0, 1, 0);
-			b = location.getBlock();
-		}
+		TempBlock tb = TempBlock.get(b);
+		if (tb != null && PlantRegrowth.getDecayedBlocks().contains(tb))
+			b = location.add(0, 1, 0).getBlock();
 		
 		if (GeneralMethods.isSolid(b) 
 				&& !GeneralMethods.isTransparent(b) 
@@ -191,11 +188,14 @@ public class PlantWhip extends PlantAbility implements AddonAbility {
 		
 		addLeaves(b);
 		
-		for (Entity entity : GeneralMethods.getEntitiesAroundPoint(location, hitRadius)) {
-			if ((entity instanceof LivingEntity) && entity.getUniqueId() != player.getUniqueId()) {
-				DamageHandler.damageEntity(entity, damage, this);
-				Vector travelVec = GeneralMethods.getDirection(location, entity.getLocation());
-				entity.setVelocity(travelVec.setY(knockup).normalize().multiply(knockback));
+		for (Entity e : GeneralMethods.getEntitiesAroundPoint(location, hitRadius)) {
+			if (e != player) {
+				Vector travelVec = GeneralMethods.getDirection(location, e.getLocation());
+				travelVec.setY(FastMath.abs(travelVec.getY()) * knockup).normalize().multiply(knockback);
+				e.setVelocity(travelVec);
+				if (e instanceof LivingEntity) {
+					DamageHandler.damageEntity(e, damage, this);
+				}
 			}
 		}
 	}
@@ -227,7 +227,7 @@ public class PlantWhip extends PlantAbility implements AddonAbility {
 		bPlayer.addCooldown(this);
 	}
 	
-	public void onLaunch() {
+	public void onClick() {
 		launching = true;
 	}
 	

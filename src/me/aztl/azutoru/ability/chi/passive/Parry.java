@@ -8,6 +8,11 @@ import com.projectkorra.projectkorra.ability.ChiAbility;
 import com.projectkorra.projectkorra.attribute.Attribute;
 
 import me.aztl.azutoru.Azutoru;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.policy.SneakingPolicy;
+import me.aztl.azutoru.policy.SneakingPolicy.ProhibitedState;
 import me.aztl.azutoru.util.PlayerUtil;
 
 public class Parry extends ChiAbility implements AddonAbility {
@@ -17,40 +22,29 @@ public class Parry extends ChiAbility implements AddonAbility {
 	@Attribute(Attribute.DURATION)
 	private long duration;
 	
+	private RemovalPolicy policy;
+	
 	public Parry(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreBinds(this)) {
+		if (!bPlayer.canBendIgnoreBinds(this)
+				|| (hasAbility(player, Duck.class) && getAbility(player, Duck.class).isDucking())
+				|| !PlayerUtil.isOnGround(player))
 			return;
-		}
-		
-		if (hasAbility(player, Duck.class) && getAbility(player, Duck.class).isDucking()) {
-			return;
-		}
-		
-		if (!PlayerUtil.isOnGround(player)) {
-			return;
-		}
 		
 		cooldown = Azutoru.az.getConfig().getLong("Abilities.Chi.Parry.Cooldown");
 		duration = Azutoru.az.getConfig().getLong("Abilities.Chi.Parry.Duration");
+		
+		policy = Policies.builder()
+					.add(new ExpirationPolicy(duration))
+					.add(new SneakingPolicy(ProhibitedState.NOT_SNEAKING)).build();
 		
 		start();
 	}
 	
 	@Override
 	public void progress() {
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			remove();
-			return;
-		}
-		
-		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
-			remove();
-			return;
-		}
-		
-		if (!player.isSneaking()) {
+		if (!bPlayer.canBendIgnoreBinds(this) || policy.test(player)) {
 			remove();
 			return;
 		}

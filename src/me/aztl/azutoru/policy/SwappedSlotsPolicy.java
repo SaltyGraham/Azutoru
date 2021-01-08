@@ -26,7 +26,7 @@ public class SwappedSlotsPolicy implements RemovalPolicy {
 	public boolean test(Player player) {
 		Optional<BendingPlayer> bPlayer = Optional.ofNullable(BendingPlayer.getBendingPlayer(player));
 		if (!bPlayer.isPresent()) return true;
-		return !bPlayer.get().getBoundAbilityName().equals(expected) && (condition != null ? condition.test(player) : true);
+		return !bPlayer.get().getBoundAbilityName().equalsIgnoreCase(expected) && (condition != null ? condition.test(player) : true);
 	}
 
 }

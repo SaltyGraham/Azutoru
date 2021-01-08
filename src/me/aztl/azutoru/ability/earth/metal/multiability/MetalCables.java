@@ -3,7 +3,7 @@ package me.aztl.azutoru.ability.earth.metal.multiability;
 import java.util.ArrayList;
 
 import org.bukkit.Location;
-import org.bukkit.World;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -21,6 +21,11 @@ import com.projectkorra.projectkorra.util.ClickType;
 import com.projectkorra.projectkorra.util.DamageHandler;
 
 import me.aztl.azutoru.Azutoru;
+import me.aztl.azutoru.policy.DifferentWorldPolicy;
+import me.aztl.azutoru.policy.ExpirationPolicy;
+import me.aztl.azutoru.policy.Policies;
+import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.policy.UsedAmmoPolicy;
 import me.aztl.azutoru.util.MathUtil;
 import me.aztl.azutoru.util.PlayerUtil;
 import me.aztl.azutoru.util.PlayerUtil.Hand;
@@ -77,19 +82,17 @@ public class MetalCables extends MetalAbility implements AddonAbility, MultiAbil
 	// Retract
 	@Attribute(Attribute.SPEED)
 	private double retractSpeed;
-	
-	private long time;
-	private World world;
+
 	private Cable left, right;
 	private Location leftLoc, rightLoc;
 	private Vector direction;
+	private RemovalPolicy policy;
+	private long time;
 	
 	public MetalCables(Player player, ClickType type) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			return;
-		}
+		if (!bPlayer.canBendIgnoreBinds(this)) return;
 		
 		MetalCables mc = getAbility(player, MetalCables.class);
 		if (mc != null) {
@@ -99,42 +102,47 @@ public class MetalCables extends MetalAbility implements AddonAbility, MultiAbil
 		
 		if (type == ClickType.LEFT_CLICK) {
 			MultiAbilityManager.bindMultiAbility(player, "MetalCables");
+			FileConfiguration c = Azutoru.az.getConfig();
 			
 			// General
-			cooldown = Azutoru.az.getConfig().getLong("Abilities.Earth.MetalCables.Cooldown");
-			duration = Azutoru.az.getConfig().getLong("Abilities.Earth.MetalCables.Duration");
-			cableSwingSpeed = Azutoru.az.getConfig().getDouble("Abilities.Earth.MetalCables.SwingSpeed");
-			cableLaunchSpeed = Azutoru.az.getConfig().getDouble("Abilities.Earth.MetalCables.LaunchSpeed");
-			cableWhipSpeed = Azutoru.az.getConfig().getDouble("Abilities.Earth.MetalCables.WhipSpeed");
-			whipDuration = Azutoru.az.getConfig().getDouble("Abilities.Earth.MetalCables.WhipDuration");
-			maxCableLength = Azutoru.az.getConfig().getInt("Abilities.Earth.MetalCables.MaxRange") * 2;
-			maxUses = Azutoru.az.getConfig().getInt("Abilities.Earth.MetalCables.MaxUses");
+			cooldown = c.getLong("Abilities.Earth.MetalCables.Cooldown");
+			duration = c.getLong("Abilities.Earth.MetalCables.Duration");
+			cableSwingSpeed = c.getDouble("Abilities.Earth.MetalCables.SwingSpeed");
+			cableLaunchSpeed = c.getDouble("Abilities.Earth.MetalCables.LaunchSpeed");
+			cableWhipSpeed = c.getDouble("Abilities.Earth.MetalCables.WhipSpeed");
+			whipDuration = c.getDouble("Abilities.Earth.MetalCables.WhipDuration");
+			maxCableLength = c.getInt("Abilities.Earth.MetalCables.MaxRange") * 2;
+			maxUses = c.getInt("Abilities.Earth.MetalCables.MaxUses");
 			
 			// Slam
-			slamRange = Azutoru.az.getConfig().getInt("Abilities.Earth.MetalCables.Slam.Range");
-			hitRadius = Azutoru.az.getConfig().getDouble("Abilities.Earth.MetalCables.Slam.HitRadius");
-			damage = Azutoru.az.getConfig().getDouble("Abilities.Earth.MetalCables.Slam.Damage");
-			knockback = Azutoru.az.getConfig().getDouble("Abilities.Earth.MetalCables.Slam.Knockback");
-			knockup = Azutoru.az.getConfig().getDouble("Abilities.Earth.MetalCables.Slam.Knockup");
+			slamRange = c.getInt("Abilities.Earth.MetalCables.Slam.Range");
+			hitRadius = c.getDouble("Abilities.Earth.MetalCables.Slam.HitRadius");
+			damage = c.getDouble("Abilities.Earth.MetalCables.Slam.Damage");
+			knockback = c.getDouble("Abilities.Earth.MetalCables.Slam.Knockback");
+			knockup = c.getDouble("Abilities.Earth.MetalCables.Slam.Knockup");
 			
 			// Grapple
-			grapplePullSpeed = Azutoru.az.getConfig().getDouble("Abilities.Earth.MetalCables.Grapple.PullSpeed");
+			grapplePullSpeed = c.getDouble("Abilities.Earth.MetalCables.Grapple.PullSpeed");
 			
 			// Grab
-			grabPullSpeed = Azutoru.az.getConfig().getDouble("Abilities.Earth.MetalCables.Grab.PullSpeed");
-			grabRadius = Azutoru.az.getConfig().getDouble("Abilities.Earth.MetalCables.Grab.GrabRadius");
-			entityThrowSpeed = Azutoru.az.getConfig().getDouble("Abilities.Earth.MetalCables.Grab.EntityThrowSpeed");
+			grabPullSpeed = c.getDouble("Abilities.Earth.MetalCables.Grab.PullSpeed");
+			grabRadius = c.getDouble("Abilities.Earth.MetalCables.Grab.GrabRadius");
+			entityThrowSpeed = c.getDouble("Abilities.Earth.MetalCables.Grab.EntityThrowSpeed");
 			
 			// Leap
-			leapSpeed = Azutoru.az.getConfig().getDouble("Abilities.Earth.MetalCables.Leap.Push");
+			leapSpeed = c.getDouble("Abilities.Earth.MetalCables.Leap.Push");
 			
 			// Retract
-			retractSpeed = Azutoru.az.getConfig().getDouble("Abilities.Earth.MetalCables.Retract.Speed");
+			retractSpeed = c.getDouble("Abilities.Earth.MetalCables.Retract.Speed");
 			
-			world = player.getWorld();
 			leftLoc = PlayerUtil.getHandPos(player, Hand.LEFT);
 			rightLoc = PlayerUtil.getHandPos(player, Hand.RIGHT);
 			direction = player.getEyeLocation().getDirection();
+			
+			policy = Policies.builder()
+						.add(new DifferentWorldPolicy(() -> this.player.getWorld()))
+						.add(new ExpirationPolicy(duration))
+						.add(new UsedAmmoPolicy(() -> maxUses)).build();
 			
 			start();
 		}
@@ -240,27 +248,12 @@ public class MetalCables extends MetalAbility implements AddonAbility, MultiAbil
 	
 	@Override
 	public void progress() {
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			remove();
-			return;
-		}
-		
-		if (maxUses <= 0) {
+		if (!bPlayer.canBendIgnoreBinds(this) || policy.test(player)) {
 			remove();
 			return;
 		}
 		
 		if (!MultiAbilityManager.hasMultiAbilityBound(player, "MetalCables")) {
-			remove();
-			return;
-		}
-		
-		if (!player.getWorld().equals(world)) {
-			remove();
-			return;
-		}
-		
-		if (duration > 0 && System.currentTimeMillis() > getStartTime() + duration) {
 			remove();
 			return;
 		}

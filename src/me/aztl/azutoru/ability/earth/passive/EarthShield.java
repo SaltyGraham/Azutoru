@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.bukkit.Location;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Player;
@@ -38,17 +39,14 @@ public class EarthShield extends EarthAbility implements AddonAbility {
 	public EarthShield(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreBindsCooldowns(this)) {
+		if (!bPlayer.canBendIgnoreBindsCooldowns(this)
+				|| !bPlayer.canBendIgnoreCooldowns(getAbility(EarthSmash.class)))
 			return;
-		}
 		
-		if (!bPlayer.canBendIgnoreCooldowns(getAbility(EarthSmash.class))) {
-			return;
-		}
-		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Earth.Crumble.Shield.Cooldown");
-		duration = Azutoru.az.getConfig().getLong("Abilities.Earth.Crumble.Shield.Duration");
-		blockRadius = Azutoru.az.getConfig().getDouble("Abilities.Earth.Crumble.Shield.BlockRadius");
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Earth.Crumble.Shield.Cooldown");
+		duration = c.getLong("Abilities.Earth.Crumble.Shield.Duration");
+		blockRadius = c.getDouble("Abilities.Earth.Crumble.Shield.BlockRadius");
 		
 		affectedBlocks = new HashSet<>();
 		policy = Policies.builder()
@@ -69,8 +67,7 @@ public class EarthShield extends EarthAbility implements AddonAbility {
 		for (Entity e : GeneralMethods.getEntitiesAroundPoint(player.getLocation(), blockRadius)) {
 			if (e instanceof FallingBlock) {
 				FallingBlock fb = (FallingBlock) e;
-				if (isEarth(fb.getBlockData().getMaterial())
-						&& !affectedBlocks.contains(fb)) {
+				if (isEarth(fb.getBlockData().getMaterial()) && !affectedBlocks.contains(fb)) {
 					Vector ortho = GeneralMethods.getOrthogonalVector(fb.getVelocity(), 90, 0.5);
 					try {
 						fb.setVelocity(ortho);

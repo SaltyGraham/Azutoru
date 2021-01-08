@@ -9,6 +9,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
 import com.projectkorra.projectkorra.GeneralMethods;
@@ -38,15 +39,14 @@ public class EarthTent extends EarthAbility implements AddonAbility, ComboAbilit
 	public EarthTent(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			return;
-		}
+		if (!bPlayer.canBendIgnoreBinds(this)) return;
 		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Earth.EarthTent.Cooldown");
-		revertTime = Azutoru.az.getConfig().getLong("Abilities.Earth.EarthTent.RevertTime");
-		height = Azutoru.az.getConfig().getInt("Abilities.Earth.EarthTent.Height");
-		width = Azutoru.az.getConfig().getInt("Abilities.Earth.EarthTent.Width") / 2;
-		length = Azutoru.az.getConfig().getInt("Abilities.Earth.EarthTent.Length");
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Earth.EarthTent.Cooldown");
+		revertTime = c.getLong("Abilities.Earth.EarthTent.RevertTime");
+		height = c.getInt("Abilities.Earth.EarthTent.Height");
+		width = c.getInt("Abilities.Earth.EarthTent.Width") / 2;
+		length = c.getInt("Abilities.Earth.EarthTent.Length");
 		
 		location = player.getLocation();
 		
@@ -189,7 +189,7 @@ public class EarthTent extends EarthAbility implements AddonAbility, ComboAbilit
 	
 	@Override
 	public String getInstructions() {
-		return "EarthRidge (Left-click) > RaiseEarth (Right-click on a block)";
+		return "Shockwave (Tap sneak) > Shockwave (Tap sneak) > RaiseEarth (Right-click on a block)";
 	}
 
 	@Override
@@ -210,7 +210,10 @@ public class EarthTent extends EarthAbility implements AddonAbility, ComboAbilit
 	@Override
 	public ArrayList<AbilityInformation> getCombination() {
 		ArrayList<AbilityInformation> combo = new ArrayList<>();
-		combo.add(new AbilityInformation("EarthRidge", ClickType.LEFT_CLICK));
+		combo.add(new AbilityInformation("Shockwave", ClickType.SHIFT_DOWN));
+		combo.add(new AbilityInformation("Shockwave", ClickType.SHIFT_UP));
+		combo.add(new AbilityInformation("Shockwave", ClickType.SHIFT_DOWN));
+		combo.add(new AbilityInformation("Shockwave", ClickType.SHIFT_UP));
 		combo.add(new AbilityInformation("RaiseEarth", ClickType.RIGHT_CLICK_BLOCK));
 		return combo;
 	}

@@ -2,27 +2,36 @@ package me.aztl.azutoru.ability.earth;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
+import org.apache.commons.math3.util.FastMath;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Nullable;
 
+import com.jedk1.jedcore.JedCore;
+import com.jedk1.jedcore.ability.firebending.Combustion;
+import com.jedk1.jedcore.ability.firebending.FireComet;
 import com.projectkorra.projectkorra.GeneralMethods;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.CoreAbility;
 import com.projectkorra.projectkorra.ability.EarthAbility;
 import com.projectkorra.projectkorra.ability.util.Collision;
 import com.projectkorra.projectkorra.attribute.Attribute;
+import com.projectkorra.projectkorra.configuration.ConfigManager;
 import com.projectkorra.projectkorra.earthbending.EarthSmash;
 import com.projectkorra.projectkorra.earthbending.EarthSmash.State;
 import com.projectkorra.projectkorra.firebending.FireBlastCharged;
@@ -49,6 +58,8 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 		WALL;
 	}
 	
+	private static double radius = Azutoru.az.getConfig().getDouble("Abilities.Earth.RaiseEarth.CollisionRadius");
+	
 	@Attribute(Attribute.COOLDOWN)
 	private long cooldown;
 	@Attribute(Attribute.COOLDOWN)
@@ -70,7 +81,6 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 	@Attribute(Attribute.WIDTH)
 	private int width;
 	private boolean throwEnabled;
-	private static double collisionRadius = Azutoru.az.getConfig().getDouble("Abilities.Earth.RaiseEarth.CollisionRadius");
 
 	private static Map<Block, RaiseEarth> affectedBlocks = new ConcurrentHashMap<>();
 	private static Map<RaiseEarth, List<Column>> columnsByInstance = new ConcurrentHashMap<>();
@@ -90,162 +100,116 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 	public RaiseEarth(Player player, ClickType type) {
 		super(player);
 		
-		if (!bPlayer.canBend(this)) {
+		if (!bPlayer.canBend(this)
+				|| hasAbility(player, RaiseEarth.class)
+				|| !player.getEyeLocation().getBlock().isPassable())
 			return;
-		}
-		
-		if (hasAbility(player, RaiseEarth.class)) {
-			return;
-		}
-		
-		if (!player.getEyeLocation().getBlock().isPassable()) {
-			return;
-		}
 		
 		setFields();
 		
 		instance = this;
 		Block sourceBlock = BlockSource.getEarthSourceBlock(player, sourceRange, type);
 		
-		if (type == ClickType.LEFT_CLICK) {
-			state = RaiseEarthState.RAISE;
+		state = RaiseEarthState.RAISE;
+		switch (type) {
+		case LEFT_CLICK:
 			shape = RaiseEarthShape.COLUMN;
-		} else if (type == ClickType.SHIFT_DOWN) {
-			state = RaiseEarthState.RAISE;
+			break;
+		case SHIFT_DOWN:
 			shape = RaiseEarthShape.WALL;
-		} else if (type == ClickType.RIGHT_CLICK) {
+			break;
+		case RIGHT_CLICK:
+		default:
 			state = RaiseEarthState.THROW;
 			sourceBlock = player.getTargetBlock(null, (int) sourceRange);
 		}
 		
-		if (sourceBlock == null || !isEarthbendable(sourceBlock)) {
-			return;
-		}
+		if (sourceBlock == null || !isEarthbendable(sourceBlock)) return;
 		
 		if (state == RaiseEarthState.RAISE) {
 			if (bPlayer.isOnCooldown(columnString())
-					|| bPlayer.isOnCooldown(wallString())) {
+					|| bPlayer.isOnCooldown(wallString())
+					|| affectedBlocks.containsKey(sourceBlock)) {
 				return;
 			}
-			if (!affectedBlocks.containsKey(sourceBlock)) {
-				List<Block> targetBlocks = player.getLastTwoTargetBlocks(null, (int) sourceRange);
-				if (targetBlocks.size() > 1) {
-					source = targetBlocks.get(1);
-					face = source.getFace(targetBlocks.get(0));
-					height = getEarthbendableBlocksLength(source, MathUtil.getFaceDirection(face).clone().multiply(-1), height);
-					if (height < 1) {
-						return;
-					}
-					
-					if (shape == RaiseEarthShape.COLUMN) {
-						Orientation o = Orientation.VERTICAL;
-						if (face != BlockFace.UP && face != BlockFace.DOWN) {
-							o = Orientation.HORIZONTAL;
-						}
-						column = new Column(o);
-						
-						bPlayer.addCooldown(columnString(), cooldown);
-					} else if (shape == RaiseEarthShape.WALL) {
-						Vector eyeDir = player.getEyeLocation().getDirection();
-						eyeDir.setY(0);
-						Vector ortho = GeneralMethods.getOrthogonalVector(eyeDir, 90, 1);
-						direction = getDegreeRoundedVector(ortho, 0.25);
-						
-						location = source.getLocation();
-						
-						bPlayer.addCooldown(wallString(), cooldown);
-					}
-				}
-			} else return;
+			
+			List<Block> targetBlocks = player.getLastTwoTargetBlocks(null, (int) sourceRange);
+			if (targetBlocks.size() < 2) return;
+			
+			source = targetBlocks.get(1);
+			face = source.getFace(targetBlocks.get(0));
+			height = getEarthbendableBlocksLength(source, MathUtil.getFaceDirection(face).clone().multiply(-1), height);
+			if (height < 1) return;
+			
+			if (shape == RaiseEarthShape.COLUMN) {
+				Orientation o = Orientation.VERTICAL;
+				if (face != BlockFace.UP && face != BlockFace.DOWN)
+					o = Orientation.HORIZONTAL;
+				column = new Column(o);
+				
+				bPlayer.addCooldown(columnString(), cooldown);
+			} else if (shape == RaiseEarthShape.WALL) {
+				location = source.getLocation();
+				Vector eyeDir = player.getEyeLocation().getDirection().setY(0);
+				direction = getDegreeRoundedVector(GeneralMethods.getOrthogonalVector(eyeDir, 90, 1), 0.25);
+				
+				raiseWall();
+				bPlayer.addCooldown(wallString(), cooldown);
+				return;
+			}
 		} else if (state == RaiseEarthState.THROW) {
-			if (bPlayer.isOnCooldown(throwString())) {
+			if (bPlayer.isOnCooldown(throwString())
+					|| !affectedBlocks.containsKey(sourceBlock)
+					|| !throwEnabled)
 				return;
-			}
-			if (affectedBlocks.containsKey(sourceBlock) && throwEnabled) {
-				origin = sourceBlock.getLocation();
-				location = origin.clone();
-				
-				Location eye = player.getEyeLocation();
-				direction = eye.getDirection();
-				
-				Column column = columnsByInstance.get(affectedBlocks.get(sourceBlock)).get(0);
-				if (column != null) {
-					Orientation o = column.getOrientation();
-					if (o == Orientation.VERTICAL) {
-						direction.setY(0).normalize();
-					} else if (o == Orientation.HORIZONTAL) {
-						direction.setX(0).setZ(0).normalize();
-					}
-				}
-				
-				player.swingMainHand();
-				playEarthbendingSound(location);
-				
-				instance = affectedBlocks.get(sourceBlock);
-				List<Column> throwableColumns = columnsByInstance.get(instance);
-				for (Column c : throwableColumns) {
-					new RaiseEarth(player, direction, c, this);
-				}
-				
-				bPlayer.addCooldown(throwString(), throwCooldown);
-				return;
+			
+			origin = sourceBlock.getLocation();
+			location = origin.clone();
+			direction = player.getEyeLocation().getDirection();
+			
+			Column column = columnsByInstance.get(affectedBlocks.get(sourceBlock)).get(0);
+			if (column != null) {
+				Orientation o = column.getOrientation();
+				direction = o == Orientation.VERTICAL ? direction.setY(0).normalize() : direction.setX(0).setZ(0).normalize();
 			} else return;
+			
+			player.swingMainHand();
+			playEarthbendingSound(location);
+			
+			instance = affectedBlocks.get(sourceBlock);
+			columnsByInstance.get(instance).forEach(c -> new RaiseEarth(player, direction, c, this));
+			
+			bPlayer.addCooldown(throwString(), throwCooldown);
+			return;
 		} else return;
 		
 		start();
-	}
-	
-	public RaiseEarth(Player player, Block sourceBlock) {
-		this(player, sourceBlock, BlockFace.UP);
 	}
 	
 	public RaiseEarth(Player player, Block sourceBlock, BlockFace face) {
 		this(player, sourceBlock, face, Azutoru.az.getConfig().getInt("Abilities.Earth.RaiseEarth.Height"), null);
 	}
 	
-	public RaiseEarth(Player player, Block sourceBlock, int height) {
-		this(player, sourceBlock, BlockFace.UP, height, null);
-	}
-	
 	public RaiseEarth(Player player, Block sourceBlock, BlockFace face, int height, @Nullable RaiseEarth instance) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreBindsCooldowns(this)) {
+		if (!bPlayer.canBendIgnoreBindsCooldowns(this)
+				|| !player.getEyeLocation().getBlock().isPassable()
+				|| sourceBlock == null || !isEarthbendable(sourceBlock)
+				|| affectedBlocks.containsKey(sourceBlock))
 			return;
-		}
-		
-		if (!player.getEyeLocation().getBlock().isPassable()) {
-			return;
-		}
-		
-		if (sourceBlock == null || !isEarthbendable(sourceBlock)) {
-			return;
-		}
-		
-		if (affectedBlocks.containsKey(sourceBlock)) {
-			return;
-		}
 		
 		state = RaiseEarthState.RAISE;
 		shape = RaiseEarthShape.COLUMN;
 		
-		if (instance == null) {
-			this.instance = this;
-		} else {
-			this.instance = instance;
-		}
+		this.instance = instance != null ? instance : this;
 		this.counter = 0;
 		this.source = sourceBlock;
 		this.face = face;
-		Orientation o = Orientation.VERTICAL;
-		if (face != BlockFace.UP && face != BlockFace.DOWN) {
-			o = Orientation.HORIZONTAL;
-		}
+		Orientation o = (face == BlockFace.UP || face == BlockFace.DOWN) ? Orientation.VERTICAL : Orientation.HORIZONTAL;
 		this.column = new Column(o);
 		this.height = getEarthbendableBlocksLength(source, MathUtil.getFaceDirection(face).clone().multiply(-1), height);
-		if (this.height < 1) {
-			return;
-		}
+		if (this.height < 1) return;
 		
 		start();
 	}
@@ -268,42 +232,36 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 	}
 	
 	private void setFields() {
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Earth.RaiseEarth.Cooldown");
-		sourceRange = Azutoru.az.getConfig().getDouble("Abilities.Earth.RaiseEarth.SourceRange");
-		height = Azutoru.az.getConfig().getInt("Abilities.Earth.RaiseEarth.Height");
-		width = Azutoru.az.getConfig().getInt("Abilities.Earth.RaiseEarth.WallWidth");
-		throwEnabled = Azutoru.az.getConfig().getBoolean("Abilities.Earth.RaiseEarth.Throw.Enabled");
-		throwCooldown = Azutoru.az.getConfig().getLong("Abilities.Earth.RaiseEarth.Throw.Cooldown");
-		speed = Azutoru.az.getConfig().getInt("Abilities.Earth.RaiseEarth.Throw.Speed");
-		range = Azutoru.az.getConfig().getDouble("Abilities.Earth.RaiseEarth.Throw.Range");
-		hitRadius = Azutoru.az.getConfig().getDouble("Abilities.Earth.RaiseEarth.Throw.HitRadius");
-		damage = Azutoru.az.getConfig().getDouble("Abilities.Earth.RaiseEarth.Throw.Damage");
-		knockback = Azutoru.az.getConfig().getDouble("Abilities.Earth.RaiseEarth.Throw.Knockback");
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Earth.RaiseEarth.Cooldown");
+		sourceRange = c.getDouble("Abilities.Earth.RaiseEarth.SourceRange");
+		height = c.getInt("Abilities.Earth.RaiseEarth.Height");
+		width = c.getInt("Abilities.Earth.RaiseEarth.WallWidth");
+		throwEnabled = c.getBoolean("Abilities.Earth.RaiseEarth.Throw.Enabled");
+		throwCooldown = c.getLong("Abilities.Earth.RaiseEarth.Throw.Cooldown");
+		speed = c.getInt("Abilities.Earth.RaiseEarth.Throw.Speed");
+		range = c.getDouble("Abilities.Earth.RaiseEarth.Throw.Range");
+		hitRadius = c.getDouble("Abilities.Earth.RaiseEarth.Throw.HitRadius");
+		damage = c.getDouble("Abilities.Earth.RaiseEarth.Throw.Damage");
+		knockback = c.getDouble("Abilities.Earth.RaiseEarth.Throw.Knockback");
 	}
 
 	@Override
 	public void progress() {
 		if (state == RaiseEarthState.RAISE) {
 			if (counter < height) {
-				if (shape == RaiseEarthShape.COLUMN) {
-					raiseColumn();
-				} else if (shape == RaiseEarthShape.WALL) {
-					raiseWall();
-				}
-				
 				counter++;
+				raiseColumn();
 			} else {
 				instance.getColumns().add(column);
-				if (columnsByInstance.get(instance) == null) {
+				if (columnsByInstance.get(instance) == null)
 					columnsByInstance.put(instance, instance.getColumns());
-				}
 				columnsByInstance.get(instance).add(column);
 				remove();
 				return;
 			}
-		} else if (state == RaiseEarthState.THROW) {
+		} else
 			throwEarth();
-		}
 	}
 	
 	private void raiseColumn() {
@@ -316,18 +274,15 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 	private void raiseWall() {
 		if (blocks.isEmpty()) {
 			for (int i = 0; i <= width; i++) {
-				if (blocks.size() == width) {
-					break;
-				}
+				if (blocks.size() == width) break;
 				double distance = i - width / 2.0;
 				Block b = location.clone().add(direction.clone().multiply(distance)).getBlock();
 				
 				if (b != null) {
 					if (isTransparent(b)) {
 						b = b.getRelative(face);
-						if (isEarthbendable(b)) {
+						if (isEarthbendable(b))
 							blocks.add(b);
-						}
 					} else if (isEarthbendable(b.getRelative(face.getOppositeFace()))) {
 						b = b.getRelative(face.getOppositeFace());
 						blocks.add(b);
@@ -344,8 +299,6 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 				new RaiseEarth(player, sourceBlock, face, height, this);
 			}
 		}
-		
-		remove();
 	}
 	
 	private void throwEarth() {
@@ -355,34 +308,32 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 		}
 		
 		location.add(direction.clone().multiply(speed));
-		if (column.getOrientation() == Orientation.VERTICAL && isDiagonal(direction)) {
+		if (column.getOrientation() == Orientation.VERTICAL && isDiagonal(direction))
 			location = location.getBlock().getLocation().add(0.5, 0.5, 0.5);
-		}
 		
-		ArrayList<Block> newBlocks = new ArrayList<>();
+		List<Block> newBlocks = new ArrayList<>();
 		for (Block b : blocks) {
 			Location targetLoc = location.clone();
 			targetLoc.add(direction.clone().multiply(speed));
 			
 			if (column.getOrientation() == Orientation.VERTICAL) {
 				targetLoc.setY(b.getY());
-			} else if (column.getOrientation() == Orientation.HORIZONTAL) {
+			} else {
 				targetLoc.setX(b.getX());
 				targetLoc.setZ(b.getZ());
 			}
 			
 			Block target = targetLoc.getBlock();
 			
-			if (!isViableTarget(target)) {
-				break;
-			}
+			if (!isViableTarget(target)) break;
 			
 			for (Entity e : GeneralMethods.getEntitiesAroundPoint(targetLoc, hitRadius)) {
-				if (e instanceof LivingEntity && e.getUniqueId() != player.getUniqueId() && !affectedEntities.contains(e)) {
-					Vector velocity = direction.clone().multiply(knockback);
-					e.setVelocity(velocity);
+				if (affectedEntities.contains(e)) continue;
+				affectedEntities.add(e);
+				Vector velocity = direction.clone().multiply(knockback);
+				e.setVelocity(velocity);
+				if (e instanceof LivingEntity && e != player) {
 					DamageHandler.damageEntity(e, damage, this);
-					affectedEntities.add(e);
 					cleanupThrownBlocks();
 					return;
 				}
@@ -428,38 +379,28 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 	public static boolean isDiagonal(Vector direction) {
 		double x = direction.getX();
 		double z = direction.getZ();
-		if (x == 0 || z == 0) {
-			return false;
-		}
-		double ratio = Math.abs(x / z);
-		if (ratio >= 0.8 && ratio <= 1.2) {
-			return true;
-		}
-		return false;
+		if (x == 0 || z == 0) return false;
+		double ratio = FastMath.abs(x / z);
+		return ratio >= 0.8 && ratio <= 1.2;
 	}
 	
 	public static Vector getDegreeRoundedVector(Vector vec, double degreeIncrement) {
-		if (vec == null) {
-			return null;
-		}
+		if (vec == null) return null;
 		vec.normalize();
-		double[] dims = { vec.getX(), vec.getY(), vec.getZ() };
+		double[] comps = { vec.getX(), vec.getY(), vec.getZ() };
 
-		for (int i = 0; i < dims.length; i++) {
-			double dim = dims[i];
-			int sign = dim >= 0 ? 1 : -1;
-			int dimDivIncr = (int) (dim / degreeIncrement);
+		for (int i = 0; i < comps.length; i++) {
+			double comp = comps[i];
+			int sign = comp >= 0 ? 1 : -1;
+			int dimDivIncr = (int) (comp / degreeIncrement);
 
 			double lowerBound = dimDivIncr * degreeIncrement;
 			double upperBound = (dimDivIncr + (1 * sign)) * degreeIncrement;
-
-			if (Math.abs(dim - lowerBound) < Math.abs(dim - upperBound)) {
-				dims[i] = lowerBound;
-			} else {
-				dims[i] = upperBound;
-			}
+			
+			comps[i] = FastMath.abs(comp - lowerBound) < FastMath.abs(comp - upperBound) ? lowerBound : upperBound;
 		}
-		return new Vector(dims[0], dims[1], dims[2]);
+		
+		return new Vector(comps[0], comps[1], comps[2]);
 	}
 	
 	public static void playCrumbleEffect(Location location) {
@@ -467,26 +408,24 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 	}
 	
 	public static void progressAll() {
-		Set<RaiseEarth> removal = new HashSet<>();
-		Vector direction = new Vector(0, 0, 0);
-		for (RaiseEarth re : columnsByInstance.keySet()) {
+		Vector direction = new Vector();
+		Iterator<RaiseEarth> it = columnsByInstance.keySet().iterator();
+		while (it.hasNext()) {
+			RaiseEarth re = it.next();
 			Location reLoc = re.getColumns().get(0).getBlocks().get(0).getLocation();
 			boolean crumbled = false;
 			
-			columns:
-			for (Column c : re.getColumns()) {
+			columns: for (Column c : re.getColumns()) {
 				for (Block b : c.getBlocks()) {
 					if (!isEarth(b)) continue;
 					Location loc = b.getLocation().add(0.5, 0.5, 0.5);
 					
 					for (EarthSmash es : getAbilities(EarthSmash.class)) {
-						if (es.getState() != State.SHOT) {
-							continue;
-						}
+						if (es.getState() != State.SHOT) continue;
 						
 						Location esLoc = es.getLocation();
-						if (esLoc != null && esLoc.getWorld().equals(reLoc.getWorld())
-								&& loc.distance(esLoc) <= collisionRadius) {
+						if (esLoc != null && esLoc.getWorld() == reLoc.getWorld() 
+								&& loc.distanceSquared(esLoc) <= radius * radius) {
 							crumbled = true;
 							direction = GeneralMethods.getDirection(esLoc, loc);
 							es.remove();
@@ -496,8 +435,8 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 					
 					for (FireBlastCharged cfb : getAbilities(FireBlastCharged.class)) {
 						Location cfbLoc = cfb.getLocation();
-						if (cfbLoc != null && cfbLoc.getWorld().equals(reLoc.getWorld())
-								&& loc.distance(cfbLoc) <= collisionRadius) {
+						if (cfbLoc != null && cfbLoc.getWorld() == reLoc.getWorld()
+								&& loc.distanceSquared(cfbLoc) <= radius * radius) {
 							crumbled = true;
 							direction = GeneralMethods.getDirection(cfbLoc, loc);
 							cfb.remove();
@@ -507,8 +446,8 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 					
 					for (FireStreams fs : getAbilities(FireStreams.class)) {
 						Location fsLoc = fs.getLocation();
-						if (fsLoc != null && fsLoc.getWorld().equals(reLoc.getWorld())
-								&& loc.distance(fsLoc) <= collisionRadius) {
+						if (fsLoc != null && fsLoc.getWorld() == reLoc.getWorld()
+								&& loc.distanceSquared(fsLoc) <= radius * radius) {
 							crumbled = true;
 							direction = GeneralMethods.getDirection(fsLoc, loc);
 							fs.remove();
@@ -517,14 +456,12 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 					}
 					
 					for (RaiseEarth reProjectile : getAbilities(RaiseEarth.class)) {
-						if (reProjectile.getState() != RaiseEarthState.THROW) {
-							continue;
-						}
+						if (reProjectile.getState() != RaiseEarthState.THROW) continue;
 						
 						List<Location> reProjectileLocs = reProjectile.getLocations();
-						if (reProjectileLocs != null && !reProjectileLocs.isEmpty() && reProjectileLocs.get(0).getWorld().equals(reLoc.getWorld())) {
+						if (reProjectileLocs != null && !reProjectileLocs.isEmpty() && reProjectileLocs.get(0).getWorld() == reLoc.getWorld()) {
 							for (Location location : reProjectileLocs) {
-								if (loc.distance(location) <= collisionRadius) {
+								if (loc.distanceSquared(location) <= radius * radius) {
 									crumbled = true;
 									direction = GeneralMethods.getDirection(location, loc);
 									reProjectile.removeAllColumns();
@@ -533,29 +470,63 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 							}
 						}
 					}
+					
+					if (ConfigManager.getConfig().getBoolean("Abilities.Fire.Combustion.Enabled")) {
+						for (com.projectkorra.projectkorra.firebending.combustion.Combustion co : getAbilities(com.projectkorra.projectkorra.firebending.combustion.Combustion.class)) {
+							Location coLoc = co.getLocation();
+							if (coLoc != null && coLoc.getWorld() == reLoc.getWorld()
+									&& loc.distanceSquared(coLoc) <= radius * radius) {
+								crumbled = true;
+								direction = GeneralMethods.getDirection(coLoc, loc);
+								co.remove();
+								break columns;
+							}
+						}
+					}
+					
+					if (!Bukkit.getPluginManager().isPluginEnabled(JedCore.plugin)) return;
+					
+					if (JedCore.plugin.getConfig().getBoolean("Abilities.Fire.Combustion.Enabled")) {
+						for (Combustion co : getAbilities(Combustion.class)) {
+							Location coLoc = co.getLocation();
+							if (coLoc != null && coLoc.getWorld() == reLoc.getWorld()
+									&& loc.distanceSquared(coLoc) <= radius * radius) {
+								crumbled = true;
+								direction = GeneralMethods.getDirection(coLoc, loc);
+								co.remove();
+								break columns;
+							}
+						}
+					}
+					
+					for (FireComet fc : getAbilities(FireComet.class)) {
+						Location fcLoc = fc.getLocation();
+						if (fcLoc != null && fcLoc.getWorld() == reLoc.getWorld()
+								&& loc.distanceSquared(fcLoc) <= radius * radius) {
+							crumbled = true;
+							direction = GeneralMethods.getDirection(fcLoc, loc);
+							fc.remove();
+							break columns;
+						}
+					}
+					
 				}
 			}
-			
 			if (crumbled) {
-				removal.add(re);
-			}
-		}
-		
-		for (RaiseEarth re : removal) {
-			for (Column c : re.getColumns()) {
-				for (Block b : c.getBlocks()) {
-					Crumble.crumble(b, direction);
+				for (Column c : re.getColumns()) {
+					for (Block b : c.getBlocks()) {
+						Crumble.crumble(b, direction);
+					}
 				}
+				re.removeAllColumns();
 			}
-			re.removeAllColumns();
 		}
 	}
 	
 	@Override
 	public void handleCollision(Collision collision) {
-		if (collision.isRemovingFirst()) {
+		if (collision.isRemovingFirst())
 			cleanupThrownBlocks();
-		}
 	}
 	
 	@Override
@@ -609,17 +580,11 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 	}
 	
 	public static void removeAllCleanup() {
-		if (affectedBlocks != null) {
+		if (affectedBlocks != null)
 			affectedBlocks.clear();
-		}
 		if (columnsByInstance != null) {
-			for (RaiseEarth re : columnsByInstance.keySet()) {
-				re.removeAllColumns(false);
-			}
-			for (CoreAbility abil : CoreAbility.getAbilities(RaiseEarth.class)) {
-				RaiseEarth re = (RaiseEarth) abil;
-				re.removeAllColumns(false);
-			}
+			columnsByInstance.keySet().forEach(re -> re.removeAllColumns(false));
+			CoreAbility.getAbilities(RaiseEarth.class).forEach(abil -> ((RaiseEarth) abil).removeAllColumns(false));
 			columnsByInstance.clear();
 		}
 	}
@@ -710,11 +675,7 @@ public class RaiseEarth extends EarthAbility implements AddonAbility {
 	
 	@Override
 	public List<Location> getLocations() {
-		List<Location> locations = new ArrayList<>();
-		for (Block b : blocks) {
-			locations.add(b.getLocation().add(0.5, 0.5, 0.5));
-		}
-		return locations;
+		return blocks.stream().map(b -> b.getLocation().add(0.5, 0.5, 0.5)).collect(Collectors.toList());
 	}
 
 	@Override

@@ -6,16 +6,7 @@ import java.util.function.Supplier;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
-import com.projectkorra.projectkorra.ability.CoreAbility;
-
-import me.aztl.azutoru.ability.util.Shot;
-
 public class UsedAmmoPolicy implements RemovalPolicy {
-	
-	/**
-	 * Predicate that checks if the player currently has a Shot ability instance active
-	 */
-	public static final Predicate<Player> NOT_SHOOTING = p -> CoreAbility.hasAbility(p, Shot.class);
 	
 	private Supplier<Integer> ammo;
 	private Predicate<Player> condition;

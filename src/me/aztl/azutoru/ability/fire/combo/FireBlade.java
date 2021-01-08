@@ -3,9 +3,12 @@ package me.aztl.azutoru.ability.fire.combo;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
+import org.apache.commons.math3.util.FastMath;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -49,25 +52,23 @@ public class FireBlade extends FireAbility implements AddonAbility, ComboAbility
 	private HashMap<Integer, Vector> directions;
 	private List<Location> locList;
 	private boolean setup, progressing, dagger;
-	private int counter, startDistance, arcSteps;
+	private int startDistance, arcSteps;
 	
 	public FireBlade(Player player, double range, double damage, double speed, int startDistance, int arcSteps, boolean dagger) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreBinds(this) || hasAbility(player, FireBlade.class)) {
-			return;
-		}
+		if (!bPlayer.canBendIgnoreBinds(this) || hasAbility(player, FireBlade.class)) return;
 		
-		if (hasAbility(player, FireShield.class)) {
+		if (hasAbility(player, FireShield.class))
 			getAbility(player, FireShield.class).remove();
-		}
 		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Fire.FireBlade.Cooldown");
+		FileConfiguration c = Azutoru.az.getConfig();
+		this.cooldown = c.getLong("Abilities.Fire.FireBlade.Cooldown");
 		this.speed = speed;
-		hitRadius = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireBlade.HitRadius");
+		this.hitRadius = c.getDouble("Abilities.Fire.FireBlade.HitRadius");
 		this.damage = damage;
 		this.range = range;
-		maxAngle = Azutoru.az.getConfig().getInt("Abilities.Fire.FireBlade.MaxAngle");
+		this.maxAngle = c.getInt("Abilities.Fire.FireBlade.MaxAngle");
 		this.startDistance = startDistance;
 		this.arcSteps = arcSteps;
 		this.dagger = dagger;
@@ -132,24 +133,16 @@ public class FireBlade extends FireAbility implements AddonAbility, ComboAbility
 		
 		if (!setup) {
 			if (System.currentTimeMillis() < getStartTime() + 200) {
-				
 				endLoc = GeneralMethods.getTargetedLocation(player, startDistance);
-				
-				if (Math.abs(endLoc.getYaw() - startLoc.getYaw()) >= maxAngle) {
+				if (FastMath.abs(endLoc.getYaw() - startLoc.getYaw()) >= maxAngle
+						|| FastMath.abs(endLoc.getPitch() - startLoc.getPitch()) >= maxAngle)
 					setup = true;
-				}
-				if (Math.abs(endLoc.getPitch() - startLoc.getPitch()) >= maxAngle) {
-					setup = true;
-				}
-				
 				return;
 			} else setup = true;
 		}
 		
 		if (!progressing) {
-			List<Location> linePoints = new ArrayList<Location>();
-			linePoints = MathUtil.getLinePoints(player, startLoc, endLoc, arcSteps);
-			for (Location loc : linePoints) {
+			for (Location loc : MathUtil.getLinePoints(player, startLoc, endLoc, arcSteps)) {
 				locations.put(id, loc);
 				directions.put(id, loc.getDirection());
 				id++;
@@ -167,13 +160,9 @@ public class FireBlade extends FireAbility implements AddonAbility, ComboAbility
 				updateLocations(locations.get(i));
 				
 				Block b = locations.get(i).getBlock();
-				if (GeneralMethods.isSolid(b) || b.isLiquid()) {
+				if (GeneralMethods.isSolid(b)|| b.isLiquid()
+						|| GeneralMethods.checkDiagonalWall(locations.get(i), directions.get(i)))
 					continue;
-				}
-				
-				if (GeneralMethods.checkDiagonalWall(locations.get(i), directions.get(i))) {
-					continue;
-				}
 				
 				if (locations.get(i).distanceSquared(startLoc) > range * range) {
 					remove();
@@ -190,13 +179,11 @@ public class FireBlade extends FireAbility implements AddonAbility, ComboAbility
 					playFirebendingParticles(locations.get(i), 1, 0.2, 0.2, 0.2);
 				}
 				
-				if (counter % 6 == 0) {
+				if (ThreadLocalRandom.current().nextInt(6) == 0)
 					playFirebendingSound(locations.get(i));
-				}
-				counter++;
 				
 				for (Entity e : GeneralMethods.getEntitiesAroundPoint(locations.get(i), hitRadius)) {
-					if (e instanceof LivingEntity && e.getUniqueId() != player.getUniqueId()) {
+					if (e instanceof LivingEntity && e != player) {
 						DamageHandler.damageEntity(e, damage, (hasAbility(player, FireDaggers.class) ? getAbility(player, FireDaggers.class) : this));
 						remove();
 						return;

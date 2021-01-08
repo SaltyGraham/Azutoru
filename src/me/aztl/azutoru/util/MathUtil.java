@@ -1,8 +1,13 @@
 package me.aztl.azutoru.util;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Rotation;
+import org.apache.commons.math3.geometry.euclidean.threed.RotationConvention;
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.apache.commons.math3.util.FastMath;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
@@ -20,6 +25,13 @@ public class MathUtil {
 		} else {
 			return BlockFace.NORTH;
 		}
+	}
+	
+	public static List<Location> getCirclePoints(Location location, double radius, int steps) {
+		List<Location> locations = new ArrayList<>();
+		for (int i = 0; i < 360; i += 360 / steps)
+			locations.add(location.add(radius * FastMath.cos(i), 0, radius * FastMath.sin(i)));
+		return locations;
 	}
 	
 	public static Vector getFaceDirection(BlockFace face) {
@@ -114,11 +126,85 @@ public class MathUtil {
     
     public static Vector rotateAroundAxesXZ(Vector v, double degrees) {
     	Vector rotated = new Vector(-v.getZ(), 0, v.getX());
-    	double radian = Math.toRadians(degrees);
-    	Vector v1 = v.clone().multiply(Math.cos(radian));
+    	double radian = FastMath.toRadians(degrees);
+    	Vector v1 = v.clone().multiply(FastMath.cos(radian));
     	Vector v2 = v.clone().crossProduct(rotated);
-    	v2.multiply(Math.sin(radian));
+    	v2.multiply(FastMath.sin(radian));
     	return v1.add(v2);
+    }
+    
+    // Vector3D methods
+    
+	/**
+	 * Create an arc by combining {@link #rotate(Vector3D, Rotation, int)} and {@link #rotateInverse(Vector3D, Rotation, int)}.
+	 * Amount of rays will be rounded up to the nearest odd number. Minimum value is 3.
+	 * @param start the starting point
+	 * @param rotation the rotation to use
+	 * @param rays the amount of vectors to return, must be an odd number, minimum 3
+	 * @return a list comprising of all the directions for this arc
+	 * @author Moros
+	 */
+    public static Collection<Vector3D> createArc(Vector3D start, Rotation rotation, int lines) {
+		lines = FastMath.max(3, lines);
+		if (lines % 2 == 0) lines++;
+		int half = (lines - 1) / 2;
+		Collection<Vector3D> arc = new ArrayList<>(lines);
+		arc.add(start);
+		arc.addAll(rotate(start, rotation, half));
+		arc.addAll(rotateInverse(start, rotation, half));
+		return arc;
+	}
+    
+	/**
+	 * Repeat a rotation on a specific vector.
+	 * @param start the starting point
+	 * @param rotation the rotation to use
+	 * @param times the amount of times to repeat the rotation
+	 * @return a list comprising of all the directions for this arc
+	 * @author Moros
+	 */
+    public static Collection<Vector3D> rotate(Vector3D start, Rotation rotation, int times) {
+    	Collection<Vector3D> arc = new ArrayList<>();
+    	double[] vector = start.toArray();
+    	for (int i = 0; i < times; i++) {
+    		rotation.applyTo(vector, vector);
+    		arc.add(new Vector3D(vector));
+    	}
+    	return arc;
+    }
+    
+	/**
+	 * Inversely repeat a rotation on a specific vector.
+	 * @author Moros
+	 * @see #rotate(Vector3D, Rotation, int)
+	 */
+    public static Collection<Vector3D> rotateInverse(Vector3D start, Rotation rotation, int times) {
+    	Collection<Vector3D> arc = new ArrayList<>();
+    	double[] vector = start.toArray();
+    	for (int i = 0; i < times; i++) {
+    		rotation.applyInverseTo(vector, vector);
+    		arc.add(new Vector3D(vector));
+    	}
+    	return arc;
+    }
+    
+    /**
+     * @author Moros
+     */
+    public static Vector orthogonal(Vector axis, double radians, double length) {
+    	Vector3D v = toVector3D(axis);
+    	double[] orthogonal = new Vector3D(v.getY(), -v.getX(), 0).normalize().scalarMultiply(length).toArray();
+    	Rotation rotation = new Rotation(v, radians, RotationConvention.VECTOR_OPERATOR);
+    	rotation.applyTo(orthogonal, orthogonal);
+    	return fromVector3D(new Vector3D(orthogonal));
+    }
+    
+    public static Vector fromVector3D(Vector3D v) {
+    	return new Vector(v.getX(), v.getY(), v.getZ());
+    }
+    
+    public static Vector3D toVector3D(Vector v) {
+    	return new Vector3D(v.getX(), v.getY(), v.getZ());
     }
 
 }

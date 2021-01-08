@@ -3,6 +3,7 @@ package me.aztl.azutoru.ability.fire;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.bukkit.Location;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -22,6 +23,7 @@ import me.aztl.azutoru.ability.fire.combo.FireBlade;
 import me.aztl.azutoru.policy.ExpirationPolicy;
 import me.aztl.azutoru.policy.Policies;
 import me.aztl.azutoru.policy.RemovalPolicy;
+import me.aztl.azutoru.policy.UsedAmmoPolicy;
 import me.aztl.azutoru.util.PlayerUtil;
 import me.aztl.azutoru.util.PlayerUtil.Hand;
 
@@ -51,7 +53,7 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 	private double throwSpeed;
 	private int maxThrows;
 	
-	private Location left, right, location;
+	private Location left, right;
 	private RemovalPolicy policy;
 	private Dagger activeDagger, lastActiveDagger;
 	private Ability activeAbility;
@@ -61,25 +63,34 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 	public FireDaggers(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBend(this)) {
+		if (hasAbility(player, FireDaggers.class)) {
+			FireDaggers fd = getAbility(player, FireDaggers.class);
+			if (player.isSneaking())
+				fd.onJumpSneakClick();
+			else
+				fd.onClick();
 			return;
 		}
 		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Fire.FireDaggers.Cooldown");
-		duration = Azutoru.az.getConfig().getLong("Abilities.Fire.FireDaggers.Duration");
-		blockDuration = Azutoru.az.getConfig().getLong("Abilities.Fire.FireDaggers.BlockDuration");
-		usageCooldown = Azutoru.az.getConfig().getLong("Abilities.Fire.FireDaggers.UsageCooldown");
-		damage = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireDaggers.Damage");
-		range = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireDaggers.Range");
-		throwSpeed = Azutoru.az.getConfig().getDouble("Abilities.Fire.FireDaggers.ThrowSpeed");
-		maxThrows = Azutoru.az.getConfig().getInt("Abilities.Fire.FireDaggers.MaxThrows");
+		if (!bPlayer.canBend(this)) return;
+		
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Fire.FireDaggers.Cooldown");
+		duration = c.getLong("Abilities.Fire.FireDaggers.Duration");
+		blockDuration = c.getLong("Abilities.Fire.FireDaggers.BlockDuration");
+		usageCooldown = c.getLong("Abilities.Fire.FireDaggers.UsageCooldown");
+		damage = c.getDouble("Abilities.Fire.FireDaggers.Damage");
+		range = c.getDouble("Abilities.Fire.FireDaggers.Range");
+		throwSpeed = c.getDouble("Abilities.Fire.FireDaggers.ThrowSpeed");
+		maxThrows = c.getInt("Abilities.Fire.FireDaggers.MaxThrows");
 		
 		applyModifiers();
 		
 		blocking = false;
 		policy = Policies.builder()
 					.add(Policies.IN_LIQUID)
-					.add(new ExpirationPolicy(duration)).build();
+					.add(new ExpirationPolicy(duration))
+					.add(new UsedAmmoPolicy(() -> maxThrows)).build();
 		
 		start();
 	}
@@ -121,9 +132,8 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 		
 		if (activeAbility != Ability.BLOCK) {
 			time = System.currentTimeMillis();
-			if (isBlocking()) {
+			if (isBlocking())
 				setBlocking(false);
-			}
 			
 			for (double d = 0; d <= 0.3; d += 0.1) {
 				left = GeneralMethods.getLeftSide(left, d).subtract(0, d * 0.6, 0);
@@ -133,25 +143,19 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 			}
 		} else {
 			progressBlock();
-			if (!isBlocking()) {
+			if (!isBlocking())
 				setBlocking(true);
-			}
 		}
 	}
 	
 	private void progressBlock() {
-		while (System.currentTimeMillis() >= time) {
+		if (System.currentTimeMillis() >= time) {
 			left = left.subtract(0, 0.3, 0);
 			right = right.subtract(0, 0.3, 0);
-			break;
 		}
 		
-		for (Entity e : GeneralMethods.getEntitiesAroundPoint(left, 1)) {
-			blockEntitiesAroundPoint(e, left);
-		}
-		for (Entity e : GeneralMethods.getEntitiesAroundPoint(right, 1)) {
-			blockEntitiesAroundPoint(e, right);
-		}
+		GeneralMethods.getEntitiesAroundPoint(left, 1).forEach(e -> blockEntitiesAroundPoint(e, left));
+		GeneralMethods.getEntitiesAroundPoint(right, 1).forEach(e -> blockEntitiesAroundPoint(e, right));
 		
 		for (double d = 0; d <= 0.4; d += 0.1) {
 			left = GeneralMethods.getRightSide(left, d).add(0, 0.2, 0);
@@ -178,7 +182,6 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 	
 	public void reset() {
 		checkForAmmo();
-		location = null;
 		lastActiveDagger = activeDagger;
 		activeDagger = null;
 		activeAbility = null;
@@ -193,58 +196,39 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 	
 	// Normal clicking shoots a dagger
 	public void onClick() {
-		if (bPlayer.isOnCooldown(getName() + "_ATTACK")) {
-			return;
-		}
-		
-		if (lastActiveDagger == null) {
-			activeDagger = Dagger.RIGHT;
-		} else if (lastActiveDagger == Dagger.RIGHT) {
-			activeDagger = Dagger.LEFT;
-		} else if (lastActiveDagger == Dagger.LEFT) {
-			activeDagger = Dagger.RIGHT;
-		}
-		
+		if (bPlayer.isOnCooldown(getName() + "_ATTACK")) return;
 		new FireBlade(player, range, damage, throwSpeed, 1, 35, true);
-		
+		activeDagger = lastActiveDagger == Dagger.RIGHT ? Dagger.LEFT : Dagger.RIGHT;
 		bPlayer.addCooldown(getName() + "_ATTACK", usageCooldown);
 		maxThrows--;
 	}
 	
 	// Sneaking while on the ground blocks attacks
 	public void onSneak() {
-		if (!PlayerUtil.isOnGround(player)) {
+		if (!PlayerUtil.isOnGround(player)
+				|| bPlayer.isOnCooldown(getName() + "_BLOCK"))
 			return;
-		}
-		if (bPlayer.isOnCooldown(getName() + "_BLOCK")) {
-			return;
-		}
-		
 		activeAbility = Ability.BLOCK;
-		
 		bPlayer.addCooldown(getName() + "_BLOCK", usageCooldown);
 	}
 	
 	// Sneaking midair gives the player the option to either shoot FireBlast or FireBlade from their feet
+	
 	// Releasing sneak midair shoots a FireBlast
 	public void onJumpReleaseSneak() {
-		if (PlayerUtil.isOnGround(player)) {
+		if (PlayerUtil.isOnGround(player)
+				|| hasAbility(player, FireBlade.class)
+				|| hasAbility(player, FireJet.class))
 			return;
-		}
-		if (hasAbility(player, FireBlade.class) || hasAbility(player, FireJet.class)) {
-			return;
-		}
 		new FireBlast(player);
 	}
 	
 	// Sneak-clicking midair shoots a FireBlade
 	public void onJumpSneakClick() {
-		if (PlayerUtil.isOnGround(player)) {
+		if (PlayerUtil.isOnGround(player)
+				|| hasAbility(player, FireBlade.class)
+				|| hasAbility(player, FireJet.class))
 			return;
-		}
-		if (hasAbility(player, FireBlast.class) || hasAbility(player, FireJet.class)) {
-			return;
-		}
 		new FireBlade(player);
 	}
 	
@@ -269,21 +253,6 @@ public class FireDaggers extends FireAbility implements AddonAbility {
 
 	@Override
 	public Location getLocation() {
-		if (activeAbility == null) {
-			if (activeDagger == Dagger.LEFT) {
-				return left;
-			} else {
-				return right;
-			}
-		} else if (activeAbility == Ability.ATTACK) {
-			return location;
-		} else if (activeAbility == Ability.BLOCK) {
-			if (activeDagger == Dagger.LEFT) {
-				return left;
-			} else {
-				return right;
-			}
-		}
 		return right;
 	}
 

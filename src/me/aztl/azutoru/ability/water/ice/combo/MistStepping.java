@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
@@ -46,20 +47,18 @@ public class MistStepping extends IceAbility implements AddonAbility, ComboAbili
 	public MistStepping(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			return;
-		}
+		if (!bPlayer.canBendIgnoreBinds(this)) return;
 		
-		if (hasAbility(player, WaterSpout.class)) {
+		if (hasAbility(player, WaterSpout.class))
 			getAbility(player, WaterSpout.class).remove();
-		}
 		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Water.MistStepping.Cooldown");
-		duration = Azutoru.az.getConfig().getLong("Abilities.Water.MistStepping.Duration");
-		horizontal = Azutoru.az.getConfig().getDouble("Abilities.Water.MistStepping.HorizontalPush");
-		vertical = Azutoru.az.getConfig().getDouble("Abilities.Water.MistStepping.VerticalPush");
-		maxSteps = Azutoru.az.getConfig().getInt("Abilities.Water.MistStepping.MaxSteps");
-		maxDistance = Azutoru.az.getConfig().getInt("Abilities.Water.MistStepping.MaxDistanceFromGround");
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Water.MistStepping.Cooldown");
+		duration = c.getLong("Abilities.Water.MistStepping.Duration");
+		horizontal = c.getDouble("Abilities.Water.MistStepping.HorizontalPush");
+		vertical = c.getDouble("Abilities.Water.MistStepping.VerticalPush");
+		maxSteps = c.getInt("Abilities.Water.MistStepping.MaxSteps");
+		maxDistance = c.getInt("Abilities.Water.MistStepping.MaxDistanceFromGround");
 		
 		applyModifiers();
 		

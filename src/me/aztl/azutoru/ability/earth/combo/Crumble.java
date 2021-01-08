@@ -2,10 +2,13 @@ package me.aztl.azutoru.ability.earth.combo;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
+import org.apache.commons.math3.util.FastMath;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.LivingEntity;
@@ -28,7 +31,6 @@ import com.projectkorra.projectkorra.util.TempBlock;
 
 import me.aztl.azutoru.Azutoru;
 import me.aztl.azutoru.ability.earth.RaiseEarth;
-import me.aztl.azutoru.ability.earth.RaiseEarth.Column;
 import me.aztl.azutoru.util.MathUtil;
 
 public class Crumble extends EarthAbility implements AddonAbility, ComboAbility {
@@ -42,10 +44,10 @@ public class Crumble extends EarthAbility implements AddonAbility, ComboAbility 
 	private static double hitRadius = Azutoru.az.getConfig().getDouble("Abilities.Earth.Crumble.HitRadius");
 	private static double damage = Azutoru.az.getConfig().getDouble("Abilities.Earth.Crumble.Damage");
 	private int maxBlasts;
-	
+
+	private static Set<FallingBlock> blocks = new HashSet<>();
 	private Location location;
 	private Vector direction;
-	private static Set<FallingBlock> blocks = new HashSet<>();
 	
 	public Crumble(Player player) {
 		super(player);
@@ -54,10 +56,11 @@ public class Crumble extends EarthAbility implements AddonAbility, ComboAbility 
 			return;
 		}
 		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Earth.Crumble.Cooldown");
-		range = Azutoru.az.getConfig().getDouble("Abilities.Earth.Crumble.Range");
-		detectionRadius = Azutoru.az.getConfig().getDouble("Abilities.Earth.Crumble.DetectionRadius");
-		maxBlasts = Azutoru.az.getConfig().getInt("Abilities.Earth.Crumble.MaxEarthBlasts");
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Earth.Crumble.Cooldown");
+		range = c.getDouble("Abilities.Earth.Crumble.Range");
+		detectionRadius = c.getDouble("Abilities.Earth.Crumble.DetectionRadius");
+		maxBlasts = c.getInt("Abilities.Earth.Crumble.MaxEarthBlasts");
 		
 		location = player.getEyeLocation();
 		direction = location.getDirection();
@@ -76,37 +79,32 @@ public class Crumble extends EarthAbility implements AddonAbility, ComboAbility 
 			location.add(direction);
 			Block b = location.getBlock();
 			
-			if (RaiseEarth.getAffectedBlocks().containsKey(b)) {
-				RaiseEarth selected = RaiseEarth.getAffectedBlocks().get(b);
-				handleRaiseEarth(selected);
+			RaiseEarth re = RaiseEarth.getAffectedBlocks().get(b);
+			if (re != null) {
+				handleRaiseEarth(re);
 				removeWithCooldown();
 				return;
 			}
 			
-			Set<Block> removal = new HashSet<>();
-			if (TempBlock.isTempBlock(b) && EarthTent.getAffectedBlocks().contains(TempBlock.get(b))) {
+			TempBlock t = TempBlock.get(b);
+			if (t != null && EarthTent.getAffectedBlocks().contains(t)) {
 				double tentLength = Azutoru.az.getConfig().getDouble("Abilities.Earth.EarthTent.Length");
 				for (Block block : GeneralMethods.getBlocksAroundPoint(location, tentLength * tentLength)) {
-					if (TempBlock.isTempBlock(block) && EarthTent.getAffectedBlocks().contains(TempBlock.get(block))) {
-						crumble(block);
-						removal.add(block);
-					}
-				}
-				for (Block block : removal) {
 					TempBlock tb = TempBlock.get(block);
-					tb.revertBlock();
-					EarthTent.removeBlock(tb);
+					if (tb != null && EarthTent.getAffectedBlocks().contains(tb)) {
+						playEarthbendingSound(location);
+						crumble(block);
+						tb.revertBlock();
+						EarthTent.removeBlock(tb);
+					}
 				}
 			}
 			
 			for (EarthSmash es : getAbilities(EarthSmash.class)) {
-				if (es.getLocation() == null || es.getLocation().getWorld() != player.getWorld()) {
-					continue;
-				}
+				if (es.getLocation() == null || es.getLocation().getWorld() != player.getWorld()) continue;
+				
 				if (es.getLocation().distanceSquared(location) <= detectionRadius * detectionRadius) {
-					for (Location loc : es.getLocations()) {
-						handleEarthSmash(loc);
-					}
+					es.getLocations().forEach(l -> handleEarthSmash(l));
 					es.remove();
 					removeWithCooldown();
 					return;
@@ -114,19 +112,15 @@ public class Crumble extends EarthAbility implements AddonAbility, ComboAbility 
 			}
 			
 			for (EarthBlast eb : getAbilities(EarthBlast.class)) {
-				if (eb.getLocation() == null || eb.getLocation().getWorld() != player.getWorld()
-						|| eb.getPlayer().getUniqueId() == player.getUniqueId()) {
-					continue;
-				}
+				if (eb.getLocation() == null || eb.getLocation().getWorld() != player.getWorld() || eb.getPlayer() == player) continue;
+				
 				if (eb.getLocation().distanceSquared(location) <= detectionRadius * detectionRadius) {
 					playEarthbendingSound(location);
 					Block block = eb.getLocation().getBlock();
-					if (isEarthbendable(block)) {
+					if (isEarthbendable(block))
 						crumble(block);
-					}
 					eb.remove();
-					maxBlasts--;
-					if (maxBlasts == 0) {
+					if (--maxBlasts == 0) {
 						removeWithCooldown();
 						return;
 					}
@@ -137,27 +131,18 @@ public class Crumble extends EarthAbility implements AddonAbility, ComboAbility 
 	
 	private void handleRaiseEarth(RaiseEarth instance) {
 		playEarthbendingSound(location);
-		for (Column column : instance.getColumns()) {
-			for (Block b : column.getBlocks()) {
-				crumble(b);
-			}
-		}
-		if (instance.getColumns().size() == 1) {
-			for (Column column : instance.getAdjacentColumns(instance.getColumns().get(0))) {
-				for (Block b : column.getBlocks()) {
-					crumble(b);
-				}
-			}
-		}
+		instance.getColumns().forEach(c -> c.getBlocks().forEach(b -> crumble(b)));
+		if (instance.getColumns().size() == 1)
+			instance.getAdjacentColumns(instance.getColumns().get(0)).forEach(c -> c.getBlocks().forEach(b -> crumble(b)));
 		instance.removeAllColumns();
 		instance.remove();
 	}
 	
 	private void handleEarthSmash(Location loc) {
 		playEarthbendingSound(loc);
-		if (isEarth(loc.getBlock())) {
-			crumble(loc.getBlock());
-		}
+		Block b = loc.getBlock();
+		if (isEarth(b))
+			crumble(b);
 	}
 	
 	private void crumble(Block b) {
@@ -166,7 +151,7 @@ public class Crumble extends EarthAbility implements AddonAbility, ComboAbility 
 	
 	public static void crumble(Block b, Vector direction) {
 		FallingBlock fb = GeneralMethods.spawnFallingBlock(b.getLocation().add(0.5, 0.5, 0.5), b.getType(), b.getBlockData());
-		fb.setVelocity(MathUtil.rotateAroundAxesXZ(direction, Math.random() * 60 - 20).multiply(0.5));
+		fb.setVelocity(MathUtil.rotateAroundAxesXZ(direction, FastMath.random() * 60 - 20).multiply(0.5));
 		fb.setMetadata("Crumble", new FixedMetadataValue(Azutoru.az, 0));
 		fb.setHurtEntities(false);
 		fb.setDropItem(false);
@@ -174,43 +159,41 @@ public class Crumble extends EarthAbility implements AddonAbility, ComboAbility 
 	}
 	
 	public static void progressAll() {
-		Set<FallingBlock> removal = new HashSet<>();
-		for (FallingBlock fb : blocks) {
+		Iterator<FallingBlock> it = blocks.iterator();
+		while (it.hasNext()) {
+			FallingBlock fb = it.next();
 			if (fb.isDead()) {
-				removal.add(fb);
+				blocks.remove(fb);
 				continue;
 			}
 			for (Entity e : GeneralMethods.getEntitiesAroundPoint(fb.getLocation(), hitRadius)) {
 				if (e instanceof LivingEntity) {
 					((LivingEntity) e).damage(damage);
-					removal.add(fb);
+					blocks.remove(fb);
+					fb.remove();
 				}
 			}
 		}
-		blocks.removeAll(removal);
+	}
+	
+	public static void addBlock(FallingBlock fb) {
+		blocks.add(fb);
 	}
 	
 	@Override
 	public void handleCollision(Collision c) {
 		if (c.isRemovingFirst()) {
 			CoreAbility second = c.getAbilitySecond();
-			if (second instanceof RaiseEarth) {
-				RaiseEarth re = (RaiseEarth) second;
-				handleRaiseEarth(re);
-			} else if (second instanceof EarthSmash) {
-				EarthSmash es = (EarthSmash) second;
-				handleEarthSmash(es.getLocation());
-			}
+			if (second instanceof RaiseEarth)
+				handleRaiseEarth((RaiseEarth) second);
+			else if (second instanceof EarthSmash)
+				handleEarthSmash(((EarthSmash) second).getLocation());
 		}
 	}
 	
 	public void removeWithCooldown() {
 		remove();
 		bPlayer.addCooldown(this);
-	}
-	
-	public static boolean isCrumbleBlock(FallingBlock fb) {
-		return blocks.contains(fb);
 	}
 
 	@Override

@@ -3,8 +3,9 @@ package me.aztl.azutoru.ability.air.combo;
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.apache.commons.math3.util.FastMath;
 import org.bukkit.Location;
-import org.bukkit.entity.Entity;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
@@ -35,12 +36,11 @@ public class AirCocoon extends AirAbility implements AddonAbility, ComboAbility 
 	public AirCocoon(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			return;
-		}
+		if (!bPlayer.canBendIgnoreBinds(this)) return;
 		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Air.AirCocoon.Cooldown");
-		duration = Azutoru.az.getConfig().getLong("Abilities.Air.AirCocoon.Duration");
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Air.AirCocoon.Cooldown");
+		duration = c.getLong("Abilities.Air.AirCocoon.Duration");
 		
 		policy = Policies.builder()
 					.add(new DifferentWorldPolicy(() -> this.player.getWorld()))
@@ -62,25 +62,21 @@ public class AirCocoon extends AirAbility implements AddonAbility, ComboAbility 
 		if (ThreadLocalRandom.current().nextInt(6) == 0)
 			playAirbendingSound(player.getLocation());
 		
-		Vector velocity = player.getVelocity().multiply(0);
-		player.setVelocity(velocity);
+		player.setVelocity(new Vector());
 		
-		for (Entity entity : GeneralMethods.getEntitiesAroundPoint(player.getLocation().add(0, 0.5, 0), 1)) {
-			if (entity.getUniqueId() != player.getUniqueId()) {
-				Vector ortho = GeneralMethods.getOrthogonalVector(entity.getVelocity(), 90, 1);
-				entity.setVelocity(ortho);
-			}
-		}
+		GeneralMethods.getEntitiesAroundPoint(player.getLocation().add(0, 1, 0), 1)
+			.stream().filter(e -> e != player)
+			.forEach(e -> e.setVelocity(GeneralMethods.getOrthogonalVector(e.getVelocity(), 90, 1)));
 	}
 	
 	private void displayCocoon() {
 		Location loc = player.getLocation().add(0, 0.5, 0);
-		for (double i = 0; i <= Math.PI; i += Math.PI / 5) {
-			double radius = Math.sin(i);
-			double y = Math.cos(i) * 1.5;
-			for (double a = 0; a < Math.PI * 2; a += Math.PI / 5) {
-				double x = Math.cos(a) * radius;
-				double z = Math.sin(a) * radius;
+		for (double i = 0; i <= FastMath.PI; i += FastMath.PI / 5) {
+			double radius = FastMath.sin(i);
+			double y = FastMath.cos(i) * 1.5;
+			for (double a = 0; a < FastMath.PI * 2; a += FastMath.PI / 5) {
+				double x = FastMath.cos(a) * radius;
+				double z = FastMath.sin(a) * radius;
 				loc.add(x, y, z);
 				getAirbendingParticles().display(loc, 1);
 				loc.subtract(x, y, z);

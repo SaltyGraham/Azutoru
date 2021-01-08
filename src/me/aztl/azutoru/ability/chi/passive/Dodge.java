@@ -1,7 +1,9 @@
 package me.aztl.azutoru.ability.chi.passive;
 
+import org.apache.commons.math3.util.FastMath;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
@@ -37,14 +39,15 @@ public class Dodge extends ChiAbility implements AddonAbility {
 			return;
 		}
 		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Multi-Elemental.Dodge.Cooldown");
-		horizontal = Azutoru.az.getConfig().getDouble("Abilities.Multi-Elemental.Dodge.HorizontalModifier");
-		vertical = Azutoru.az.getConfig().getDouble("Abilities.Multi-Elemental.Dodge.VerticalModifier");
-		chi = Azutoru.az.getConfig().getBoolean("Abilities.Multi-Elemental.Dodge.Chi");
-		air = Azutoru.az.getConfig().getBoolean("Abilities.Multi-Elemental.Dodge.Air");
-		fire = Azutoru.az.getConfig().getBoolean("Abilities.Multi-Elemental.Dodge.Fire");
-		earth = Azutoru.az.getConfig().getBoolean("Abilities.Multi-Elemental.Dodge.Earth");
-		water = Azutoru.az.getConfig().getBoolean("Abilities.Multi-Elemental.Dodge.Water");
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Multi-Elemental.Dodge.Cooldown");
+		horizontal = c.getDouble("Abilities.Multi-Elemental.Dodge.HorizontalModifier");
+		vertical = c.getDouble("Abilities.Multi-Elemental.Dodge.VerticalModifier");
+		chi = c.getBoolean("Abilities.Multi-Elemental.Dodge.Chi");
+		air = c.getBoolean("Abilities.Multi-Elemental.Dodge.Air");
+		fire = c.getBoolean("Abilities.Multi-Elemental.Dodge.Fire");
+		earth = c.getBoolean("Abilities.Multi-Elemental.Dodge.Earth");
+		water = c.getBoolean("Abilities.Multi-Elemental.Dodge.Water");
 		
 		dodged = false;
 		
@@ -68,7 +71,7 @@ public class Dodge extends ChiAbility implements AddonAbility {
 			direction.setZ(direction.getZ() * horizontal);
 			player.setVelocity(direction);
 			
-			ParticleEffect.CLOUD.display(eyeLoc, 10, Math.random(), 0.2, Math.random());
+			ParticleEffect.CLOUD.display(eyeLoc, 10, FastMath.random(), 0.2, FastMath.random());
 			dodged = true;
 			bPlayer.addCooldown(this);
 			return;
@@ -81,25 +84,17 @@ public class Dodge extends ChiAbility implements AddonAbility {
 	}
 	
 	public boolean canDodge() {
-		if (PlayerUtil.isOnGround(player) || player.getLocation().getBlock().isLiquid()) {
+		if (PlayerUtil.isOnGround(player)
+				|| player.getLocation().getBlock().isLiquid()
+				|| !player.isSneaking())
 			return false;
-		}
 		
-		if (!player.isSneaking()) {
-			return false;
-		}
-		
-		if (chi && bPlayer.hasElement(Element.CHI)) {
+		if ((chi && bPlayer.isElementToggled(Element.CHI))
+				|| (air && bPlayer.isElementToggled(Element.AIR))
+				|| (fire && bPlayer.isElementToggled(Element.FIRE))
+				|| (water && bPlayer.isElementToggled(Element.WATER))
+				|| (earth && bPlayer.isElementToggled(Element.EARTH)))
 			return true;
-		} else if (air && bPlayer.hasElement(Element.AIR)) {
-			return true;
-		} else if (fire && bPlayer.hasElement(Element.FIRE)) {
-			return true;
-		} else if (water && bPlayer.hasElement(Element.WATER)) {
-			return true;
-		} else if (earth && bPlayer.hasElement(Element.EARTH)) {
-			return true;
-		}
 		
 		return false;
 	}
@@ -111,7 +106,7 @@ public class Dodge extends ChiAbility implements AddonAbility {
 
 	@Override
 	public Location getLocation() {
-		return player.getLocation() != null ? player.getLocation() : null;
+		return player.getLocation();
 	}
 
 	@Override

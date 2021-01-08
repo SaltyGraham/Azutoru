@@ -47,16 +47,11 @@ public class AirSpoutRush extends AirAbility implements AddonAbility, ComboAbili
 	public AirSpoutRush(Player player) {
 		super(player);
 		
-		AirSpout spout = getAbility(player, AirSpout.class);
-		if (spout == null) {
-			return;
-		} else {
-			spout.remove();
-		}
+		if (hasAbility(player, AirSpout.class))
+			getAbility(player, AirSpout.class).remove();
+		else return;
 		
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			return;
-		}
+		if (!bPlayer.canBendIgnoreBinds(this)) return;
 		
 		angle = 0;
 		cooldown = Azutoru.az.getConfig().getLong("Abilities.Air.AirSpoutRush.Cooldown");

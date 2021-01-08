@@ -4,6 +4,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 
 import org.bukkit.Location;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
 import com.projectkorra.projectkorra.BendingPlayer;
@@ -39,21 +40,21 @@ public class CloudSurf extends AirAbility implements AddonAbility {
 	public CloudSurf(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBend(this) || PlayerUtil.isOnGround(player)) {
+		if (!bPlayer.canBend(this) || PlayerUtil.isOnGround(player)) return;
+		
+		if (hasAbility(player, CloudSurf.class)) {
+			getAbility(player, CloudSurf.class).remove();
 			return;
 		}
 		
-		duration = Azutoru.az.getConfig().getLong("Abilities.Air.CloudSurf.Duration");
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Air.CloudSurf.Cooldown");
-		forceCloudParticles = Azutoru.az.getConfig().getBoolean("Abilities.Air.CloudSurf.ForceCloudParticles");
-		allowSneakMoves = Azutoru.az.getConfig().getBoolean("Abilities.Air.CloudSurf.AllowSneakMoves");
-		damageThreshold = Azutoru.az.getConfig().getDouble("Abilities.Air.CloudSurf.DamageThreshold");
+		FileConfiguration c = Azutoru.az.getConfig();
+		duration = c.getLong("Abilities.Air.CloudSurf.Duration");
+		cooldown = c.getLong("Abilities.Air.CloudSurf.Cooldown");
+		forceCloudParticles = c.getBoolean("Abilities.Air.CloudSurf.ForceCloudParticles");
+		allowSneakMoves = c.getBoolean("Abilities.Air.CloudSurf.AllowSneakMoves");
+		damageThreshold = c.getDouble("Abilities.Air.CloudSurf.DamageThreshold");
 		
-		if (bPlayer.isAvatarState()) {
-			duration = 0;
-			cooldown = 0;
-			damageThreshold = damageThreshold * 5;
-		}
+		applyModifiers();
 		
 		canFly = player.getAllowFlight();
 		isFlying = player.isFlying();
@@ -72,6 +73,14 @@ public class CloudSurf extends AirAbility implements AddonAbility {
 		flightHandler.createInstance(player, getName());
 		PlayerUtil.allowFlight(player);
 		start();
+	}
+	
+	private void applyModifiers() {
+		if (bPlayer.isAvatarState()) {
+			duration = 0;
+			cooldown = 0;
+			damageThreshold *= 5;
+		}
 	}
 	
 	@Override

@@ -3,6 +3,7 @@ package me.aztl.azutoru.ability.fire.combo;
 import java.util.ArrayList;
 
 import org.bukkit.Location;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
@@ -39,19 +40,17 @@ public class JetStepping extends FireAbility implements AddonAbility, ComboAbili
 	public JetStepping(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			return;
-		}
+		if (!bPlayer.canBendIgnoreBinds(this)) return;
 		
-		if (hasAbility(player, FireJet.class)) {
+		if (hasAbility(player, FireJet.class))
 			getAbility(player, FireJet.class).remove();
-		}
 		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Fire.JetStepping.Cooldown");
-		duration = Azutoru.az.getConfig().getLong("Abilities.Fire.JetStepping.Duration");
-		horizontal = Azutoru.az.getConfig().getDouble("Abilities.Fire.JetStepping.HorizontalPush");
-		vertical = Azutoru.az.getConfig().getDouble("Abilities.Fire.JetStepping.VerticalPush");
-		maxSteps = Azutoru.az.getConfig().getInt("Abilities.Fire.JetStepping.MaxSteps");
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Fire.JetStepping.Cooldown");
+		duration = c.getLong("Abilities.Fire.JetStepping.Duration");
+		horizontal = c.getDouble("Abilities.Fire.JetStepping.HorizontalPush");
+		vertical = c.getDouble("Abilities.Fire.JetStepping.VerticalPush");
+		maxSteps = c.getInt("Abilities.Fire.JetStepping.MaxSteps");
 		
 		applyModifiers();
 		

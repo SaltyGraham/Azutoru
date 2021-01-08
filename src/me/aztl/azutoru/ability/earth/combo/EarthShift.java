@@ -5,7 +5,9 @@ import java.util.ArrayList;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
@@ -15,6 +17,7 @@ import com.projectkorra.projectkorra.ability.ComboAbility;
 import com.projectkorra.projectkorra.ability.EarthAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
 import com.projectkorra.projectkorra.attribute.Attribute;
+import com.projectkorra.projectkorra.object.HorizontalVelocityTracker;
 import com.projectkorra.projectkorra.util.ClickType;
 
 import me.aztl.azutoru.Azutoru;
@@ -29,24 +32,21 @@ public class EarthShift extends EarthAbility implements AddonAbility, ComboAbili
 	private double speed;
 	
 	private Location target;
-	private Vector direction;
 	
 	public EarthShift(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			return;
-		}
+		if (!bPlayer.canBendIgnoreBinds(this)) return;
 		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Earth.EarthShift.Cooldown");
-		range = Azutoru.az.getConfig().getDouble("Abilities.Earth.EarthShift.Range") - 6;
-		speed = Azutoru.az.getConfig().getDouble("Abilities.Earth.EarthShift.Speed");
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Earth.EarthShift.Cooldown");
+		range = c.getDouble("Abilities.Earth.EarthShift.Range") - 6;
+		speed = c.getDouble("Abilities.Earth.EarthShift.Speed");
 		
 		target = player.getTargetBlock(null, (int) range).getLocation();
 		if (!isEarthbendable(player.getLocation().getBlock().getRelative(BlockFace.DOWN))
-				|| !isEarthbendable(target.getBlock())) {
+				|| !isEarthbendable(target.getBlock()))
 			return;
-		}
 		
 		start();
 	}
@@ -58,11 +58,13 @@ public class EarthShift extends EarthAbility implements AddonAbility, ComboAbili
 			return;
 		}
 		
-		for (Entity entity : GeneralMethods.getEntitiesAroundPoint(target, 6)) {
-			Block block = entity.getLocation().getBlock().getRelative(BlockFace.DOWN);
-			if (isEarthbendable(block) && entity.getUniqueId() != player.getUniqueId()) {
-				direction = GeneralMethods.getDirection(target, entity.getLocation()).multiply(speed).setY(0);
-				entity.setVelocity(direction);
+		for (Entity e : GeneralMethods.getEntitiesAroundPoint(target, 6)) {
+			Block b = e.getLocation().getBlock().getRelative(BlockFace.DOWN);
+			if (isEarthbendable(b) && e != player) {
+				if (e instanceof LivingEntity)
+					new HorizontalVelocityTracker(e, player, 200, this);
+				Vector direction = GeneralMethods.getDirection(target, e.getLocation()).multiply(speed).setY(0);
+				e.setVelocity(direction);
 				remove();
 				return;
 			}

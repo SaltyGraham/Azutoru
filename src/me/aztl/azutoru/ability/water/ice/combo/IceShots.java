@@ -3,24 +3,34 @@ package me.aztl.azutoru.ability.water.ice.combo;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
+import org.apache.commons.math3.util.FastMath;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 import com.projectkorra.projectkorra.GeneralMethods;
+import com.projectkorra.projectkorra.ability.Ability;
 import com.projectkorra.projectkorra.ability.AddonAbility;
 import com.projectkorra.projectkorra.ability.ComboAbility;
-import com.projectkorra.projectkorra.ability.ElementalAbility;
 import com.projectkorra.projectkorra.ability.IceAbility;
 import com.projectkorra.projectkorra.ability.util.ComboManager.AbilityInformation;
 import com.projectkorra.projectkorra.attribute.Attribute;
 import com.projectkorra.projectkorra.util.BlockSource;
 import com.projectkorra.projectkorra.util.ClickType;
+import com.projectkorra.projectkorra.util.DamageHandler;
+import com.projectkorra.projectkorra.util.ParticleEffect;
 import com.projectkorra.projectkorra.util.TempBlock;
+import com.projectkorra.projectkorra.util.TempPotionEffect;
 import com.projectkorra.projectkorra.waterbending.Torrent;
 import com.projectkorra.projectkorra.waterbending.ice.IceSpikeBlast;
 import com.projectkorra.projectkorra.waterbending.plant.PlantRegrowth;
@@ -71,24 +81,21 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 	public IceShots(Player player) {
 		super(player);
 		
-		IceSpikeBlast iceSpike = getAbility(player, IceSpikeBlast.class);
-		if (iceSpike != null) {
-			iceSpike.remove();
-		}
+		if (hasAbility(player, IceSpikeBlast.class))
+			getAbility(player, IceSpikeBlast.class).remove();
 		
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			return;
-		}
+		if (!bPlayer.canBendIgnoreBinds(this)) return;
 		
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Water.IceShots.Cooldown");
-		duration = Azutoru.az.getConfig().getLong("Abilities.Water.IceShots.Duration");
-		sourceRange = Azutoru.az.getConfig().getDouble("Abilities.Water.IceShots.SourceRange");
-		maxIceShots = Azutoru.az.getConfig().getInt("Abilities.Water.IceShots.MaxIceShots");
-		range = Azutoru.az.getConfig().getDouble("Abilities.Water.IceShots.Range");
-		damage = Azutoru.az.getConfig().getDouble("Abilities.Water.IceShots.DamagePerShot");
-		hitRadius = Azutoru.az.getConfig().getDouble("Abilities.Water.IceShots.HitRadius");
-		ringRadius = Azutoru.az.getConfig().getDouble("Abilities.Water.IceShots.RingRadius");
-		speed = Azutoru.az.getConfig().getDouble("Abilities.Water.IceShots.Speed");
+		FileConfiguration c = Azutoru.az.getConfig();
+		cooldown = c.getLong("Abilities.Water.IceShots.Cooldown");
+		duration = c.getLong("Abilities.Water.IceShots.Duration");
+		sourceRange = c.getDouble("Abilities.Water.IceShots.SourceRange");
+		maxIceShots = c.getInt("Abilities.Water.IceShots.MaxIceShots");
+		range = c.getDouble("Abilities.Water.IceShots.Range");
+		damage = c.getDouble("Abilities.Water.IceShots.DamagePerShot");
+		hitRadius = c.getDouble("Abilities.Water.IceShots.HitRadius");
+		ringRadius = c.getDouble("Abilities.Water.IceShots.RingRadius");
+		speed = c.getDouble("Abilities.Water.IceShots.Speed");
 		
 		applyModifiers();
 		
@@ -100,7 +107,7 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 					.add(new ProtectedRegionPolicy(this, () -> location))
 					.add(new SneakingPolicy(ProhibitedState.NOT_SNEAKING))
 					.add(new SwappedSlotsPolicy("IceSpike"))
-					.add(new UsedAmmoPolicy(() -> maxIceShots, UsedAmmoPolicy.NOT_SHOOTING)).build();
+					.add(new UsedAmmoPolicy(() -> maxIceShots, p -> !hasAbility(p, IceShot.class))).build();
 		
 		sourceBlock = BlockSource.getWaterSourceBlock(player, sourceRange, ClickType.SHIFT_DOWN, true, true, true, true, true);
 		if (sourceBlock != null && !GeneralMethods.isRegionProtectedFromBuild(this, sourceBlock.getLocation())) {
@@ -132,7 +139,7 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 	@Override
 	public void progress() {
 		if (!bPlayer.canBendIgnoreBinds(this) || policy.test(player)) {
-			remove(true);
+			removeWithCooldown();
 			return;
 		}
 		
@@ -148,7 +155,7 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 			if (Torrent.getFrozenBlocks().containsKey(tb)) {
 				Torrent.massThaw(tb);
 			} else if (!isBendableWaterTempBlock(tb) && !decayableSource) {
-				remove(false);
+				remove();
 				return;
 			}
 		}
@@ -165,9 +172,9 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 			location.add(0, 1, 0);
 			Block block = location.getBlock();
 			
-			if (!(isWaterbendable(block) || ElementalAbility.isAir(block.getType()))
+			if (!(isWaterbendable(block) || isAir(block.getType()))
 					|| GeneralMethods.isRegionProtectedFromBuild(this, block.getLocation())) {
-				remove(false);
+				remove();
 				return;
 			}
 			
@@ -182,9 +189,9 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 			location.add(vec.normalize());
 			Block block = location.getBlock();
 			
-			if (!(isWaterbendable(block) || ElementalAbility.isAir(block.getType())
+			if (!(isWaterbendable(block) || isAir(block.getType())
 					|| GeneralMethods.isRegionProtectedFromBuild(this, block.getLocation()))) {
-				remove(false);
+				remove();
 				return;
 			}
 			
@@ -210,7 +217,7 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 			dir.setY(0);
 			Block block = player.getEyeLocation().add(dir).getBlock();
 			location = block.getLocation();
-			if (ElementalAbility.isAir(block.getType()) && !GeneralMethods.isRegionProtectedFromBuild(this, block.getLocation())) {
+			if (isAir(block.getType()) && !GeneralMethods.isRegionProtectedFromBuild(this, block.getLocation())) {
 				createBlock(block, Material.WATER);
 			}
 		}
@@ -218,7 +225,7 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 	
 	public void onClick() {
 		if (animation == AnimateState.CIRCLE && maxIceShots > 0) {
-			new Shot(player, this, eyeLoc, player.getEyeLocation().getDirection(), damage, range, hitRadius, speed, false);
+			new IceShot(player, this, eyeLoc, player.getEyeLocation().getDirection(), damage, range, hitRadius, speed, false);
 			maxIceShots--;
 		}
 	}
@@ -227,17 +234,79 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 		affectedBlocks.put(block, new TempBlock(block, material));
 	}
 	
-	public void remove(boolean addCooldown) {
+	private class IceShot extends Shot {
+
+		public IceShot(Player player, Ability ability, Location origin, Vector direction, double damage, double range,
+				double hitRadius, double speed, boolean controllable) {
+			super(player, ability, origin, direction, damage, range, hitRadius, speed, controllable);
+		}
+		
+		@Override
+		protected void progressShot() {
+			ParticleEffect.SNOW_SHOVEL.display(location, 5, FastMath.random(), FastMath.random(), FastMath.random(), 0.05);
+			new TempBlock(location.getBlock(), Material.ICE).setRevertTime(10);
+			
+			for (Entity e : GeneralMethods.getEntitiesAroundPoint(location, hitRadius)) {
+				if (e instanceof LivingEntity && e != player) {
+					DamageHandler.damageEntity(e, damage, this);
+					PotionEffect effect = new PotionEffect(PotionEffectType.SLOW, 40, 2);
+					new TempPotionEffect((LivingEntity) e, effect);
+					remove();
+					return;
+				}
+			}
+			
+			if (!canPlaceWaterBlock(location.getBlock())) {
+				remove();
+				return;
+			}
+			
+			if (ThreadLocalRandom.current().nextInt(6) == 0)
+				IceAbility.playIcebendingSound(location);
+		}
+
+		@Override
+		public long getCooldown() {
+			return 0;
+		}
+
+		@Override
+		public boolean isExplosiveAbility() {
+			return false;
+		}
+
+		@Override
+		public boolean isHarmlessAbility() {
+			return false;
+		}
+
+		@Override
+		public boolean isIgniteAbility() {
+			return false;
+		}
+
+		@Override
+		public boolean isSneakAbility() {
+			return true;
+		}
+		
+	}
+	
+	@Override
+	public void remove() {
+		super.remove();
+		WorldUtil.revertBlocks(affectedBlocks);
+		affectedBlocks.clear();
+	}
+	
+	public void removeWithCooldown() {
 		remove();
 		WorldUtil.revertBlocks(affectedBlocks);
 		affectedBlocks.clear();
-		if (addCooldown) {
-			bPlayer.addCooldown(this);
-		}
-		return;
+		bPlayer.addCooldown(this);
 	}
 	
-	public Integer getMaxIceShots() {
+	public int getMaxIceShots() {
 		return maxIceShots;
 	}
 	

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
@@ -44,18 +45,17 @@ public class WaterRun extends WaterAbility implements AddonAbility, ComboAbility
 	public WaterRun(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreBinds(this) || bPlayer.isOnCooldown(this)) {
+		if (!bPlayer.canBendIgnoreBinds(this) 
+				|| bPlayer.isOnCooldown(this)
+				|| hasAbility(player, WaterSpout.class)
+				|| hasAbility(player, WaterSpoutRush.class))
 			return;
-		}
 		
-		if (hasAbility(player, WaterSpout.class) || hasAbility(player, WaterSpoutRush.class)) {
-			return;
-		}
-		
-		speed = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterRun.Speed");
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Water.WaterRun.Cooldown");
-		duration = Azutoru.az.getConfig().getLong("Abilities.Water.WaterRun.Duration");
-		damageThreshold = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterRun.DamageThreshold");
+		FileConfiguration c = Azutoru.az.getConfig();
+		speed = c.getDouble("Abilities.Water.WaterRun.Speed");
+		cooldown = c.getLong("Abilities.Water.WaterRun.Cooldown");
+		duration = c.getLong("Abilities.Water.WaterRun.Duration");
+		damageThreshold = c.getDouble("Abilities.Water.WaterRun.DamageThreshold");
 		
 		applyModifiers();
 		
@@ -67,9 +67,7 @@ public class WaterRun extends WaterAbility implements AddonAbility, ComboAbility
 					.add(new ExpirationPolicy(duration)).build();
 		
 		Block topBlock = GeneralMethods.getTopBlock(player.getLocation(), 3);
-		if (!isWater(topBlock) && !isIce(topBlock) && !isSnow(topBlock)) {
-			return;
-		}
+		if (!isWater(topBlock) && !isIce(topBlock) && !isSnow(topBlock)) return;
 		
 		start();
 	}

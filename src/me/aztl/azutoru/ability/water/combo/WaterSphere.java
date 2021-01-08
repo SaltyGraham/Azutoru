@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -62,25 +63,23 @@ public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbil
 	public WaterSphere(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBendIgnoreBinds(this)) {
-			return;
-		}
+		if (!bPlayer.canBendIgnoreBinds(this)) return;
 		
-		if (getAbility(player, SurgeWall.class) != null) {
+		if (getAbility(player, SurgeWall.class) != null)
 			getAbility(player, SurgeWall.class).remove();
-		}
 		
-		sourceRange = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterSphere.SourceRange");
-		speed = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterSphere.Speed");
-		range = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterSphere.Range");
-		radius = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterSphere.Radius");
-		iceSource = Azutoru.az.getConfig().getBoolean("Abilities.Water.WaterSphere.AllowIceSource");
-		plantSource = Azutoru.az.getConfig().getBoolean("Abilities.Water.WaterSphere.AllowPlantSource");
-		snowSource = Azutoru.az.getConfig().getBoolean("Abilities.Water.WaterSphere.AllowSnowSource");
-		bottleSource = Azutoru.az.getConfig().getBoolean("Abilities.Water.WaterSphere.AllowBottleSource");
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Water.WaterSphere.Cooldown");
-		duration = Azutoru.az.getConfig().getLong("Abilities.Water.WaterSphere.Duration");
-		damage = Azutoru.az.getConfig().getDouble("Abilities.Water.WaterSphere.Damage");
+		FileConfiguration c = Azutoru.az.getConfig();
+		sourceRange = c.getDouble("Abilities.Water.WaterSphere.SourceRange");
+		speed = c.getDouble("Abilities.Water.WaterSphere.Speed");
+		range = c.getDouble("Abilities.Water.WaterSphere.Range");
+		radius = c.getDouble("Abilities.Water.WaterSphere.Radius");
+		iceSource = c.getBoolean("Abilities.Water.WaterSphere.AllowIceSource");
+		plantSource = c.getBoolean("Abilities.Water.WaterSphere.AllowPlantSource");
+		snowSource = c.getBoolean("Abilities.Water.WaterSphere.AllowSnowSource");
+		bottleSource = c.getBoolean("Abilities.Water.WaterSphere.AllowBottleSource");
+		cooldown = c.getLong("Abilities.Water.WaterSphere.Cooldown");
+		duration = c.getLong("Abilities.Water.WaterSphere.Duration");
+		damage = c.getDouble("Abilities.Water.WaterSphere.Damage");
 		// TODO: Add damage threshold
 		
 		applyModifiers();
@@ -90,7 +89,7 @@ public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbil
 		damagedEntities = new ArrayList<>();
 		
 		policy = Policies.builder()
-					.add(new DamagePolicy(3 /* future damage threshold variable */, () -> player.getHealth()))
+					.add(new DamagePolicy(3 /* TODO: future damage threshold variable */, () -> player.getHealth()))
 					.add(new DifferentWorldPolicy(() -> player.getWorld()))
 					.add(new ExpirationPolicy(duration))
 					.add(new ProtectedRegionPolicy(this, () -> location))
@@ -99,7 +98,6 @@ public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbil
 		Block sourceBlock = BlockSource.getWaterSourceBlock(player, sourceRange, ClickType.SHIFT_DOWN, true, iceSource, plantSource, snowSource, bottleSource);
 		if (sourceBlock != null) {
 			location = sourceBlock.getLocation().add(0, 1.5, 0);
-			
 			start();
 		}
 	}
@@ -128,23 +126,15 @@ public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbil
 			return;
 		}
 		
-		if (GeneralMethods.isSolid(location.getBlock())) {
+		if (GeneralMethods.isSolid(location.getBlock()))
 			location.subtract(direction.normalize().multiply(speed));
-		}
 		
-		if (getAbility(player, SurgeWall.class) != null) {
+		if (hasAbility(player, SurgeWall.class))
 			getAbility(player, SurgeWall.class).remove();
-		} else if (getAbility(player, SurgeWave.class) != null) {
+		if (hasAbility(player, SurgeWave.class))
 			getAbility(player, SurgeWave.class).remove();
-		}
 		
 		if (clicked) {
-			if (hasAbility(player, SurgeWave.class)) {
-				getAbility(player, SurgeWave.class).remove();
-			} else if (hasAbility(player, SurgeWall.class)) {
-				getAbility(player, SurgeWall.class).remove();
-			}
-			
 			if (player.getLocation().distanceSquared(location) > range * range * 1.1) {
 				remove();
 				return;
@@ -152,52 +142,43 @@ public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbil
 			
 			for (Block b : GeneralMethods.getBlocksAroundPoint(location, radius)) {
 				if (isAir(b.getType()) && !GeneralMethods.isRegionProtectedFromBuild(this, b.getLocation())) {
-					new TempBlock(b, Material.WATER);
+					affectedBlocks.put(b, new TempBlock(b, Material.WATER));
 				}
 			}
 			
 			for (Entity e : GeneralMethods.getEntitiesAroundPoint(location, radius)) {
-				if (e.getUniqueId() != player.getUniqueId()) {
-					e.setVelocity(new Vector(0, 0, 0));
+				if (e != player) {
+					e.setVelocity(new Vector());
 				}
 			}
 		} else {
 			WorldUtil.revertBlocks(affectedBlocks);
 			
-			if (player.isSneaking()) {
+			if (player.isSneaking())
 				direction = GeneralMethods.getDirection(location, GeneralMethods.getTargetedLocation(player, radius + 2));
-			} else {
+			else
 				direction = GeneralMethods.getDirection(location, GeneralMethods.getTargetedLocation(player, range, getTransparentMaterials()));
-			}
 			
 			location.add(direction.normalize().multiply(speed));
 			
 			for (Block b : GeneralMethods.getBlocksAroundPoint(location, radius)) {
-				if (isAir(b.getType()) && !GeneralMethods.isRegionProtectedFromBuild(this, b.getLocation())) {
-					createBlock(b, Material.WATER);
-				}
 				if (GeneralMethods.isRegionProtectedFromBuild(this, b.getLocation())) {
 					remove();
 					return;
 				}
-				if (isWater(b) && !TempBlock.isTempBlock(b)) {
+				if (isAir(b.getType()))
+					createBlock(b, Material.WATER);
+				else if (isWater(b) && !TempBlock.isTempBlock(b))
 					WorldUtil.displayWaterBubble(b.getLocation());
-				}
-				if (isLava(b)) {
+				else if (isLava(b))
 					b.setType(Material.OBSIDIAN);
-				}
 			}
 			
 			for (Entity e : GeneralMethods.getEntitiesAroundPoint(location, radius)) {
-				if (e.getUniqueId() != player.getUniqueId()) {
-					Vector velocity = GeneralMethods.getDirection(e.getLocation().add(0, 1, 0), location).normalize();
-					
-					if (!(e instanceof Player)) {
-						velocity.multiply(1.5);
-					}
+				if (e != player) {
+					Vector velocity = GeneralMethods.getDirection(e.getLocation().add(0, 1, 0), location).normalize().multiply(1.25);
 					e.setVelocity(velocity);
 					e.setFallDistance(0);
-					
 					if (damage > 0 && e instanceof LivingEntity && !damagedEntities.contains(e)) {
 						DamageHandler.damageEntity(e, damage, this);
 						damagedEntities.add(e);
@@ -208,11 +189,7 @@ public class WaterSphere extends WaterAbility implements AddonAbility, ComboAbil
 	}
 	
 	public void onClick() {
-		if (clicked) {
-			clicked = false;
-		} else {
-			clicked = true;
-		}
+		clicked = !clicked;
 	}
 	
 	public void createBlock(Block block, Material material) {

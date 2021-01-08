@@ -1,12 +1,12 @@
 package me.aztl.azutoru.ability.water.blood;
 
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 import org.bukkit.Location;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -53,16 +53,15 @@ public class BloodStrangle extends BloodAbility implements AddonAbility {
 	public BloodStrangle(Player player) {
 		super(player);
 		
-		if (!bPlayer.canBend(this)) {
-			return;
-		}
+		if (!bPlayer.canBend(this)) return;
 		
-		range = Azutoru.az.getConfig().getDouble("Abilities.Water.BloodStrangle.Range");
-		grabRadius = Azutoru.az.getConfig().getDouble("Abilities.Water.BloodStrangle.GrabRadius");
-		damage = Azutoru.az.getConfig().getDouble("Abilities.Water.BloodStrangle.Damage");
-		undeadMobs = Azutoru.az.getConfig().getBoolean("Abilities.Water.BloodStrangle.CanBendUndeadMobs");
-		cooldown = Azutoru.az.getConfig().getLong("Abilities.Water.BloodStrangle.Cooldown");
-		duration = Azutoru.az.getConfig().getLong("Abilities.Water.BloodStrangle.Duration");
+		FileConfiguration c = Azutoru.az.getConfig();
+		range = c.getDouble("Abilities.Water.BloodStrangle.Range");
+		grabRadius = c.getDouble("Abilities.Water.BloodStrangle.GrabRadius");
+		damage = c.getDouble("Abilities.Water.BloodStrangle.Damage");
+		undeadMobs = c.getBoolean("Abilities.Water.BloodStrangle.CanBendUndeadMobs");
+		cooldown = c.getLong("Abilities.Water.BloodStrangle.Cooldown");
+		duration = c.getLong("Abilities.Water.BloodStrangle.Duration");
 		
 		init = System.currentTimeMillis();
 		policy = Policies.builder()
@@ -70,9 +69,8 @@ public class BloodStrangle extends BloodAbility implements AddonAbility {
 					.add(new ExpirationPolicy(duration))
 					.add(new ProtectedRegionPolicy(this, () -> location)).build();
 		
-		if (grabEntities()) {
+		if (grabEntities())
 			start();
-		}
 	}
 	
 	public boolean grabEntities() {
@@ -81,14 +79,12 @@ public class BloodStrangle extends BloodAbility implements AddonAbility {
 		for (int i = 1; i < range; i++) {
 			location = GeneralMethods.getTargetedLocation(player, i, getTransparentMaterials());
 			for (Entity e : GeneralMethods.getEntitiesAroundPoint(location, grabRadius)) {
-				if (e instanceof LivingEntity 
-						&& e.getUniqueId() != player.getUniqueId()
+				if (e instanceof LivingEntity && e != player
 						&& (!GeneralMethods.isUndead(e) && !undeadMobs)
 						&& !GeneralMethods.isRegionProtectedFromBuild(this, e.getLocation())) {
-					if (e instanceof Player && e instanceof BendingPlayer) {
-						Player victim = (Player) e;
-						BendingPlayer bVictim = (BendingPlayer) victim;
-						if (bVictim.canBeBloodbent()
+					if (e instanceof Player) {
+						BendingPlayer bVictim = BendingPlayer.getBendingPlayer((Player) e);
+						if (bVictim != null && bVictim.canBeBloodbent()
 								&& !Commands.invincible.contains(bVictim.getName())) {
 							grabbedEntities.put(e, GeneralMethods.getDirection(location, e.getLocation()));
 						}
@@ -97,25 +93,19 @@ public class BloodStrangle extends BloodAbility implements AddonAbility {
 					}
 				}
 			}
-			if (grabbedEntities.size() > 2) {
-				break;
-			} else if (System.currentTimeMillis() > init + 500) {
-				break;
-			}
+			if (grabbedEntities.size() > 2 || System.currentTimeMillis() > init + 500) break;
 		}
 		
-		if (grabbedEntities == null || grabbedEntities.isEmpty()) {
-			return false;
-		}
+		if (grabbedEntities == null || grabbedEntities.isEmpty()) return false;
 		
 		for (Entity e : grabbedEntities.keySet()) {
-			if (grabbedEntities.size() == 1) {
-				grabbedEntities.replace(e, new Vector (0, 0, 0));
-			}
+			if (grabbedEntities.size() == 1)
+				grabbedEntities.replace(e, new Vector());
 			DamageHandler.damageEntity(e, 0, this);
-			if (e instanceof Player && e instanceof BendingPlayer) {
+			if (e instanceof Player) {
 				BendingPlayer bVictim = BendingPlayer.getBendingPlayer((Player) e);
-				bVictim.blockChi();
+				if (bVictim != null)
+					bVictim.blockChi();
 			}
 		}
 		
@@ -136,63 +126,51 @@ public class BloodStrangle extends BloodAbility implements AddonAbility {
 			remove();
 			return;
 		} else {
-			Set<Entity> removal = new HashSet<>();
-			for (Entity e : grabbedEntities.keySet()) {
-				removal = checkForRemoval(e, removal);
-				if (removal.contains(e)) {
+			Iterator<Entity> it = grabbedEntities.keySet().iterator();
+			while (it.hasNext()) {
+				Entity e = it.next();
+				if (shouldRemove(e)) {
+					grabbedEntities.remove(e);
 					continue;
 				}
 				
 				Location eLoc = e.getLocation();
 				Location destination = location.add(grabbedEntities.get(e));
-				double dx, dy, dz;
-				dx = destination.getX() - eLoc.getX();
-				dy = destination.getY() - eLoc.getY();
-				dz = destination.getZ() - eLoc.getZ();
-				Vector vector = new Vector(dx, dy, dz);
-				if (location.distance(eLoc) > 0.5) {
-					e.setVelocity(vector.normalize().multiply(0.3));
-				} else {
-					e.setVelocity(new Vector(0, 0, 0));
-				}
+				double dx = destination.getX() - eLoc.getX();
+				double dy = destination.getY() - eLoc.getY();
+				double dz = destination.getZ() - eLoc.getZ();
+				Vector v = new Vector(dx, dy, dz);
+				e.setVelocity((location.distanceSquared(eLoc) > 0.5 * 0.5) ? v.normalize().multiply(0.3) : new Vector());
 				e.setFallDistance(0);
 				AirAbility.breakBreathbendingHold(e);
-				
-				applyEffects((LivingEntity) e);
-			}
-			for (Entity e : removal) {
-				grabbedEntities.remove(e);
+				if (e instanceof LivingEntity)
+					applyEffects((LivingEntity) e);
 			}
 		}
 	}
 	
-	public void applyEffects(LivingEntity e) {
+	public void applyEffects(LivingEntity le) {
 		if (time < getStartTime() + 500) {
-			e.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 50, 2));
+			le.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 50, 2));
 		} else if (time >= getStartTime() + 500) {
-			e.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 500, 2));
+			le.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 500, 2));
 			if (new Random().nextInt(10) == 0) {
-				DamageHandler.damageEntity(e, damage, this);
+				DamageHandler.damageEntity(le, damage, this);
 			}
 		}
 	}
 	
-	public Set<Entity> checkForRemoval(Entity e, Set<Entity> removal) {
-		if (e.isDead()) {
-			removal.add(e);
-		} else if (e instanceof Player) {
+	public boolean shouldRemove(Entity e) {
+		if (e.isDead())
+			return true;
+		else if (e instanceof Player) {
 			Player victim = (Player) e;
-			if (!victim.isOnline()) {
-				removal.add(e);
-			} else if (victim.getWorld() != player.getWorld()) {
-				removal.add(e);
-			} else if (victim.getLocation().distanceSquared(player.getLocation()) > range + 5) {
-				removal.add(e);
-			} else if (GeneralMethods.isRegionProtectedFromBuild(this, victim.getLocation())) {
-				removal.add(e);
-			}
+			return !victim.isOnline()
+					|| victim.getWorld() != player.getWorld()
+					|| victim.getLocation().distanceSquared(player.getLocation()) > range + 5
+					|| GeneralMethods.isRegionProtectedFromBuild(this, victim.getLocation());
 		}
-		return removal;
+		return false;
 	}
 	
 	public void remove() {
