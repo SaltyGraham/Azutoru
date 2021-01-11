@@ -173,6 +173,11 @@ public class GlassShards extends GlassAbility implements AddonAbility {
 			if (ThreadLocalRandom.current().nextInt(6) == 0)
 				GlassAbility.playGlassbendingSound(location);
 		}
+		
+		@Override
+		public String getName() {
+			return "GlassShards";
+		}
 
 		@Override
 		public long getCooldown() {

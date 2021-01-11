@@ -94,11 +94,6 @@ public abstract class Shot extends ElementalAbility implements AddonAbility {
 	}
 
 	@Override
-	public String getName() {
-		return "Shot";
-	}
-
-	@Override
 	public Element getElement() {
 		return Element.AVATAR;
 	}

@@ -22,6 +22,10 @@ public class WorldUtil {
 	
 	private static List<Material> ignoredPlants = Arrays.asList(Material.ACACIA_SAPLING, Material.BIRCH_SAPLING, Material.DARK_OAK_SAPLING, Material.JUNGLE_SAPLING, Material.OAK_SAPLING, Material.SPRUCE_SAPLING, Material.ORANGE_TULIP, Material.PINK_TULIP, Material.RED_TULIP, Material.WHITE_TULIP, Material.ROSE_BUSH, Material.BLUE_ORCHID, Material.ALLIUM, Material.DANDELION, Material.LILAC, Material.OXEYE_DAISY, Material.AZURE_BLUET, Material.PEONY, Material.SUNFLOWER, Material.POPPY, Material.FERN, Material.DEAD_BUSH, Material.LARGE_FERN, Material.LILY_OF_THE_VALLEY, Material.WITHER_ROSE, Material.CORNFLOWER, Material.RED_MUSHROOM, Material.BROWN_MUSHROOM, Material.WARPED_ROOTS, Material.CRIMSON_ROOTS, Material.NETHER_SPROUTS, Material.WHEAT, Material.BEETROOTS, Material.CARROTS, Material.POTATOES, Material.GRASS, Material.TALL_GRASS, Material.LILY_PAD);
 	
+	public static Location centerBlock(Block block) {
+		return block.getLocation().clone().add(0.5, 0.5, 0.5);
+	}
+	
 	public static void displayWaterBubble(Location loc) {
 		ParticleEffect.WATER_BUBBLE.display(loc, 1, 0.5, 0.5, 0.5);
 	}

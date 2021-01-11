@@ -2,7 +2,6 @@ package me.aztl.azutoru.ability.earth.combo;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 import org.apache.commons.math3.util.FastMath;
@@ -159,21 +158,21 @@ public class Crumble extends EarthAbility implements AddonAbility, ComboAbility 
 	}
 	
 	public static void progressAll() {
-		Iterator<FallingBlock> it = blocks.iterator();
-		while (it.hasNext()) {
-			FallingBlock fb = it.next();
+		Set<FallingBlock> removal = new HashSet<>();
+		for (FallingBlock fb : blocks) {
 			if (fb.isDead()) {
-				blocks.remove(fb);
+				removal.add(fb);
 				continue;
 			}
 			for (Entity e : GeneralMethods.getEntitiesAroundPoint(fb.getLocation(), hitRadius)) {
 				if (e instanceof LivingEntity) {
 					((LivingEntity) e).damage(damage);
-					blocks.remove(fb);
+					removal.add(fb);
 					fb.remove();
 				}
 			}
 		}
+		blocks.removeAll(removal);
 	}
 	
 	public static void addBlock(FallingBlock fb) {

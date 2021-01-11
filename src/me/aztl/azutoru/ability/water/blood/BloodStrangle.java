@@ -1,9 +1,10 @@
 package me.aztl.azutoru.ability.water.blood;
 
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.Map;
-import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.bukkit.Location;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -126,11 +127,10 @@ public class BloodStrangle extends BloodAbility implements AddonAbility {
 			remove();
 			return;
 		} else {
-			Iterator<Entity> it = grabbedEntities.keySet().iterator();
-			while (it.hasNext()) {
-				Entity e = it.next();
+			Set<Entity> removal = new HashSet<>();
+			for (Entity e : grabbedEntities.keySet()) {
 				if (shouldRemove(e)) {
-					grabbedEntities.remove(e);
+					removal.add(e);
 					continue;
 				}
 				
@@ -146,6 +146,13 @@ public class BloodStrangle extends BloodAbility implements AddonAbility {
 				if (e instanceof LivingEntity)
 					applyEffects((LivingEntity) e);
 			}
+			for (Entity e : removal) {
+				grabbedEntities.remove(e);
+				if (e instanceof Player) {
+					BendingPlayer bVictim = BendingPlayer.getBendingPlayer((Player) e);
+					if (bVictim != null) bVictim.unblockChi();
+				}
+			}
 		}
 	}
 	
@@ -154,7 +161,7 @@ public class BloodStrangle extends BloodAbility implements AddonAbility {
 			le.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 50, 2));
 		} else if (time >= getStartTime() + 500) {
 			le.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 500, 2));
-			if (new Random().nextInt(10) == 0) {
+			if (ThreadLocalRandom.current().nextInt(10) == 0) {
 				DamageHandler.damageEntity(le, damage, this);
 			}
 		}

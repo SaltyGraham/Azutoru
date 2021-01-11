@@ -154,7 +154,7 @@ public class WaterSlash extends WaterAbility implements AddonAbility, ComboAbili
 			}
 			progressing = true;
 		} else {
-			if (locations.isEmpty()) {
+			if (locations.isEmpty() || locations.values().stream().allMatch(l -> GeneralMethods.isSolid(l.getBlock()))) {
 				remove();
 				return;
 			}

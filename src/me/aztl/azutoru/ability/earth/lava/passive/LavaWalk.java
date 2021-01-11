@@ -25,7 +25,6 @@ public class LavaWalk extends LavaAbility implements AddonAbility, PassiveAbilit
 
 	@Attribute(Attribute.RADIUS)
 	private int radius;
-	private boolean canBendTempLava;
 	@Attribute(Attribute.RANGE)
 	private double range;
 	
@@ -38,7 +37,6 @@ public class LavaWalk extends LavaAbility implements AddonAbility, PassiveAbilit
 		
 		FileConfiguration c = Azutoru.az.getConfig();
 		radius = c.getInt("Abilities.Earth.LavaWalk.Radius");
-		canBendTempLava = c.getBoolean("Abilities.Earth.LavaWalk.CanBendTempLava");
 		range = c.getDouble("Abilities.Earth.LavaWalk.Range");
 		
 		world = player.getWorld();
@@ -47,7 +45,7 @@ public class LavaWalk extends LavaAbility implements AddonAbility, PassiveAbilit
 
 	@Override
 	public void progress() {
-		if (!active || !bPlayer.canUsePassive(this) || !bPlayer.canBendPassive(this)) {
+		if (!active || !bPlayer.canBendPassive(this) || !bPlayer.canUsePassive(this)) {
 			if (!affectedBlocks.isEmpty())
 				revertBlocks();
 			return;
@@ -55,25 +53,26 @@ public class LavaWalk extends LavaAbility implements AddonAbility, PassiveAbilit
 		
 		Block block = player.getLocation().getBlock().getRelative(BlockFace.DOWN);
 		for (Block affectedBlock : GeneralMethods.getBlocksAroundPoint(block.getLocation(), radius)) {
-			if ((isLava(affectedBlock) && !TempBlock.isTempBlock(affectedBlock)) 
-					|| (isLava(affectedBlock) && TempBlock.isTempBlock(affectedBlock) && canBendTempLava)) {
+			if ((isLava(affectedBlock) && !TempBlock.isTempBlock(affectedBlock))) {
 				TempBlock tb = new TempBlock(affectedBlock, Material.STONE);
 				affectedBlocks.add(tb);
 			}
 		}
 		
-		if (!player.getWorld().equals(world)) {
+		if (player.getWorld() != world) {
 			revertBlocks();
 			world = player.getWorld();
 		}
 		
-		affectedBlocks.stream()
-			.filter(tb -> tb.getBlock().getLocation().distanceSquared(player.getLocation()) > range * range)
-			.forEach(tb -> tb.revertBlock());
+		for (TempBlock tb : affectedBlocks) {
+			if (tb.getBlock().getLocation().distanceSquared(player.getLocation()) > range * range) {
+				tb.revertBlock();
+			}
+		}
 	}
 	
 	public void revertBlocks() {
-		affectedBlocks.forEach(tb -> tb.revertBlock());
+		affectedBlocks.forEach(TempBlock::revertBlock);
 		affectedBlocks.clear();
 	}
 	

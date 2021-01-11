@@ -264,6 +264,11 @@ public class IceShots extends IceAbility implements AddonAbility, ComboAbility {
 			if (ThreadLocalRandom.current().nextInt(6) == 0)
 				IceAbility.playIcebendingSound(location);
 		}
+		
+		@Override
+		public String getName() {
+			return "IceShots";
+		}
 
 		@Override
 		public long getCooldown() {

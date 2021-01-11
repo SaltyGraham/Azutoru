@@ -140,7 +140,7 @@ public class MathUtil {
 	 * Amount of rays will be rounded up to the nearest odd number. Minimum value is 3.
 	 * @param start the starting point
 	 * @param rotation the rotation to use
-	 * @param rays the amount of vectors to return, must be an odd number, minimum 3
+	 * @param lines the amount of vectors to return, must be an odd number, minimum 3
 	 * @return a list comprising of all the directions for this arc
 	 * @author Moros
 	 */

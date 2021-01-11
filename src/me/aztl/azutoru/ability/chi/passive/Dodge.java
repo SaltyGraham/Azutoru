@@ -89,11 +89,11 @@ public class Dodge extends ChiAbility implements AddonAbility {
 				|| !player.isSneaking())
 			return false;
 		
-		if ((chi && bPlayer.isElementToggled(Element.CHI))
-				|| (air && bPlayer.isElementToggled(Element.AIR))
-				|| (fire && bPlayer.isElementToggled(Element.FIRE))
-				|| (water && bPlayer.isElementToggled(Element.WATER))
-				|| (earth && bPlayer.isElementToggled(Element.EARTH)))
+		if ((chi && bPlayer.hasElement(Element.CHI) && bPlayer.isElementToggled(Element.CHI))
+				|| (air && bPlayer.hasElement(Element.AIR) && bPlayer.isElementToggled(Element.AIR))
+				|| (fire && bPlayer.hasElement(Element.FIRE) && bPlayer.isElementToggled(Element.FIRE))
+				|| (water && bPlayer.hasElement(Element.WATER) && bPlayer.isElementToggled(Element.WATER))
+				|| (earth && bPlayer.hasElement(Element.EARTH) && bPlayer.isElementToggled(Element.EARTH)))
 			return true;
 		
 		return false;
